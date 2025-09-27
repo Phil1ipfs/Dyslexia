@@ -144,7 +144,7 @@ const TeacherDashboard = () => {
         improvementFromOriginal: improvement,
         status: interventionStatus,
         passedThreshold: currentPassed,
-        notes: `${totalAttempts} attempts completed. Latest attempt: ${currentScore}% score, ${currentPassed ? 'PASSED' : 'FAILED'}. ${improvement > 0 ? `Overall improvement: ${improvement}% from original score.` : 'No improvement data available.'}`,
+        notes: `${totalAttempts} attempts completed. ${currentPassed ? 'PASSED' : 'FAILED'} (threshold: ${interventionData.latestAttemptData?.passThreshold || 75}%). ${improvement > 0 ? `Overall improvement: ${improvement}% from original score.` : 'No improvement data available.'}`,
         lastActivityDate: latestAttempt && latestAttempt.completedAt
           ? new Date(latestAttempt.completedAt).toLocaleDateString()
           : 'N/A'

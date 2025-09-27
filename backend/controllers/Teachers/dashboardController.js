@@ -1061,9 +1061,8 @@ const processComprehensiveInterventionData = (students, interventionAssessments,
         lastAttemptDate: latestAttempt.completedAt ? new Date(latestAttempt.completedAt).toLocaleDateString() :
                         (latestAttempt.attemptedAt ? new Date(latestAttempt.attemptedAt).toLocaleDateString() : 'N/A'),
 
-        // Assessment information - use data from category results
-        totalQuestions: category.interventionAttempts || 0, // Total intervention attempts
-        completedActivities: category.interventionAttempts || 0, // Completed intervention attempts
+        // Assessment information
+        totalQuestions: assessment?.totalQuestions || category.totalQuestions || 0,
         revisionNumber: latestAttempt.revisionNumber || 1,
         teacherRevisions: Math.max(1, assessment?.revisionHistory?.length || latestAttempt.revisionNumber || 1),
 
@@ -1077,16 +1076,8 @@ const processComprehensiveInterventionData = (students, interventionAssessments,
           (latestResult.skillMastery[category.categoryName]?.masteryProbability || 0) : 0,
         interventionEffectiveness: latestResult?.interventionEffectiveness?.overallEffectiveness || 'N/A',
 
-        // Comprehensive intervention data from latest result
-        latestTotalQuestions: latestResult?.totalQuestions || 0,
-        latestCorrectAnswers: latestResult?.correctAnswers || 0,
-        latestScore: latestResult?.score || 0,
-        latestIsPassed: latestResult?.isPassed || false,
-        previousScore: latestResult?.previousScore || 0,
-        absoluteImprovement: latestResult?.improvement || 0,
+        // Improvement percentage from intervention results
         improvementPercentage: latestResult?.improvementPercentage || 0,
-        passThreshold: latestResult?.passThreshold || 75,
-        latestAssessmentDate: latestResult?.assessmentDate || null,
 
         // Raw data for detailed view
         interventionHistory: sortedHistory,
