@@ -2325,25 +2325,86 @@ class InterventionResultsAnalysisService {
   static async updateCategoryResultsWithIntervention(interventionResults, dataContext) {
     const { studentId, category } = dataContext;
 
+    // 🔒 PREVENT DUPLICATE CALLS: Check if this intervention result has already been processed
+    const interventionResultId = interventionResults._id;
+    console.log(`[INTERVENTION ANALYSIS] 🔒 DUPLICATE PROTECTION: Checking intervention result ${interventionResultId}`);
+
+    // Check if this intervention result is already recorded in ANY category_results
+    const existingRecords = await CategoryResults.find({
+      studentId: studentId,
+      'categories.interventionHistory.interventionResultId': interventionResultId
+    });
+
+    if (existingRecords.length > 0) {
+      console.warn(`[INTERVENTION ANALYSIS] ⚠️  DUPLICATE CALL DETECTED: Intervention result ${interventionResultId} already exists in ${existingRecords.length} record(s)`);
+      existingRecords.forEach(record => {
+        console.warn(`[INTERVENTION ANALYSIS] ⚠️    - Record ID: ${record._id}, Reading Level: ${record.readingLevel}`);
+      });
+      console.warn(`[INTERVENTION ANALYSIS] ⚠️  SKIPPING UPDATE to prevent duplicate data corruption`);
+      return; // Exit early to prevent duplicate updates
+    }
+
     console.log(`[INTERVENTION ANALYSIS] 📊 Updating category_results with intervention data...`);
     console.log(`[INTERVENTION ANALYSIS] 📊 Looking for category_results:`, {
       studentId: studentId,
       category: category,
       readingLevel: interventionResults.readingLevel,
-      interventionId: interventionResults.interventionAssessmentId
+      interventionId: interventionResults.interventionAssessmentId,
+      interventionResultId: interventionResultId,
+      interventionScore: interventionResults.score,
+      interventionPassed: interventionResults.isPassed,
+      revisionNumber: interventionResults.revisionNumber
     });
 
-    // ✅ FIX: Find category_results for the CORRECT reading level where intervention was taken
-    const categoryResults = await CategoryResults.findOne({
-      studentId: studentId,
-      readingLevel: interventionResults.readingLevel  // CRITICAL: Match reading level
-    });
+    try {
+      // 🔒 CRITICAL DATA INTEGRITY: Prevent corruption of historical reading level records
+      console.log(`[INTERVENTION ANALYSIS] 🔒 DATA INTEGRITY CHECK: Ensuring intervention only updates correct reading level record`);
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Target Reading Level: ${interventionResults.readingLevel}`);
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Intervention Assessment ID: ${interventionResults.interventionAssessmentId}`);
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Student ID: ${studentId}`);
 
-    if (!categoryResults) {
-      console.warn(`[INTERVENTION ANALYSIS] ⚠️ Category results not found for student ${studentId} at reading level ${interventionResults.readingLevel}`);
-      console.warn(`[INTERVENTION ANALYSIS] ⚠️ This means intervention was taken but category_results record doesn't exist for this level`);
-      return;
-    }
+      // ✅ STRICT QUERY: Find category_results for EXACT reading level where intervention was taken
+      const categoryResults = await CategoryResults.findOne({
+        studentId: studentId,
+        readingLevel: interventionResults.readingLevel  // CRITICAL: Match reading level EXACTLY
+      });
+
+      if (!categoryResults) {
+        console.error(`[INTERVENTION ANALYSIS] ❌ CRITICAL ERROR: Category results not found for student ${studentId} at reading level ${interventionResults.readingLevel}`);
+        console.error(`[INTERVENTION ANALYSIS] ❌ This means intervention was taken but category_results record doesn't exist for this level`);
+
+        // List all category_results for this student for debugging
+        const allCategoryResults = await CategoryResults.find({ studentId: studentId });
+        console.error(`[INTERVENTION ANALYSIS] 🔍 Available category_results for student ${studentId}:`);
+        allCategoryResults.forEach(cr => {
+          console.error(`[INTERVENTION ANALYSIS]   - ID: ${cr._id}, Reading Level: ${cr.readingLevel}, Categories: ${cr.categories.length}`);
+        });
+
+        throw new Error(`No category_results found for student ${studentId} at reading level ${interventionResults.readingLevel}`);
+      }
+
+      // 🔒 HISTORICAL DATA PROTECTION: Verify we found the CORRECT record
+      if (categoryResults.readingLevel !== interventionResults.readingLevel) {
+        console.error(`[INTERVENTION ANALYSIS] 🚨 CRITICAL DATA INTEGRITY ERROR: Reading level mismatch detected!`);
+        console.error(`[INTERVENTION ANALYSIS] 🚨 Expected: ${interventionResults.readingLevel}, Found: ${categoryResults.readingLevel}`);
+        console.error(`[INTERVENTION ANALYSIS] 🚨 This would corrupt historical data - BLOCKING UPDATE`);
+        throw new Error(`Reading level mismatch: expected ${interventionResults.readingLevel}, found ${categoryResults.readingLevel}`);
+      }
+
+      // 🔒 PREVENT MULTIPLE RECORD UPDATES: Ensure only ONE record is being updated
+      const allMatchingRecords = await CategoryResults.find({
+        studentId: studentId,
+        readingLevel: interventionResults.readingLevel
+      });
+
+      if (allMatchingRecords.length > 1) {
+        console.error(`[INTERVENTION ANALYSIS] 🚨 CRITICAL ERROR: Multiple category_results found for same reading level!`);
+        console.error(`[INTERVENTION ANALYSIS] 🚨 Found ${allMatchingRecords.length} records for student ${studentId} at level ${interventionResults.readingLevel}`);
+        allMatchingRecords.forEach((record, index) => {
+          console.error(`[INTERVENTION ANALYSIS] 🚨   Record ${index + 1}: ID ${record._id}, Created: ${record.createdAt}`);
+        });
+        throw new Error(`Data integrity violation: Multiple category_results found for same reading level`);
+      }
 
     console.log(`[INTERVENTION ANALYSIS] ✅ Found category_results for ${interventionResults.readingLevel} level:`, {
       recordId: categoryResults._id,
@@ -2416,15 +2477,20 @@ class InterventionResultsAnalysisService {
       console.log(`[INTERVENTION ANALYSIS] 🔒 - Original isPassed: ${categoryData.isPassed} (PRESERVED)`);
       console.log(`[INTERVENTION ANALYSIS] 📊 - Intervention score: ${interventionResults.score}% (tracked in history only)`);
 
-      // ✅ ONLY update intervention status flags - DO NOT touch original assessment results
+      // ✅ Update intervention status flags AND mark category as passed for progression
       categoryResults.categories[categoryIndex].interventionRequired = false;
       categoryResults.categories[categoryIndex].interventionCompleted = true; // Category completed via intervention
 
-      // ❌ REMOVED: Do NOT overwrite original isPassed or score
-      // ❌ categoryResults.categories[categoryIndex].isPassed = true;  // REMOVED - preserves original false
-      // ❌ categoryResults.categories[categoryIndex].score = newScore; // REMOVED - preserves original 7%
+      // ✅ CRITICAL: Mark category as passed to enable reading level progression
+      categoryResults.categories[categoryIndex].isPassed = true; // REQUIRED for progression system
+      console.log(`[INTERVENTION ANALYSIS] ✅ CRITICAL: Category marked as PASSED for reading level progression`);
 
-      console.log(`[INTERVENTION ANALYSIS] ✅ Category completion status updated without overwriting original assessment data`);
+      // ✅ PRESERVE original assessment score but mark as passed
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Original assessment score preserved: ${categoryData.score}%`);
+      console.log(`[INTERVENTION ANALYSIS] 📊 Intervention score: ${interventionResults.score}% (tracked in history)`);
+      console.log(`[INTERVENTION ANALYSIS] ✅ isPassed = true enables next category access and reading level progression`);
+
+      console.log(`[INTERVENTION ANALYSIS] ✅ Category completion status updated - PROGRESSION ENABLED`);
 
     } else {
       console.log(`[INTERVENTION ANALYSIS] 📝 Intervention failed. Category needs teacher revision.`);
@@ -2482,10 +2548,65 @@ class InterventionResultsAnalysisService {
     // Update timestamps
     categoryResults.updatedAt = new Date();
 
-    // Save the updated category_results
-    await categoryResults.save();
+    // 🔒 FINAL DATA INTEGRITY CHECK: Verify record before saving
+    console.log(`[INTERVENTION ANALYSIS] 🔒 FINAL VALIDATION: Confirming data integrity before save`);
+    console.log(`[INTERVENTION ANALYSIS] 🔒 Record ID: ${categoryResults._id}`);
+    console.log(`[INTERVENTION ANALYSIS] 🔒 Record Reading Level: ${categoryResults.readingLevel}`);
+    console.log(`[INTERVENTION ANALYSIS] 🔒 Expected Reading Level: ${interventionResults.readingLevel}`);
+    console.log(`[INTERVENTION ANALYSIS] 🔒 Category being updated: ${category}`);
+    console.log(`[INTERVENTION ANALYSIS] 🔒 Intervention Attempts being set to: ${categoryResults.categories[categoryIndex].interventionAttempts}`);
+    console.log(`[INTERVENTION ANALYSIS] 🔒 History entries being added: ${categoryResults.categories[categoryIndex].interventionHistory?.length || 0}`);
 
-    console.log(`[INTERVENTION ANALYSIS] ✅ Category results updated successfully`);
+    // 🔒 ABORT IF WRONG RECORD: Double-check we're updating the right record
+    if (categoryResults.readingLevel !== interventionResults.readingLevel) {
+      console.error(`[INTERVENTION ANALYSIS] 🚨 ABORTING SAVE: Reading level mismatch detected at save time!`);
+      console.error(`[INTERVENTION ANALYSIS] 🚨 PREVENTED HISTORICAL DATA CORRUPTION`);
+      throw new Error(`SAVE ABORTED: Reading level mismatch prevents historical data corruption`);
+    }
+
+    // Save the updated category_results with proper error handling
+    try {
+      console.log(`[INTERVENTION ANALYSIS] 💾 Saving updated category_results for ${interventionResults.readingLevel} level ONLY...`);
+      const savedResult = await categoryResults.save();
+      console.log(`[INTERVENTION ANALYSIS] ✅ Category results saved successfully for ${category} at ${interventionResults.readingLevel} level`);
+      console.log(`[INTERVENTION ANALYSIS] 🔒 HISTORICAL DATA PROTECTED: Only ${interventionResults.readingLevel} record was updated`);
+      console.log(`[INTERVENTION ANALYSIS] 📊 Final category state:`, {
+        recordId: categoryResults._id,
+        readingLevel: categoryResults.readingLevel,
+        categoryName: category,
+        score: categoryResults.categories[categoryIndex].score,
+        isPassed: categoryResults.categories[categoryIndex].isPassed,
+        interventionAttempts: categoryResults.categories[categoryIndex].interventionAttempts,
+        interventionCompleted: categoryResults.categories[categoryIndex].interventionCompleted,
+        interventionRequired: categoryResults.categories[categoryIndex].interventionRequired,
+        currentInterventionId: categoryResults.categories[categoryIndex].currentInterventionId,
+        historyLength: categoryResults.categories[categoryIndex].interventionHistory?.length || 0
+      });
+
+      return savedResult;
+    } catch (saveError) {
+      console.error(`[INTERVENTION ANALYSIS] ❌ CRITICAL ERROR: Failed to save category_results:`, saveError);
+      console.error(`[INTERVENTION ANALYSIS] ❌ Error details:`, {
+        message: saveError.message,
+        stack: saveError.stack,
+        name: saveError.name
+      });
+      throw new Error(`Failed to save category_results: ${saveError.message}`);
+    }
+
+    } catch (mainError) {
+      console.error(`[INTERVENTION ANALYSIS] ❌ CRITICAL ERROR in updateCategoryResultsWithIntervention:`, mainError);
+      console.error(`[INTERVENTION ANALYSIS] ❌ Error context:`, {
+        studentId: studentId,
+        category: category,
+        readingLevel: interventionResults.readingLevel,
+        interventionScore: interventionResults.score,
+        interventionPassed: interventionResults.isPassed,
+        errorMessage: mainError.message,
+        errorStack: mainError.stack
+      });
+      throw mainError; // Re-throw to ensure calling code knows about the failure
+    }
   }
 
   /**

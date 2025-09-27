@@ -1567,6 +1567,21 @@ class InterventionGeneratorService {
         throw new Error(`Intervention assessment not found: ${interventionId}`);
       }
 
+      // ✅ DUPLICATE PREVENTION: Check if intervention results already exist for this revision
+      const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+      const existingResults = await InterventionResults.findOne({
+        interventionAssessmentId: interventionId,
+        revisionNumber: intervention.revisionNumber || 1
+      });
+
+      if (existingResults) {
+        console.log(`[INTERVENTION GENERATOR] ⚠️ INTERVENTION RESULTS ALREADY EXIST for revision ${intervention.revisionNumber || 1}`);
+        console.log(`[INTERVENTION GENERATOR] 📊 Existing result: score=${existingResults.score}, passed=${existingResults.isPassed}, created=${existingResults.createdAt}`);
+        return existingResults; // Return existing results instead of creating duplicates
+      }
+
+      console.log(`[INTERVENTION GENERATOR] ✅ NO EXISTING RESULTS FOUND - PROCEEDING WITH NEW RESULT CREATION`);
+
       // CRITICAL: Validate intervention completeness before creating results
       console.log(`[INTERVENTION GENERATOR] ✅ VALIDATING INTERVENTION COMPLETENESS BEFORE CREATING RESULTS`);
       const CategoryResultsService = require('./CategoryResultsService');
@@ -1795,6 +1810,20 @@ class InterventionGeneratorService {
 
       await interventionResults.save();
       console.log(`[INTERVENTION GENERATOR] 🎯 intervention_results saved successfully - ID: ${interventionResults._id}`);
+
+      // ✅ CRITICAL FIX: Link intervention results back to intervention assessment
+      try {
+        console.log(`[INTERVENTION GENERATOR] 🔗 LINKING intervention results to intervention assessment...`);
+        const InterventionResultsAnalysisService = require('./InterventionResultsAnalysisService');
+        await InterventionResultsAnalysisService.linkInterventionResults(
+          interventionId,
+          interventionResults._id
+        );
+        console.log(`[INTERVENTION GENERATOR] ✅ Successfully linked intervention results to assessment`);
+      } catch (linkError) {
+        console.error('[INTERVENTION GENERATOR] ❌ Failed to link intervention results to assessment:', linkError);
+        // Don't throw - intervention results are already saved, linking is secondary
+      }
 
       // CRITICAL: Update category_results with intervention attempt
       try {

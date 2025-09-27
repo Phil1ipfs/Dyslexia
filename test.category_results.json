@@ -1,4 +1,4 @@
-[{
+[ {
     "_id": {
       "$oid": "68c87b4f47bd7d555f07a55f"
     },
@@ -18,11 +18,34 @@
         "passingThreshold": 75,
         "isCompleted": true,
         "lastQuestionAnswered": "",
-        "interventionRequired": false,
-        "interventionAttempts": 0,
-        "interventionCompleted": false,
-        "currentInterventionId": null,
-        "interventionHistory": [],
+        "interventionRequired": true,
+        "interventionAttempts": 1,
+        "interventionCompleted": true,
+        "currentInterventionId": {
+          "$oid": "68d7a38acc573c034e487fa5"
+        },
+        "interventionHistory": [
+          {
+            "attemptNumber": 1,
+            "interventionId": {
+              "$oid": "68d7a38acc573c034e487fa5"
+            },
+            "interventionResultId": {
+              "$oid": "68d7aa8936dbeeba843aeea3"
+            },
+            "score": 50,
+            "isPassed": false,
+            "attemptedAt": {
+              "$date": "2025-09-27T09:12:41.791Z"
+            },
+            "completedAt": {
+              "$date": "2025-09-27T09:12:41.791Z"
+            },
+            "_id": {
+              "$oid": "68d7ab5d90afe5cc041805d4"
+            }
+          }
+        ],
         "_id": {
           "$oid": "68d74335f6ac3a6c16680bde"
         }
@@ -79,17 +102,18 @@
       "$date": "2025-09-15T20:47:11.170Z"
     },
     "updatedAt": {
-      "$date": "2025-09-27T05:35:50.233Z"
+      "$date": "2025-09-27T09:37:20.751Z"
     },
-    "__v": 21
+    "__v": 24
   },
+
   {
     "_id": {
-      "$oid": "68d7707d8adce521230aa6c1"
+      "$oid": "68d79a906226b1139ecc82cb"
     },
     "studentId": 202533333,
     "assessmentDate": {
-      "$date": "2025-09-27T06:18:58.790Z"
+      "$date": "2025-09-27T09:37:21.000Z"
     },
     "categories": [
       {
@@ -104,19 +128,42 @@
         "isCompleted": true,
         "lastQuestionAnswered": "",
         "interventionRequired": true,
-        "interventionAttempts": 0,
+        "interventionAttempts": 1,
         "interventionCompleted": false,
-        "currentInterventionId": null,
-        "interventionHistory": [],
+        "currentInterventionId": {
+          "$oid": "68d7a38acc573c034e487fa5"
+        },
+        "interventionHistory": [
+          {
+            "attemptNumber": 1,
+            "interventionId": {
+              "$oid": "68d7a38acc573c034e487fa5"
+            },
+            "interventionResultId": {
+              "$oid": "68d7aa8936dbeeba843aeea3"
+            },
+            "score": 50,
+            "isPassed": false,
+            "attemptedAt": {
+              "$date": "2025-09-27T09:12:41.791Z"
+            },
+            "completedAt": {
+              "$date": "2025-09-27T09:12:41.914Z"
+            },
+            "_id": {
+              "$oid": "68d7aa8936dbeeba843aeea9"
+            }
+          }
+        ],
         "_id": {
-          "$oid": "68d781d26c80310824f53862"
+          "$oid": "68d7b051b8dda4904c426db3"
         }
       },
       {
         "categoryName": "Phonological Awareness",
         "totalQuestions": 6,
         "correctAnswers": 0,
-        "totalPossibleMatches": 18,
+        "totalPossibleMatches": 0,
         "correctMatches": 0,
         "score": 0,
         "isPassed": false,
@@ -129,7 +176,7 @@
         "currentInterventionId": null,
         "interventionHistory": [],
         "_id": {
-          "$oid": "68d781d26c80310824f53863"
+          "$oid": "68d7b051b8dda4904c426db5"
         }
       },
       {
@@ -149,7 +196,7 @@
         "currentInterventionId": null,
         "interventionHistory": [],
         "_id": {
-          "$oid": "68d781d26c80310824f53864"
+          "$oid": "68d7b051b8dda4904c426db6"
         }
       }
     ],
@@ -160,10 +207,11 @@
     "readingLevel": "Developing",
     "readingLevelUpdated": false,
     "createdAt": {
-      "$date": "2025-09-27T05:05:01.762Z"
+      "$date": "2025-09-27T08:04:32.806Z"
     },
     "updatedAt": {
-      "$date": "2025-09-27T05:05:01.764Z"
+      "$date": "2025-09-27T09:12:41.914Z"
     },
-    "__v": 0
-  }]
+    "__v": 2
+  }
+]

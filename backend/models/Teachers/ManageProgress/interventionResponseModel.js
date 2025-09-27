@@ -129,7 +129,18 @@ interventionResponseSchema.post('save', async function(doc) {
         );
 
         if (completenessCheck.isComplete) {
-          console.log(`[INTERVENTION REAL-TIME] ✅ Intervention ${doc.interventionAssessmentId} is now COMPLETE for student ${doc.studentId}! Generating intervention results...`);
+          console.log(`[INTERVENTION REAL-TIME] ✅ Intervention ${doc.interventionAssessmentId} is now COMPLETE for student ${doc.studentId}!`);
+
+          // ✅ CRITICAL FIX: Check if intervention results already exist before generating new ones
+          const InterventionAssessment = require('../ManageProgress/interventionAssessmentModel');
+          const interventionAssessment = await InterventionAssessment.findById(doc.interventionAssessmentId);
+
+          if (interventionAssessment && interventionAssessment.interventionResultsId) {
+            console.log(`[INTERVENTION REAL-TIME] ⚠️ Intervention results ALREADY EXIST (${interventionAssessment.interventionResultsId}) - SKIPPING generation to prevent duplicates`);
+            return; // Exit early to prevent infinite loop
+          }
+
+          console.log(`[INTERVENTION REAL-TIME] 🎯 No existing results found - proceeding with generation...`);
 
           // Generate intervention results
           const interventionResults = await InterventionGeneratorService.processInterventionResults(
