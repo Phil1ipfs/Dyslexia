@@ -2483,7 +2483,7 @@ class InterventionResultsAnalysisService {
     });
 
     try {
-      // 🔒 CRITICAL DATA INTEGRITY: Cross-validate intervention reading level with student's current reading level
+      // 🔒 CRITICAL DATA INTEGRITY: Respect the original intervention reading level
       const User = require('../../models/userModel');
       const user = await User.findOne({ idNumber: studentId });
       if (!user) {
@@ -2497,18 +2497,13 @@ class InterventionResultsAnalysisService {
       console.log(`[INTERVENTION ANALYSIS] 🔒 Student's Current Reading Level: ${currentStudentReadingLevel}`);
       console.log(`[INTERVENTION ANALYSIS] 🔒 Intervention Result Reading Level: ${interventionReadingLevel}`);
 
-      // 🚨 CRITICAL FIX: Always use student's CURRENT reading level for intervention integration
-      // This prevents historical data corruption when students have progressed to new levels
+      // ✅ FIXED: DO NOT auto-correct the reading level - respect original intervention context
+      // The intervention should be recorded in the category_results for the reading level where it was taken
       if (interventionReadingLevel !== currentStudentReadingLevel) {
-        console.log(`[INTERVENTION ANALYSIS] 🔧 READING LEVEL PROGRESSION DETECTED!`);
-        console.log(`[INTERVENTION ANALYSIS] 🔧 Intervention was taken at: ${interventionReadingLevel}`);
-        console.log(`[INTERVENTION ANALYSIS] 🔧 Student is now at: ${currentStudentReadingLevel}`);
-        console.log(`[INTERVENTION ANALYSIS] 🔧 AUTO-CORRECTION: Using student's CURRENT reading level for intervention integration`);
-
-        // 🛠️ CRITICAL FIX: Always use student's current reading level for intervention updates
-        // This ensures intervention results update the CURRENT level's category_results
-        interventionResults.readingLevel = currentStudentReadingLevel;
-        console.log(`[INTERVENTION ANALYSIS] ✅ CORRECTED: Intervention will update ${currentStudentReadingLevel} level category_results`);
+        console.log(`[INTERVENTION ANALYSIS] 📋 READING LEVEL PROGRESSION DETECTED!`);
+        console.log(`[INTERVENTION ANALYSIS] 📋 Intervention was taken at: ${interventionReadingLevel}`);
+        console.log(`[INTERVENTION ANALYSIS] 📋 Student is now at: ${currentStudentReadingLevel}`);
+        console.log(`[INTERVENTION ANALYSIS] ✅ RESPECTING ORIGINAL CONTEXT: Intervention will update ${interventionReadingLevel} level category_results (where it was actually taken)`);
       } else {
         console.log(`[INTERVENTION ANALYSIS] ✅ Reading level validation passed - intervention and current level match`);
       }
@@ -2521,7 +2516,7 @@ class InterventionResultsAnalysisService {
       // ✅ STRICT QUERY: Find category_results for EXACT reading level where intervention was taken
       const categoryResults = await CategoryResults.findOne({
         studentId: studentId,
-        readingLevel: interventionResults.readingLevel  // Now validated and corrected if needed
+        readingLevel: interventionResults.readingLevel  // Respects original intervention reading level
       });
 
       if (!categoryResults) {
