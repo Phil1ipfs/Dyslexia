@@ -1104,6 +1104,16 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load cleanup routes:', error.message);
     }
 
+    // Load data migration routes
+    try {
+      const dataMigrationRoutes = require('./routes/dataMigrationRoutes');
+      app.use('/api/data-migration', dataMigrationRoutes);
+      console.log('✅ Loaded data migration routes at /api/data-migration/*');
+
+    } catch (error) {
+      console.warn('⚠️ Could not load data migration routes:', error.message);
+    }
+
 
     // 404 handler
     app.use((req, res) => {

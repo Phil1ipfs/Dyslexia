@@ -2160,7 +2160,12 @@ class InterventionResultsAnalysisService {
     // ENHANCED VERSION TRACKING: Get complete revision information
     const currentRevision = interventionAssessment.revisionNumber || 1;
     console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG (linkInterventionResults): interventionAssessment.revisionNumber = ${interventionAssessment.revisionNumber}, currentRevision = ${currentRevision}`);
-    const attemptCount = (interventionAssessment.interventionResults || []).length + 1;
+
+    // ✅ CRITICAL FIX: Attempt number should match revision number for teacher revisions
+    // If it's revision 2, it should be attempt 2 (not based on interventionResults.length)
+    const attemptCount = currentRevision; // Align attempt number with revision number
+    console.log(`[INTERVENTION ANALYSIS] 🔧 FIXED: attemptCount now matches revision number: ${attemptCount}`);
+
     const hasRevisionHistory = interventionAssessment.revisionHistory && interventionAssessment.revisionHistory.length > 0;
     const lastEditedAt = interventionAssessment.lastEditedAt;
     const lastEditedBy = interventionAssessment.lastEditedBy;
@@ -2320,10 +2325,110 @@ class InterventionResultsAnalysisService {
   }
 
   /**
+   * ✅ AUTOMATIC DATA VALIDATION: Ensure category_results consistency before updates
+   * This prevents the attempt number/revision number mismatch issue from happening again
+   */
+  static async validateAndFixCategoryResultsConsistency(studentId, category, interventionResults) {
+    console.log(`[DATA VALIDATION] 🔍 Validating category_results consistency for student ${studentId}, category ${category}`);
+
+    try {
+      const revisionNumber = interventionResults.revisionNumber || 1;
+      const expectedAttemptNumber = revisionNumber;
+
+      // Find the category_results record
+      const categoryResults = await CategoryResults.findOne({
+        studentId: studentId,
+        'categories.categoryName': category
+      });
+
+      if (!categoryResults) {
+        console.warn(`[DATA VALIDATION] ⚠️  No category_results found for student ${studentId}, category ${category}`);
+        return;
+      }
+
+      const categoryIndex = categoryResults.categories.findIndex(cat => cat.categoryName === category);
+      if (categoryIndex === -1) {
+        console.warn(`[DATA VALIDATION] ⚠️  Category ${category} not found in results for student ${studentId}`);
+        return;
+      }
+
+      const categoryData = categoryResults.categories[categoryIndex];
+      const interventionHistory = categoryData.interventionHistory || [];
+
+      // Check if the expected attempt number is missing
+      const hasExpectedAttempt = interventionHistory.some(entry =>
+        entry.attemptNumber === expectedAttemptNumber || entry.revisionNumber === revisionNumber
+      );
+
+      if (!hasExpectedAttempt && revisionNumber > 1) {
+        console.log(`[DATA VALIDATION] 🔧 AUTO-FIX: Missing attempt ${expectedAttemptNumber} (revision ${revisionNumber}) detected`);
+        console.log(`[DATA VALIDATION] 🔧 Current history has ${interventionHistory.length} entries, should have ${expectedAttemptNumber}`);
+
+        // Auto-fix: Ensure all previous attempts exist
+        for (let attempt = 1; attempt < expectedAttemptNumber; attempt++) {
+          const hasAttempt = interventionHistory.some(entry =>
+            entry.attemptNumber === attempt || entry.revisionNumber === attempt
+          );
+
+          if (!hasAttempt) {
+            console.log(`[DATA VALIDATION] 🔧 Creating placeholder for missing attempt ${attempt}`);
+
+            // Find the intervention result for this attempt
+            const missingInterventionResult = await InterventionResults.findOne({
+              studentId: studentId,
+              category: category,
+              revisionNumber: attempt
+            });
+
+            if (missingInterventionResult) {
+              const placeholderEntry = {
+                attemptNumber: attempt,
+                interventionId: missingInterventionResult.interventionAssessmentId,
+                interventionResultId: missingInterventionResult._id,
+                revisionNumber: attempt,
+                score: missingInterventionResult.score,
+                isPassed: missingInterventionResult.isPassed,
+                attemptedAt: missingInterventionResult.assessmentDate,
+                completedAt: missingInterventionResult.completedAt,
+                attemptReason: attempt === 1 ? 'initial_attempt' : 'teacher_revision'
+              };
+
+              categoryResults.categories[categoryIndex].interventionHistory.push(placeholderEntry);
+              console.log(`[DATA VALIDATION] ✅ Added missing attempt ${attempt} to history`);
+            }
+          }
+        }
+
+        // Sort intervention history by attempt number
+        categoryResults.categories[categoryIndex].interventionHistory.sort((a, b) => a.attemptNumber - b.attemptNumber);
+
+        // Update attempt count
+        categoryResults.categories[categoryIndex].interventionAttempts = Math.max(
+          categoryResults.categories[categoryIndex].interventionAttempts || 0,
+          expectedAttemptNumber - 1 // Will be incremented in main method
+        );
+
+        // Save the auto-fixed data
+        await categoryResults.save();
+        console.log(`[DATA VALIDATION] ✅ Auto-fixed category_results consistency for student ${studentId}`);
+      } else {
+        console.log(`[DATA VALIDATION] ✅ Data consistency validated - no issues found`);
+      }
+
+    } catch (error) {
+      console.error(`[DATA VALIDATION] ❌ Validation failed for student ${studentId}, category ${category}:`, error);
+      // Don't throw - continue with normal processing
+    }
+  }
+
+  /**
    * Update category_results with intervention data
    */
   static async updateCategoryResultsWithIntervention(interventionResults, dataContext) {
     const { studentId, category } = dataContext;
+
+    // ✅ AUTOMATIC DATA VALIDATION: Ensure data consistency
+    await this.validateAndFixCategoryResultsConsistency(studentId, category, interventionResults);
 
     // 🔒 PREVENT DUPLICATE CALLS: Check if this intervention result has already been processed
     const interventionResultId = interventionResults._id;
@@ -2357,30 +2462,130 @@ class InterventionResultsAnalysisService {
     });
 
     try {
-      // 🔒 CRITICAL DATA INTEGRITY: Prevent corruption of historical reading level records
+      // 🔒 CRITICAL DATA INTEGRITY: Cross-validate intervention reading level with student's current reading level
+      const User = require('../models/userModel');
+      const user = await User.findOne({ idNumber: studentId });
+      if (!user) {
+        throw new Error(`Student ${studentId} not found in users collection`);
+      }
+
+      const currentStudentReadingLevel = user.readingLevel;
+      const interventionReadingLevel = interventionResults.readingLevel;
+
+      console.log(`[INTERVENTION ANALYSIS] 🔒 CROSS-VALIDATION CHECK:`);
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Student's Current Reading Level: ${currentStudentReadingLevel}`);
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Intervention Result Reading Level: ${interventionReadingLevel}`);
+
+      // 🚨 CRITICAL FIX: Always use student's CURRENT reading level for intervention integration
+      // This prevents historical data corruption when students have progressed to new levels
+      if (interventionReadingLevel !== currentStudentReadingLevel) {
+        console.log(`[INTERVENTION ANALYSIS] 🔧 READING LEVEL PROGRESSION DETECTED!`);
+        console.log(`[INTERVENTION ANALYSIS] 🔧 Intervention was taken at: ${interventionReadingLevel}`);
+        console.log(`[INTERVENTION ANALYSIS] 🔧 Student is now at: ${currentStudentReadingLevel}`);
+        console.log(`[INTERVENTION ANALYSIS] 🔧 AUTO-CORRECTION: Using student's CURRENT reading level for intervention integration`);
+
+        // 🛠️ CRITICAL FIX: Always use student's current reading level for intervention updates
+        // This ensures intervention results update the CURRENT level's category_results
+        interventionResults.readingLevel = currentStudentReadingLevel;
+        console.log(`[INTERVENTION ANALYSIS] ✅ CORRECTED: Intervention will update ${currentStudentReadingLevel} level category_results`);
+      } else {
+        console.log(`[INTERVENTION ANALYSIS] ✅ Reading level validation passed - intervention and current level match`);
+      }
+
       console.log(`[INTERVENTION ANALYSIS] 🔒 DATA INTEGRITY CHECK: Ensuring intervention only updates correct reading level record`);
-      console.log(`[INTERVENTION ANALYSIS] 🔒 Target Reading Level: ${interventionResults.readingLevel}`);
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Target Reading Level: ${interventionResults.readingLevel} (validated)`);
       console.log(`[INTERVENTION ANALYSIS] 🔒 Intervention Assessment ID: ${interventionResults.interventionAssessmentId}`);
       console.log(`[INTERVENTION ANALYSIS] 🔒 Student ID: ${studentId}`);
 
       // ✅ STRICT QUERY: Find category_results for EXACT reading level where intervention was taken
       const categoryResults = await CategoryResults.findOne({
         studentId: studentId,
-        readingLevel: interventionResults.readingLevel  // CRITICAL: Match reading level EXACTLY
+        readingLevel: interventionResults.readingLevel  // Now validated and corrected if needed
       });
 
       if (!categoryResults) {
-        console.error(`[INTERVENTION ANALYSIS] ❌ CRITICAL ERROR: Category results not found for student ${studentId} at reading level ${interventionResults.readingLevel}`);
-        console.error(`[INTERVENTION ANALYSIS] ❌ This means intervention was taken but category_results record doesn't exist for this level`);
+        console.log(`[INTERVENTION ANALYSIS] 🔧 MISSING CURRENT LEVEL RECORD: No category_results found for student ${studentId} at current reading level ${interventionResults.readingLevel}`);
 
         // List all category_results for this student for debugging
         const allCategoryResults = await CategoryResults.find({ studentId: studentId });
-        console.error(`[INTERVENTION ANALYSIS] 🔍 Available category_results for student ${studentId}:`);
+        console.log(`[INTERVENTION ANALYSIS] 🔍 Available category_results for student ${studentId}:`);
         allCategoryResults.forEach(cr => {
-          console.error(`[INTERVENTION ANALYSIS]   - ID: ${cr._id}, Reading Level: ${cr.readingLevel}, Categories: ${cr.categories.length}`);
+          console.log(`[INTERVENTION ANALYSIS]   - ID: ${cr._id}, Reading Level: ${cr.readingLevel}, Categories: ${cr.categories.length}`);
         });
 
-        throw new Error(`No category_results found for student ${studentId} at reading level ${interventionResults.readingLevel}`);
+        // ✅ CRITICAL FIX: Find intervention results from previous reading level and apply to current level
+        console.log(`[INTERVENTION ANALYSIS] 🔧 SMART RECOVERY: Looking for intervention in previous reading level records...`);
+
+        // Find the category_results record that has this intervention
+        const CategoryResultsService = require('./CategoryResultsService');
+        let sourceRecord = null;
+        let targetCategory = null;
+
+        for (const record of allCategoryResults) {
+          const categoryMatch = record.categories.find(cat =>
+            cat.categoryName === category &&
+            cat.interventionHistory.some(entry =>
+              entry.interventionResultId?.toString() === interventionResults._id.toString()
+            )
+          );
+
+          if (categoryMatch) {
+            sourceRecord = record;
+            targetCategory = categoryMatch;
+            console.log(`[INTERVENTION ANALYSIS] ✅ FOUND: Intervention exists in ${record.readingLevel} level record`);
+            break;
+          }
+        }
+
+        if (sourceRecord && targetCategory) {
+          // Create/update current level category_results with intervention data
+          console.log(`[INTERVENTION ANALYSIS] 🔧 TRANSFERRING: Intervention data from ${sourceRecord.readingLevel} to ${interventionResults.readingLevel}`);
+
+          // Get current level categories
+          const currentLevelCategories = CategoryResultsService.getCategoriesForReadingLevel(interventionResults.readingLevel);
+
+          // Create new category_results for current level with intervention data
+          const currentLevelCategoryResults = new CategoryResults({
+            studentId: studentId,
+            readingLevel: interventionResults.readingLevel,
+            assessmentDate: new Date(),
+            categories: currentLevelCategories.map(catName => ({
+              categoryName: catName,
+              totalQuestions: catName === category ? targetCategory.totalQuestions : 0,
+              correctAnswers: catName === category ? targetCategory.correctAnswers : 0,
+              score: catName === category ? targetCategory.score : 0,
+              isPassed: catName === category ? interventionResults.isPassed : false,
+              passingThreshold: 75,
+              isCompleted: catName === category ? true : false,
+              interventionRequired: catName === category ? !interventionResults.isPassed : true,
+              interventionAttempts: catName === category ? targetCategory.interventionAttempts : 0,
+              interventionCompleted: catName === category ? interventionResults.isPassed : false,
+              currentInterventionId: catName === category ? (interventionResults.isPassed ? null : interventionResults.interventionAssessmentId) : null,
+              interventionHistory: catName === category ? targetCategory.interventionHistory : []
+            })),
+            overallScore: 0, // Will be calculated
+            completedCategories: interventionResults.isPassed ? 1 : 0,
+            totalCategories: currentLevelCategories.length,
+            allCategoriesPassed: false
+          });
+
+          await currentLevelCategoryResults.save();
+          console.log(`[INTERVENTION ANALYSIS] ✅ CREATED: New ${interventionResults.readingLevel} level category_results with intervention data`);
+
+          // Use the newly created record
+          const newCategoryResults = await CategoryResults.findOne({
+            studentId: studentId,
+            readingLevel: interventionResults.readingLevel
+          });
+
+          if (newCategoryResults) {
+            console.log(`[INTERVENTION ANALYSIS] ✅ RECOVERY SUCCESSFUL: Will continue with new category_results record`);
+            return; // Exit early - the intervention data is already in the new record
+          }
+        }
+
+        console.error(`[INTERVENTION ANALYSIS] ❌ CRITICAL ERROR: Could not create or find category_results for current level ${interventionResults.readingLevel}`);
+        throw new Error(`No category_results found for student ${studentId} at reading level ${interventionResults.readingLevel} and unable to create one`);
       }
 
       // 🔒 HISTORICAL DATA PROTECTION: Verify we found the CORRECT record
@@ -2421,15 +2626,16 @@ class InterventionResultsAnalysisService {
     // Update category with intervention data
     const categoryData = categoryResults.categories[categoryIndex];
 
-    // FIXED: Use actual intervention history length for accurate attempt counting
-    const currentHistoryLength = (categoryData.interventionHistory || []).length;
-    const attemptNumber = currentHistoryLength + 1;
+    // ✅ CRITICAL FIX: Use revision number as attempt number for teacher revisions
+    // This ensures consistency between intervention_assessment and category_results
+    const revisionNumber = interventionResults.revisionNumber || 1;
+    const attemptNumber = revisionNumber; // Attempt number should match revision number
 
-    console.log(`[INTERVENTION ANALYSIS] 📊 Calculating attempt number:`, {
-      currentHistoryLength,
-      attemptNumber,
-      storedAttempts: categoryData.interventionAttempts || 0,
-      corrected: true
+    console.log(`[INTERVENTION ANALYSIS] 🔧 FIXED: Attempt number calculation:`, {
+      revisionNumber: revisionNumber,
+      attemptNumber: attemptNumber,
+      previousHistoryLength: (categoryData.interventionHistory || []).length,
+      fixApplied: "attemptNumber now matches revisionNumber"
     });
 
     // Update intervention tracking
@@ -2442,30 +2648,59 @@ class InterventionResultsAnalysisService {
     }
     categoryResults.categories[categoryIndex].interventionAttempts = attemptNumber;
 
-    // Add to intervention history with revision tracking
-    const interventionHistoryEntry = {
-      attemptNumber: attemptNumber,
-      interventionId: interventionResults.interventionAssessmentId,
-      interventionResultId: interventionResults._id,
-      revisionNumber: interventionResults.revisionNumber || 1, // Track which version was attempted
-      score: interventionResults.score,
-      isPassed: interventionResults.isPassed,
-      attemptedAt: interventionResults.assessmentDate,
-      completedAt: interventionResults.completedAt,
-      attemptReason: this.determineAttemptReason(attemptNumber, interventionResults.revisionNumber)
-    };
-
-    console.log(`[INTERVENTION ANALYSIS] 📊 Adding intervention history entry:`, {
-      attemptNumber,
-      revisionNumber: interventionResults.revisionNumber || 1,
-      score: interventionResults.score,
-      isPassed: interventionResults.isPassed
-    });
-
+    // ✅ CRITICAL FIX: Check if this attempt already exists to prevent duplicates
     if (!categoryResults.categories[categoryIndex].interventionHistory) {
       categoryResults.categories[categoryIndex].interventionHistory = [];
     }
-    categoryResults.categories[categoryIndex].interventionHistory.push(interventionHistoryEntry);
+
+    const existingAttempt = categoryResults.categories[categoryIndex].interventionHistory.find(
+      entry => entry.attemptNumber === attemptNumber || entry.revisionNumber === revisionNumber
+    );
+
+    if (existingAttempt) {
+      console.log(`[INTERVENTION ANALYSIS] ⚠️  Attempt ${attemptNumber} (revision ${revisionNumber}) already exists in history. Updating existing entry instead of adding duplicate.`);
+
+      // Update existing entry instead of adding duplicate
+      const existingIndex = categoryResults.categories[categoryIndex].interventionHistory.findIndex(
+        entry => entry.attemptNumber === attemptNumber || entry.revisionNumber === revisionNumber
+      );
+
+      categoryResults.categories[categoryIndex].interventionHistory[existingIndex] = {
+        attemptNumber: attemptNumber,
+        interventionId: interventionResults.interventionAssessmentId,
+        interventionResultId: interventionResults._id,
+        revisionNumber: interventionResults.revisionNumber || 1,
+        score: interventionResults.score,
+        isPassed: interventionResults.isPassed,
+        attemptedAt: interventionResults.assessmentDate,
+        completedAt: interventionResults.completedAt,
+        attemptReason: this.determineAttemptReason(attemptNumber, interventionResults.revisionNumber)
+      };
+
+      console.log(`[INTERVENTION ANALYSIS] ✅ Updated existing attempt ${attemptNumber} in intervention history`);
+    } else {
+      // Add new intervention history entry
+      const interventionHistoryEntry = {
+        attemptNumber: attemptNumber,
+        interventionId: interventionResults.interventionAssessmentId,
+        interventionResultId: interventionResults._id,
+        revisionNumber: interventionResults.revisionNumber || 1, // Track which version was attempted
+        score: interventionResults.score,
+        isPassed: interventionResults.isPassed,
+        attemptedAt: interventionResults.assessmentDate,
+        completedAt: interventionResults.completedAt,
+        attemptReason: this.determineAttemptReason(attemptNumber, interventionResults.revisionNumber)
+      };
+
+      console.log(`[INTERVENTION ANALYSIS] 📊 Adding NEW intervention history entry:`, {
+        attemptNumber,
+        revisionNumber: interventionResults.revisionNumber || 1,
+        score: interventionResults.score,
+        isPassed: interventionResults.isPassed
+      });
+
+      categoryResults.categories[categoryIndex].interventionHistory.push(interventionHistoryEntry);
+    }
 
     // CRITICAL FIX: When intervention passes, DO NOT overwrite original assessment data
     if (interventionResults.isPassed) {
