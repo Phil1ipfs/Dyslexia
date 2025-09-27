@@ -155,7 +155,7 @@ const fixInterventionSuccess = async (req, res) => {
       categoryResults.completedCategories = passedCategories.length;
 
       // ✅ FIX: Use CategoryResultsService.calculateOverallStats for correct calculation
-      const CategoryResultsService = require('../services/Teachers/CategoryResultsService');
+      const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
       const correctStats = CategoryResultsService.calculateOverallStats(categoryResults.categories);
       const totalCategories = categoryResults.categories.length;
       categoryResults.overallScore = correctStats.overallScore;

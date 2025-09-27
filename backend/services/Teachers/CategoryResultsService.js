@@ -1705,19 +1705,14 @@ class CategoryResultsService {
 
       console.log(`[FORCE FIX] 📊 Calculated correct score: ${correctScore}%`);
 
-      // 🔧 CRITICAL FIX: Update category isPassed flags based on intervention success
+      // 🔧 PRESERVE ORIGINAL isPassed VALUES - Do not update category isPassed flags
       const updatedCategories = categoryResult.categories.map(cat => {
-        const mainAssessmentPassed = (cat.score || 0) >= 75;
-        const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
-        const shouldBePassed = mainAssessmentPassed || hasSuccessfulIntervention;
-
-        if (cat.isPassed !== shouldBePassed) {
-          console.log(`[FORCE FIX] 🔧 Fixing ${cat.categoryName} isPassed: ${cat.isPassed} → ${shouldBePassed} (${hasSuccessfulIntervention ? 'intervention passed' : 'main assessment passed'})`);
-        }
-
+        // Keep original isPassed value - do not modify based on intervention success
+        console.log(`[FORCE FIX] 🔒 Preserving original isPassed for ${cat.categoryName}: ${cat.isPassed}`);
+        
         return {
-          ...cat,
-          isPassed: shouldBePassed
+          ...cat
+          // isPassed field is preserved as-is, no changes made
         };
       });
 
@@ -1805,14 +1800,21 @@ class CategoryResultsService {
 
       let finalScore = cat.score || 0;
 
+      console.log(`[OVERALL STATS] DEBUG ${cat.categoryName}:`, {
+        originalScore: cat.score,
+        mainAssessmentPassed,
+        interventionHistory: cat.interventionHistory ? cat.interventionHistory.map(i => ({ score: i.score, isPassed: i.isPassed })) : [],
+        hasSuccessfulIntervention
+      });
+
       // If main assessment didn't pass but intervention passed, use intervention score
       if (!mainAssessmentPassed && hasSuccessfulIntervention) {
         const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
         const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
         finalScore = highestInterventionScore;
-        console.log(`[OVERALL STATS] Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${cat.score}%)`);
+        console.log(`[OVERALL STATS] ✅ Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${cat.score}%)`);
       } else {
-        console.log(`[OVERALL STATS] Using original score for ${cat.categoryName}: ${finalScore}%`);
+        console.log(`[OVERALL STATS] ⚪ Using original score for ${cat.categoryName}: ${finalScore}%`);
       }
 
       return finalScore;
