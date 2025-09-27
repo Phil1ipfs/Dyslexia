@@ -339,9 +339,11 @@ class InterventionAssessmentController {
         }
 
         // Now perform the update with detailed logging
+        // ✅ CRITICAL FIX: Add reading level targeting to prevent cross-reading-level updates
         const updateResult = await CategoryResults.findOneAndUpdate(
           {
             studentId: savedIntervention.studentId,
+            readingLevel: savedIntervention.readingLevel,  // ✅ Target specific reading level only
             'categories.categoryName': savedIntervention.category
           },
           {
