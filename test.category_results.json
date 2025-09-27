@@ -1,0 +1,169 @@
+[{
+    "_id": {
+      "$oid": "68c87b4f47bd7d555f07a55f"
+    },
+    "studentId": 202533333,
+    "assessmentDate": {
+      "$date": "2025-09-27T01:51:49.169Z"
+    },
+    "categories": [
+      {
+        "categoryName": "Alphabet Knowledge",
+        "totalQuestions": 15,
+        "correctAnswers": 12,
+        "totalPossibleMatches": 0,
+        "correctMatches": 0,
+        "score": 80,
+        "isPassed": true,
+        "passingThreshold": 75,
+        "isCompleted": true,
+        "lastQuestionAnswered": "",
+        "interventionRequired": false,
+        "interventionAttempts": 0,
+        "interventionCompleted": false,
+        "currentInterventionId": null,
+        "interventionHistory": [],
+        "_id": {
+          "$oid": "68d74335f6ac3a6c16680bde"
+        }
+      },
+      {
+        "categoryName": "Phonological Awareness",
+        "totalQuestions": 6,
+        "correctAnswers": 0,
+        "totalPossibleMatches": 15,
+        "correctMatches": 5,
+        "score": 33,
+        "isPassed": false,
+        "passingThreshold": 75,
+        "isCompleted": true,
+        "lastQuestionAnswered": "",
+        "interventionRequired": false,
+        "interventionAttempts": 1,
+        "interventionCompleted": true,
+        "currentInterventionId": null,
+        "interventionHistory": [
+          {
+            "attemptNumber": 1,
+            "interventionId": {
+              "$oid": "68d7400b486cb8719df91e5f"
+            },
+            "interventionResultId": {
+              "$oid": "68d740cf486cb8719df92590"
+            },
+            "score": 100,
+            "isPassed": true,
+            "attemptedAt": {
+              "$date": "2025-09-27T01:41:35.393Z"
+            },
+            "completedAt": {
+              "$date": "2025-09-27T01:41:35.393Z"
+            },
+            "_id": {
+              "$oid": "68d740cf486cb8719df9259e"
+            }
+          }
+        ],
+        "_id": {
+          "$oid": "68d74335f6ac3a6c16680bdf"
+        }
+      }
+    ],
+    "overallScore": 56,
+    "completedCategories": 2,
+    "totalCategories": 2,
+    "allCategoriesPassed": true,
+    "readingLevel": "High Emerging",
+    "readingLevelUpdated": true,
+    "createdAt": {
+      "$date": "2025-09-15T20:47:11.170Z"
+    },
+    "updatedAt": {
+      "$date": "2025-09-27T05:35:50.233Z"
+    },
+    "__v": 21
+  },
+  {
+    "_id": {
+      "$oid": "68d7707d8adce521230aa6c1"
+    },
+    "studentId": 202533333,
+    "assessmentDate": {
+      "$date": "2025-09-27T06:18:58.790Z"
+    },
+    "categories": [
+      {
+        "categoryName": "Alphabet Knowledge",
+        "totalQuestions": 15,
+        "correctAnswers": 11,
+        "totalPossibleMatches": 0,
+        "correctMatches": 0,
+        "score": 73,
+        "isPassed": false,
+        "passingThreshold": 75,
+        "isCompleted": true,
+        "lastQuestionAnswered": "",
+        "interventionRequired": true,
+        "interventionAttempts": 0,
+        "interventionCompleted": false,
+        "currentInterventionId": null,
+        "interventionHistory": [],
+        "_id": {
+          "$oid": "68d781d26c80310824f53862"
+        }
+      },
+      {
+        "categoryName": "Phonological Awareness",
+        "totalQuestions": 6,
+        "correctAnswers": 0,
+        "totalPossibleMatches": 18,
+        "correctMatches": 0,
+        "score": 0,
+        "isPassed": false,
+        "passingThreshold": 75,
+        "isCompleted": false,
+        "lastQuestionAnswered": "",
+        "interventionRequired": true,
+        "interventionAttempts": 0,
+        "interventionCompleted": false,
+        "currentInterventionId": null,
+        "interventionHistory": [],
+        "_id": {
+          "$oid": "68d781d26c80310824f53863"
+        }
+      },
+      {
+        "categoryName": "Decoding",
+        "totalQuestions": 15,
+        "correctAnswers": 0,
+        "totalPossibleMatches": 0,
+        "correctMatches": 0,
+        "score": 0,
+        "isPassed": false,
+        "passingThreshold": 75,
+        "isCompleted": false,
+        "lastQuestionAnswered": "",
+        "interventionRequired": true,
+        "interventionAttempts": 0,
+        "interventionCompleted": false,
+        "currentInterventionId": null,
+        "interventionHistory": [],
+        "_id": {
+          "$oid": "68d781d26c80310824f53864"
+        }
+      }
+    ],
+    "overallScore": 24,
+    "completedCategories": 0,
+    "totalCategories": 3,
+    "allCategoriesPassed": false,
+    "readingLevel": "Developing",
+    "readingLevelUpdated": false,
+    "createdAt": {
+      "$date": "2025-09-27T05:05:01.762Z"
+    },
+    "updatedAt": {
+      "$date": "2025-09-27T05:05:01.764Z"
+    },
+    "__v": 0
+  }]

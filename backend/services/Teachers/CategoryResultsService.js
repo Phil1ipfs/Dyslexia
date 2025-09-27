@@ -1271,12 +1271,14 @@ class CategoryResultsService {
               })
             });
           } else {
-            // Fallback calculation
+            // Fallback calculation - NO FALLBACKS: Use actual student response data only
             const score = Math.round((correctAnswers / totalQuestions) * 100);
             categories.push({
               categoryName: categoryName,
               totalQuestions: totalQuestions,
               correctAnswers: correctAnswers,
+              totalPossibleMatches: 0, // ✅ FIX: Set to 0 when no match data from student responses
+              correctMatches: 0, // ✅ FIX: Set to 0 when no match data from student responses
               score: score,
               isPassed: score >= 75,
               isCompleted: isComplete, // ✅ FIX: Use actual completeness status
