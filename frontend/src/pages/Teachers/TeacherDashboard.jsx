@@ -113,6 +113,7 @@ const TeacherDashboard = () => {
       const latestAttemptNumber = latestAttempt ? latestAttempt.attemptNumber : 1;
       const currentScore = latestAttempt ? latestAttempt.score : latestScore;
       const currentPassed = latestAttempt ? latestAttempt.isPassed : false;
+      const currentRevisionNumber = latestAttempt ? (latestAttempt.revisionNumber || 1) : 1;
 
       // Calculate completion percentage based on pass status
       const completionPercentage = currentPassed ? 100 : Math.min((totalAttempts / 3) * 100, 100);
@@ -125,12 +126,8 @@ const TeacherDashboard = () => {
         interventionStatus = 'Needs Teacher Revision';
       }
 
-      // Calculate correct/incorrect from latest attempt score
-      const latestCorrectAnswers = Math.round((currentScore / 100) * totalQuestions);
-      const latestIncorrectAnswers = totalQuestions - latestCorrectAnswers;
-
-      // Calculate mastery growth and improvement from intervention results
-      const masteryGrowth = interventionData.skillMasteryGrowth || 0;
+      // Get mastery data from intervention results (latest revision)
+      const masteryGrowth = interventionData.masteryGrowth || 0;
       const currentMastery = interventionData.currentMastery || interventionData.masteryProbability || 0;
 
       return {
@@ -139,16 +136,15 @@ const TeacherDashboard = () => {
         percentCorrect: Math.round(currentScore),
         completedActivities: totalAttempts,
         totalActivities: totalQuestions,
-        correctAnswers: latestCorrectAnswers,
-        incorrectAnswers: latestIncorrectAnswers,
         interventionPlanName: `${category} Intervention`,
-        currentRevisionNumber: latestAttemptNumber,
+        currentRevisionNumber: currentRevisionNumber,
+        latestAttemptNumber: latestAttemptNumber,
         currentMastery: currentMastery,
         masteryGrowth: masteryGrowth,
         improvementFromOriginal: improvement,
         status: interventionStatus,
         passedThreshold: currentPassed,
-        notes: `${totalAttempts} attempts completed. Current mastery: ${Math.round(currentMastery * 100)}%. ${improvement > 0 ? `Overall improvement: ${improvement}% from original score.` : ''}`,
+        notes: `${totalAttempts} attempts completed. Latest revision: ${currentRevisionNumber}. Current mastery: ${Math.round(currentMastery * 100)}%. ${improvement > 0 ? `Overall improvement: ${improvement}% from original score.` : ''}`,
         lastActivityDate: latestAttempt && latestAttempt.completedAt
           ? new Date(latestAttempt.completedAt).toLocaleDateString()
           : 'N/A'
@@ -2100,11 +2096,9 @@ const TeacherDashboard = () => {
                         <td>
                           <div style={{ textAlign: 'center' }}>
                             <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>{progress.totalAttempts}</span>
-                            {progress.teacherRevisions > 0 && (
-                              <div style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                {progress.teacherRevisions} revisions
-                              </div>
-                            )}
+                            <div style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                              {progress.revisionNumber > 1 ? `${progress.revisionNumber} revisions` : '1 revision'}
+                            </div>
                           </div>
                         </td>
                         <td>
@@ -2266,12 +2260,20 @@ const TeacherDashboard = () => {
                         <span className="teacher-detail-value">{selectedIntervention.completedActivities || 0}</span>
                       </div>
                       <div className="teacher-detail-item">
-                        <span className="teacher-detail-label">Correct Answers:</span>
-                        <span className="teacher-detail-value">{selectedIntervention.correctAnswers || 0}</span>
+                        <span className="teacher-detail-label">Latest Revision:</span>
+                        <span className="teacher-detail-value">{selectedIntervention.currentRevisionNumber || 1}</span>
                       </div>
                       <div className="teacher-detail-item">
-                        <span className="teacher-detail-label">Incorrect Answers:</span>
-                        <span className="teacher-detail-value">{selectedIntervention.incorrectAnswers || 0}</span>
+                        <span className="teacher-detail-label">Current Mastery:</span>
+                        <span className="teacher-detail-value">{Math.round((selectedIntervention.currentMastery || 0) * 100)}%</span>
+                      </div>
+                      <div className="teacher-detail-item">
+                        <span className="teacher-detail-label">Mastery Growth:</span>
+                        <span className="teacher-detail-value">{Math.round((selectedIntervention.masteryGrowth || 0) * 100)}%</span>
+                      </div>
+                      <div className="teacher-detail-item">
+                        <span className="teacher-detail-label">Improvement %:</span>
+                        <span className="teacher-detail-value">{selectedIntervention.improvementFromOriginal || 0}%</span>
                       </div>
                     </div>
 

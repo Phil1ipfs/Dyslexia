@@ -1027,7 +1027,10 @@ const processComprehensiveInterventionData = (students, interventionAssessments,
       const improvementPercentage = originalScore > 0 ? Math.round((improvement / originalScore) * 100) : 0;
 
       // Find corresponding intervention results for additional data
-      const latestResult = results.find(r => r.revisionNumber === latestAttempt.revisionNumber);
+      // Sort results by revision number and get the latest one
+      const sortedResults = results.sort((a, b) => (b.revisionNumber || 0) - (a.revisionNumber || 0));
+      const latestResult = sortedResults[0] || null;
+
 
       interventionProgress.push({
         id: `${studentId}-${category.categoryName}-${Date.now()}`,
@@ -1061,16 +1064,20 @@ const processComprehensiveInterventionData = (students, interventionAssessments,
         // Assessment information
         totalQuestions: assessment?.totalQuestions || category.totalQuestions || 0,
         revisionNumber: latestAttempt.revisionNumber || 1,
-        teacherRevisions: assessment?.revisionHistory?.length || 0,
+        teacherRevisions: Math.max(1, assessment?.revisionHistory?.length || latestAttempt.revisionNumber || 1),
 
         // Additional metrics from intervention results
-        skillMasteryGrowth: latestResult?.skillMastery ?
+        masteryGrowth: latestResult?.skillMastery ?
           (latestResult.skillMastery[category.categoryName]?.masteryGrowth || 0) : 0,
         currentMastery: latestResult?.skillMastery ?
-          (latestResult.skillMastery[category.categoryName]?.currentMastery || 0) : 0,
+          (latestResult.skillMastery[category.categoryName]?.masteryProbability ||
+           latestResult.skillMastery[category.categoryName]?.currentMastery || 0) : 0,
         masteryProbability: latestResult?.skillMastery ?
           (latestResult.skillMastery[category.categoryName]?.masteryProbability || 0) : 0,
         interventionEffectiveness: latestResult?.interventionEffectiveness?.overallEffectiveness || 'N/A',
+
+        // Improvement percentage from intervention results
+        improvementPercentage: latestResult?.improvementPercentage || 0,
 
         // Raw data for detailed view
         interventionHistory: sortedHistory,
