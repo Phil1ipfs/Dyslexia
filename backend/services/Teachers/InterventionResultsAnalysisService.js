@@ -2434,19 +2434,40 @@ class InterventionResultsAnalysisService {
     const interventionResultId = interventionResults._id;
     console.log(`[INTERVENTION ANALYSIS] 🔒 DUPLICATE PROTECTION: Checking intervention result ${interventionResultId}`);
 
-    // Check if this intervention result is already recorded in ANY category_results
+    // ✅ IMPROVED DUPLICATE DETECTION: Check if this SPECIFIC intervention result is already recorded
     const existingRecords = await CategoryResults.find({
       studentId: studentId,
       'categories.interventionHistory.interventionResultId': interventionResultId
     });
 
     if (existingRecords.length > 0) {
-      console.warn(`[INTERVENTION ANALYSIS] ⚠️  DUPLICATE CALL DETECTED: Intervention result ${interventionResultId} already exists in ${existingRecords.length} record(s)`);
+      // ✅ MORE SPECIFIC CHECK: Verify if this is actually the same attempt/revision
+      let isDuplicateAttempt = false;
+      let existingEntry = null;
+
       existingRecords.forEach(record => {
-        console.warn(`[INTERVENTION ANALYSIS] ⚠️    - Record ID: ${record._id}, Reading Level: ${record.readingLevel}`);
+        const categoryData = record.categories.find(cat => cat.categoryName === category);
+        if (categoryData && categoryData.interventionHistory) {
+          existingEntry = categoryData.interventionHistory.find(hist =>
+            hist.interventionResultId?.toString() === interventionResultId.toString()
+          );
+          if (existingEntry) {
+            isDuplicateAttempt = true;
+            console.log(`[INTERVENTION ANALYSIS] 🔍 DUPLICATE CHECK: Found existing entry with revision ${existingEntry.revisionNumber || existingEntry.attemptNumber}`);
+            console.log(`[INTERVENTION ANALYSIS] 🔍 DUPLICATE CHECK: Current intervention revision ${interventionResults.revisionNumber}`);
+          }
+        }
       });
-      console.warn(`[INTERVENTION ANALYSIS] ⚠️  SKIPPING UPDATE to prevent duplicate data corruption`);
-      return; // Exit early to prevent duplicate updates
+
+      if (isDuplicateAttempt && existingEntry) {
+        console.warn(`[INTERVENTION ANALYSIS] ⚠️  GENUINE DUPLICATE DETECTED: Intervention result ${interventionResultId} already exists`);
+        console.warn(`[INTERVENTION ANALYSIS] ⚠️  Existing: Revision ${existingEntry.revisionNumber || existingEntry.attemptNumber}, Score ${existingEntry.score}`);
+        console.warn(`[INTERVENTION ANALYSIS] ⚠️  Current: Revision ${interventionResults.revisionNumber}, Score ${interventionResults.score}`);
+        console.warn(`[INTERVENTION ANALYSIS] ⚠️  SKIPPING UPDATE to prevent duplicate data corruption`);
+        return; // Exit early to prevent duplicate updates
+      } else {
+        console.log(`[INTERVENTION ANALYSIS] ✅ NOT A DUPLICATE: Same intervention result ID but different attempt/revision - proceeding with update`);
+      }
     }
 
     console.log(`[INTERVENTION ANALYSIS] 📊 Updating category_results with intervention data...`);
@@ -2463,7 +2484,7 @@ class InterventionResultsAnalysisService {
 
     try {
       // 🔒 CRITICAL DATA INTEGRITY: Cross-validate intervention reading level with student's current reading level
-      const User = require('../models/userModel');
+      const User = require('../../models/userModel');
       const user = await User.findOne({ idNumber: studentId });
       if (!user) {
         throw new Error(`Student ${studentId} not found in users collection`);

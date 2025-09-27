@@ -1654,6 +1654,9 @@ class CategoryResultsService {
         checkedCount++;
         const studentId = categoryResult.studentId;
 
+        // ✅ CRITICAL FIX: Clean invalid intervention history entries before processing
+        this.cleanInvalidInterventionHistory(categoryResult);
+
         // Calculate what the overall score SHOULD be using our new logic
         const correctStats = this.calculateOverallStats(categoryResult.categories);
         const currentScore = categoryResult.overallScore || 0;
@@ -1682,6 +1685,51 @@ class CategoryResultsService {
       console.error('[OVERALL SCORE FIX] ❌ Error fixing overall scores:', error);
       throw error;
     }
+  }
+
+  /**
+   * 🔧 CRITICAL FIX: Clean invalid intervention history entries that are missing required fields
+   */
+  static cleanInvalidInterventionHistory(categoryResult) {
+    if (!categoryResult.categories) return;
+
+    categoryResult.categories.forEach((category, categoryIndex) => {
+      if (category.interventionHistory && category.interventionHistory.length > 0) {
+        // Filter out invalid intervention history entries
+        const validHistory = category.interventionHistory.filter((historyEntry, historyIndex) => {
+          // Check if all required fields are present
+          const isValid = (
+            typeof historyEntry.attemptNumber === 'number' &&
+            historyEntry.interventionId &&
+            historyEntry.interventionResultId &&
+            typeof historyEntry.score === 'number' &&
+            typeof historyEntry.isPassed === 'boolean' &&
+            historyEntry.attemptedAt &&
+            historyEntry.completedAt
+          );
+
+          if (!isValid) {
+            console.log(`[VALIDATION FIX] 🧹 Removing invalid intervention history entry for ${category.categoryName}:`, {
+              attemptNumber: historyEntry.attemptNumber,
+              hasInterventionId: !!historyEntry.interventionId,
+              hasInterventionResultId: !!historyEntry.interventionResultId,
+              hasScore: typeof historyEntry.score === 'number',
+              hasIsPassed: typeof historyEntry.isPassed === 'boolean',
+              hasAttemptedAt: !!historyEntry.attemptedAt,
+              hasCompletedAt: !!historyEntry.completedAt
+            });
+          }
+
+          return isValid;
+        });
+
+        // Update the category with only valid intervention history entries
+        if (validHistory.length !== category.interventionHistory.length) {
+          console.log(`[VALIDATION FIX] 📋 Cleaned ${category.categoryName}: ${category.interventionHistory.length} → ${validHistory.length} valid entries`);
+          categoryResult.categories[categoryIndex].interventionHistory = validHistory;
+        }
+      }
+    });
   }
 
   /**
