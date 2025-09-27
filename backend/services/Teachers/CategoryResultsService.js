@@ -1069,9 +1069,12 @@ class CategoryResultsService {
 
       console.log(`[CATEGORY RESULTS] ✅ PROCEEDING WITH CATEGORY-BY-CATEGORY RECORD CREATION`);
 
-      // Get all student responses
+      // Get student responses FILTERED BY READING LEVEL
       const StudentResponse = require('../../models/Teachers/ManageProgress/studentResponseModel');
-      const query = { studentId: parseInt(studentId) };
+      const query = {
+        studentId: parseInt(studentId),
+        readingLevel: readingLevel  // ✅ CRITICAL FIX: Only get responses for current reading level
+      };
       if (category) {
         query.category = category;
       }
@@ -1080,7 +1083,7 @@ class CategoryResultsService {
         .sort({ answeredAt: 1 })
         .lean();
 
-      console.log(`[CATEGORY RESULTS] Found ${responses.length} responses for student ${studentId}`);
+      console.log(`[CATEGORY RESULTS] Found ${responses.length} responses for student ${studentId} at reading level ${readingLevel}`);
 
       // DEBUG: Log what categories we actually found
       const foundCategories = [...new Set(responses.map(r => r.category))];
@@ -1272,10 +1275,27 @@ class CategoryResultsService {
       const existingResults = await this.getCategoryResults(parseInt(studentId));
 
       if (existingResults && existingResults.length > 0) {
-        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORD FOUND - UPDATING WITH INTERVENTION PRESERVATION`);
+        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORD FOUND - CHECKING IF MODIFICATION IS ALLOWED`);
 
-        // 🎯 CRITICAL FIX: Detect and repair incomplete existing records
+        // 🎯 CRITICAL FIX: Never modify completed historical records
         const existingResult = existingResults[0]; // Get the first (most recent) record
+
+        // ✅ CRITICAL VALIDATION: Check if this is a completed historical record
+        if (existingResult.readingLevelUpdated === true) {
+          console.log(`[CATEGORY RESULTS] 🚫 HISTORICAL RECORD DETECTED - Cannot modify completed record with readingLevelUpdated=true`);
+          console.log(`[CATEGORY RESULTS] 📚 Historical record: ${existingResult.readingLevel} level, completed on ${existingResult.updatedAt}`);
+          console.log(`[CATEGORY RESULTS] ✅ Skipping modification - historical record must remain intact`);
+          return existingResult; // Return the historical record without modification
+        }
+
+        // ✅ CRITICAL VALIDATION: Check if reading levels match
+        if (existingResult.readingLevel !== readingLevel) {
+          console.log(`[CATEGORY RESULTS] 🚫 READING LEVEL MISMATCH - Record level: ${existingResult.readingLevel}, Current level: ${readingLevel}`);
+          console.log(`[CATEGORY RESULTS] ✅ This indicates a progression occurred - old record should not be modified`);
+          return existingResult; // Return the existing record without modification
+        }
+
+        // 🎯 SAFE TO MODIFY: Detect and repair incomplete existing records (only for current level)
         const requiredCategories = this.getCategoriesForReadingLevel(readingLevel);
         const existingCategoryNames = existingResult.categories.map(c => c.categoryName);
         const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
@@ -2146,7 +2166,7 @@ class CategoryResultsService {
    */
   static async updateCategoryFromIntervention(studentId, category, interventionScore, interventionResultId) {
     try {
-      console.log(`[INTERVENTION UPDATE] Updating category_results for student ${studentId}, category ${category} - marking as passed via intervention (original score preserved)`);
+      console.log(`[INTERVENTION UPDATE] Updating category_results for student ${studentId}, category ${category} - marking as passed via intervention`);
 
       // Find the category result that needs updating
       const categoryResult = await CategoryResult.findOne({
@@ -2167,22 +2187,59 @@ class CategoryResultsService {
         throw new Error(`Category ${category} not found in results for student ${studentId}`);
       }
 
-      // Update the category with intervention success
-      // ✅ PRESERVE ORIGINAL ASSESSMENT DATA - Do NOT overwrite isPassed or score
-      console.log(`[INTERVENTION UPDATE] 🔒 PRESERVING original assessment data:`);
-      console.log(`[INTERVENTION UPDATE] 🔒 - Original score: ${categoryResult.categories[categoryIndex].score}% (PRESERVED)`);
-      console.log(`[INTERVENTION UPDATE] 🔒 - Original isPassed: ${categoryResult.categories[categoryIndex].isPassed} (PRESERVED)`);
-      
-      // ✅ ONLY update intervention status flags - DO NOT touch original assessment results
-      categoryResult.categories[categoryIndex].interventionRequired = false;
-      categoryResult.categories[categoryIndex].interventionCompleted = true;
+      const originalScore = categoryResult.categories[categoryIndex].score;
+      const originalIsPassed = categoryResult.categories[categoryIndex].isPassed;
+
+      console.log(`[INTERVENTION UPDATE] Original assessment: ${originalScore}% (passed: ${originalIsPassed})`);
+      console.log(`[INTERVENTION UPDATE] Intervention result: ${interventionScore}% (passed: ${interventionScore >= 75})`);
+
+      // ✅ ADD INTERVENTION TO HISTORY
+      if (!categoryResult.categories[categoryIndex].interventionHistory) {
+        categoryResult.categories[categoryIndex].interventionHistory = [];
+      }
+
+      const attemptNumber = categoryResult.categories[categoryIndex].interventionHistory.length + 1;
+      const interventionEntry = {
+        attemptNumber: attemptNumber,
+        interventionId: null, // Will be set if available
+        interventionResultId: interventionResultId,
+        score: interventionScore,
+        isPassed: interventionScore >= 75,
+        attemptedAt: new Date(),
+        completedAt: new Date()
+      };
+
+      categoryResult.categories[categoryIndex].interventionHistory.push(interventionEntry);
+
+      // ✅ UPDATE CATEGORY STATUS BASED ON INTERVENTION SUCCESS
+      if (interventionScore >= 75) {
+        categoryResult.categories[categoryIndex].isPassed = true;
+        categoryResult.categories[categoryIndex].interventionRequired = false;
+        categoryResult.categories[categoryIndex].interventionCompleted = true;
+
+        // ✅ CRITICAL FIX: Update category score to use intervention score when higher
+        if (interventionScore > originalScore) {
+          console.log(`[INTERVENTION UPDATE] 🔄 Updating category score: ${originalScore}% → ${interventionScore}% (intervention score higher)`);
+          categoryResult.categories[categoryIndex].score = interventionScore;
+        } else {
+          console.log(`[INTERVENTION UPDATE] ℹ️ Keeping original score: ${originalScore}% (higher than intervention ${interventionScore}%)`);
+        }
+
+        console.log(`[INTERVENTION UPDATE] ✅ Category now PASSED via intervention (${interventionScore}%)`);
+      } else {
+        console.log(`[INTERVENTION UPDATE] ❌ Intervention failed (${interventionScore}% < 75%)`);
+      }
+
       categoryResult.categories[categoryIndex].interventionResultId = interventionResultId;
       categoryResult.categories[categoryIndex].lastUpdated = new Date();
-      
-      // ❌ REMOVED: Do NOT overwrite original isPassed or score
-      // ❌ categoryResult.categories[categoryIndex].isPassed = true;  // REMOVED - preserves original false
-      
-      console.log(`[INTERVENTION UPDATE] ✅ Category completion status updated without overwriting original assessment data`);
+
+      // ✅ RECALCULATE OVERALL SCORE AFTER INTERVENTION UPDATE
+      const overallStats = this.calculateOverallStats(categoryResult.categories);
+      categoryResult.overallScore = overallStats.overallScore;
+      categoryResult.completedCategories = overallStats.passedCategories;
+      categoryResult.allCategoriesPassed = overallStats.passedCategories === categoryResult.categories.length;
+
+      console.log(`[INTERVENTION UPDATE] 🔄 Recalculated overall score: ${overallStats.overallScore}% (${overallStats.passedCategories}/${categoryResult.categories.length} categories passed)`);
 
       // Update overall category result metadata
       categoryResult.updatedAt = new Date();
@@ -2191,6 +2248,18 @@ class CategoryResultsService {
       await categoryResult.save();
 
       console.log(`[INTERVENTION UPDATE] Successfully updated category_results for ${category}`);
+
+      // Return success result for the calling hook
+      const successResult = {
+        success: true,
+        studentId: studentId,
+        category: category,
+        originalScore: originalScore,
+        interventionScore: interventionScore,
+        newOverallScore: categoryResult.overallScore,
+        isPassed: interventionScore >= 75,
+        categoryUpdated: true
+      };
 
       // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK AFTER INTERVENTION SUCCESS
       // Check if intervention success now qualifies student for reading level progression
@@ -2224,13 +2293,7 @@ class CategoryResultsService {
         }
       }
 
-      return {
-        success: true,
-        message: `Category ${category} updated to passed status`,
-        score: interventionScore,
-        categoryResult: categoryResult._id,
-        progressionChecked: true
-      };
+      return successResult;
 
     } catch (error) {
       console.error('[INTERVENTION UPDATE] Error updating category from intervention:', error);
