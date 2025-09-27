@@ -1793,12 +1793,15 @@ class CategoryResultsService {
 
     let overallScore = 0;
 
-    // Calculate scores for ALL categories (use intervention score if passed via intervention)
+    // 🔧 CRITICAL FIX: Calculate scores for ALL categories using BEST available score
+    // For completed categories, use intervention score if it's higher than original
+    // For incomplete categories, use original score
     const allScores = categories.map(cat => {
       const mainAssessmentPassed = (cat.score || 0) >= 75;
       const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
 
       let finalScore = cat.score || 0;
+      let scoreSource = 'original';
 
       console.log(`[OVERALL STATS] DEBUG ${cat.categoryName}:`, {
         originalScore: cat.score,
@@ -1807,16 +1810,24 @@ class CategoryResultsService {
         hasSuccessfulIntervention
       });
 
-      // If main assessment didn't pass but intervention passed, use intervention score
-      if (!mainAssessmentPassed && hasSuccessfulIntervention) {
+      // 🔧 NEW LOGIC: Always use the best available score
+      if (hasSuccessfulIntervention) {
         const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
         const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
-        finalScore = highestInterventionScore;
-        console.log(`[OVERALL STATS] ✅ Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${cat.score}%)`);
+        
+        // Use intervention score if it's higher than original OR if original didn't pass
+        if (highestInterventionScore > finalScore || !mainAssessmentPassed) {
+          finalScore = highestInterventionScore;
+          scoreSource = 'intervention';
+          console.log(`[OVERALL STATS] ✅ Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${cat.score}%)`);
+        } else {
+          console.log(`[OVERALL STATS] ⚪ Using original score for ${cat.categoryName}: ${finalScore}% (intervention available but lower: ${highestInterventionScore}%)`);
+        }
       } else {
         console.log(`[OVERALL STATS] ⚪ Using original score for ${cat.categoryName}: ${finalScore}%`);
       }
 
+      console.log(`[OVERALL STATS] 📊 Final score for ${cat.categoryName}: ${finalScore}% (${scoreSource})`);
       return finalScore;
     });
 
@@ -1824,7 +1835,7 @@ class CategoryResultsService {
     const totalScore = allScores.reduce((sum, score) => sum + score, 0);
     overallScore = Math.round(totalScore / categories.length);
 
-    console.log(`[OVERALL STATS] ✅ SIMPLE CALCULATION: ${overallScore}% average of [${allScores.join(', ')}]`);
+    console.log(`[OVERALL STATS] ✅ ENHANCED CALCULATION: ${overallScore}% average of [${allScores.join(', ')}]`);
     console.log(`[OVERALL STATS] Passed: ${effectivelyCompletedCategories.length}, Failed: ${incompleteCategories.length}, Total: ${categories.length}`);
 
     const interventionRequired = incompleteCategories.length > 0;
