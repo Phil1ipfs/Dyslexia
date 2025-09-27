@@ -5,178 +5,130 @@
 const express = require('express');
 const router = express.Router();
 
-// Import the data migration functions
-const {
-  runDataMigration,
-  findProblematicCategoryResults,
-  validateFixForStudent
-} = require('../../fix_category_results_data');
+// Import models directly to avoid the import issue
+const mongoose = require('mongoose');
+
+// Import the data migration functions - commented out due to model import issues
+// const {
+//   runDataMigration,
+//   findProblematicCategoryResults,
+//   validateFixForStudent
+// } = require('../../fix_category_results_data');
 
 /**
- * GET /api/data-migration/check
- * Check for problematic category_results records
+ * DEBUG: Find all intervention results for a specific student
  */
-router.get('/check', async (req, res) => {
-  try {
-    console.log('[DATA MIGRATION API] Checking for problematic category_results...');
-
-    const problematicCases = await findProblematicCategoryResults();
-
-    res.json({
-      success: true,
-      message: `Found ${problematicCases.length} problematic cases`,
-      data: {
-        problematicCount: problematicCases.length,
-        cases: problematicCases.map(c => ({
-          studentId: c.studentId,
-          category: c.category,
-          missingAttempt: c.missingAttempt,
-          interventionScore: c.interventionResult.score,
-          interventionPassed: c.interventionResult.isPassed
-        }))
-      }
-    });
-
-  } catch (error) {
-    console.error('[DATA MIGRATION API] Check failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to check for problematic cases',
-      error: error.message
-    });
-  }
-});
-
-/**
- * POST /api/data-migration/fix
- * Run the data migration to fix problematic records
- */
-router.post('/fix', async (req, res) => {
-  try {
-    console.log('[DATA MIGRATION API] Running data migration...');
-
-    await runDataMigration();
-
-    res.json({
-      success: true,
-      message: 'Data migration completed successfully',
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('[DATA MIGRATION API] Migration failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Data migration failed',
-      error: error.message
-    });
-  }
-});
-
-/**
- * GET /api/data-migration/validate/:studentId
- * Validate the fix for a specific student
- */
-router.get('/validate/:studentId', async (req, res) => {
+router.get('/debug/intervention-results/:studentId', async (req, res) => {
   try {
     const { studentId } = req.params;
-    console.log(`[DATA MIGRATION API] Validating fix for student ${studentId}...`);
+    console.log(`[DEBUG] Finding all intervention results for student ${studentId}...`);
 
-    // Capture console output for validation
-    const originalLog = console.log;
-    const logs = [];
-    console.log = (...args) => {
-      logs.push(args.join(' '));
-      originalLog(...args);
-    };
+    // Direct database query using existing connection
+    const db = mongoose.connection.db;
 
-    await validateFixForStudent(parseInt(studentId));
+    // Find all intervention_results for this student
+    const interventionResults = await db.collection('intervention_results').find({
+      studentId: parseInt(studentId)
+    }).sort({ createdAt: 1 }).toArray();
 
-    // Restore console.log
-    console.log = originalLog;
+    console.log(`[DEBUG] Found ${interventionResults.length} intervention results for student ${studentId}`);
 
-    res.json({
-      success: true,
-      message: `Validation completed for student ${studentId}`,
-      data: {
-        studentId: parseInt(studentId),
-        validationLogs: logs
-      }
-    });
+    // Also find intervention_assessment data
+    const interventionAssessments = await db.collection('intervention_assessment').find({
+      studentId: parseInt(studentId)
+    }).sort({ createdAt: 1 }).toArray();
 
-  } catch (error) {
-    console.error('[DATA MIGRATION API] Validation failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Validation failed',
-      error: error.message
-    });
-  }
-});
+    console.log(`[DEBUG] Found ${interventionAssessments.length} intervention assessments for student ${studentId}`);
 
-/**
- * GET /api/data-migration/student/:studentId/category/:category
- * Get detailed intervention history for a specific student and category
- */
-router.get('/student/:studentId/category/:category', async (req, res) => {
-  try {
-    const { studentId, category } = req.params;
+    // Find category_results for this student
+    const categoryResults = await db.collection('category_results').find({
+      studentId: parseInt(studentId)
+    }).sort({ createdAt: 1 }).toArray();
 
-    const CategoryResults = require('../models/categoryResultsModel');
-    const InterventionResults = require('../models/interventionResultsModel');
-
-    // Get category_results data
-    const categoryResult = await CategoryResults.findOne({
-      studentId: parseInt(studentId),
-      'categories.categoryName': category
-    });
-
-    if (!categoryResult) {
-      return res.status(404).json({
-        success: false,
-        message: `No category_results found for student ${studentId}, category ${category}`
-      });
-    }
-
-    const categoryData = categoryResult.categories.find(cat => cat.categoryName === category);
-
-    // Get all intervention_results for this student/category
-    const interventionResults = await InterventionResults.find({
-      studentId: parseInt(studentId),
-      category: category
-    }).sort({ revisionNumber: 1 });
+    console.log(`[DEBUG] Found ${categoryResults.length} category results for student ${studentId}`);
 
     res.json({
       success: true,
-      message: `Retrieved data for student ${studentId}, category ${category}`,
+      studentId: parseInt(studentId),
       data: {
-        studentId: parseInt(studentId),
-        category: category,
-        categoryResults: {
-          isPassed: categoryData.isPassed,
-          interventionAttempts: categoryData.interventionAttempts,
-          interventionCompleted: categoryData.interventionCompleted,
-          interventionHistory: categoryData.interventionHistory
-        },
         interventionResults: interventionResults.map(ir => ({
           _id: ir._id,
-          revisionNumber: ir.revisionNumber,
+          category: ir.category,
           score: ir.score,
           isPassed: ir.isPassed,
+          revisionNumber: ir.revisionNumber,
+          readingLevel: ir.readingLevel,
           assessmentDate: ir.assessmentDate,
-          completedAt: ir.completedAt
+          completedAt: ir.completedAt,
+          interventionAssessmentId: ir.interventionAssessmentId
+        })),
+        interventionAssessments: interventionAssessments.map(ia => ({
+          _id: ia._id,
+          category: ia.category,
+          revisionNumber: ia.revisionNumber,
+          readingLevel: ia.readingLevel,
+          createdAt: ia.createdAt,
+          lastEditedAt: ia.lastEditedAt,
+          interventionResults: ia.interventionResults || []
+        })),
+        categoryResults: categoryResults.map(cr => ({
+          _id: cr._id,
+          readingLevel: cr.readingLevel,
+          categories: cr.categories.map(cat => ({
+            categoryName: cat.categoryName,
+            interventionAttempts: cat.interventionAttempts,
+            interventionCompleted: cat.interventionCompleted,
+            interventionHistory: cat.interventionHistory || []
+          }))
         }))
       }
     });
 
   } catch (error) {
-    console.error('[DATA MIGRATION API] Student data retrieval failed:', error);
+    console.error('[DEBUG] Failed to find intervention data:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve student data',
+      message: 'Failed to find intervention data',
       error: error.message
     });
   }
 });
+
+// Commented out routes that depend on problematic imports
+// TODO: Re-enable once model import issues are resolved
+
+/*
+router.get('/check', async (req, res) => {
+  // Implementation commented out due to import issues
+  res.status(503).json({
+    success: false,
+    message: 'Service temporarily unavailable due to import issues'
+  });
+});
+
+router.post('/fix', async (req, res) => {
+  // Implementation commented out due to import issues
+  res.status(503).json({
+    success: false,
+    message: 'Service temporarily unavailable due to import issues'
+  });
+});
+
+router.get('/validate/:studentId', async (req, res) => {
+  // Implementation commented out due to import issues
+  res.status(503).json({
+    success: false,
+    message: 'Service temporarily unavailable due to import issues'
+  });
+});
+
+router.get('/student/:studentId/category/:category', async (req, res) => {
+  // Implementation commented out due to import issues
+  res.status(503).json({
+    success: false,
+    message: 'Service temporarily unavailable due to import issues'
+  });
+});
+*/
 
 module.exports = router;
