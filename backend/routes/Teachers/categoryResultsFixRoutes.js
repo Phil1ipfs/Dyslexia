@@ -90,13 +90,21 @@ router.post('/test-intervention-score/:studentId/:category', async (req, res) =>
 
     console.log(`[INTERVENTION SCORE TEST] Before fix:`, JSON.stringify(beforeData, null, 2));
 
+    // Get user's current reading level for proper category targeting
+    const User = require('../../models/userModel');
+    const user = await User.findOne({ idNumber: parseInt(studentId) });
+    const readingLevel = user ? user.readingLevel : null;
+
+    console.log(`[INTERVENTION SCORE TEST] User reading level: ${readingLevel}`);
+
     // Apply the intervention fix
     const mongoose = require('mongoose');
     const result = await CategoryResultsService.updateCategoryFromIntervention(
       parseInt(studentId),
       category,
       interventionScore || 100, // Default to 100% if not provided
-      new mongoose.Types.ObjectId() // Mock intervention result ID
+      new mongoose.Types.ObjectId(), // Mock intervention result ID
+      readingLevel // 🎯 FIX: Pass reading level to prevent cross-level contamination
     );
 
     // Get updated results after fix

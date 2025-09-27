@@ -62,12 +62,20 @@ async function testOverallScoreFix() {
     // - Alphabet Knowledge: 80% (passed)
     // - Phonological Awareness: 33% initially, but intervention scored 100%
 
+    // Get user's current reading level for proper category targeting
+    const User = require('./models/userModel');
+    const user = await User.findOne({ idNumber: parseInt(studentId) });
+    const readingLevel = user ? user.readingLevel : 'High Emerging'; // Default for this test
+
+    console.log(`[TEST] User reading level: ${readingLevel}`);
+
     try {
       await CategoryResultsService.updateCategoryFromIntervention(
         studentId,
         'Phonological Awareness',
         100, // The intervention score from the data
-        new mongoose.Types.ObjectId() // Mock intervention result ID
+        new mongoose.Types.ObjectId(), // Mock intervention result ID
+        readingLevel // 🎯 FIX: Pass reading level to prevent cross-level contamination
       );
 
       console.log('✅ Intervention update completed successfully');
