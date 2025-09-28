@@ -1322,7 +1322,7 @@ const IEPReport = ({
       toast.loading('Progressing student to next reading level...');
 
       const token = AuthService.getToken();
-      const response = await fetch(`${API_BASE_URL}/api/iep/student/${student.idNumber}/reading-level-progression`, {
+      const response = await fetch(`${API_BASE_URL}api/iep/student/${student.idNumber}/reading-level-progression`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
