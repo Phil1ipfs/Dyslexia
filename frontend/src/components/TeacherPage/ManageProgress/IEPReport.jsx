@@ -1381,6 +1381,16 @@ const IEPReport = ({
           setForceUpdate(prev => prev + 1); // Trigger force update
           loadIEPData(); // Load data with refreshed student info
         }, 1500); // Increased delay to ensure backend has processed
+
+        // 6. ✅ ENHANCED: Force complete page refresh to ensure UI updates properly
+        setTimeout(() => {
+          console.log('🔄 Forcing complete page refresh to ensure UI reflects new reading level...');
+          // Option 1: Force window reload to ensure complete UI refresh
+          window.location.reload();
+
+          // Option 2: Alternative - force navigation refresh (if using React Router)
+          // window.location.href = window.location.href;
+        }, 2500); // Additional delay to allow component state updates first
       } else {
         throw new Error(result.error || 'Failed to progress reading level');
       }
