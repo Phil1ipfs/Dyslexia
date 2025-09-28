@@ -457,43 +457,88 @@ const IEPReportPDFRenderer = ({ iepData }) => {
           <Text>STUDENT PERFORMANCE SUMMARY</Text>
         </View>
 
-        {/* Comprehensive Summary - Structured Format */}
+        {/* Comprehensive Summary - Same Logic as React Component */}
         <View style={styles.summaryParagraph}>
           <Text>
             {(() => {
-              const objectives = iepData.objectives || [];
-              const readingLevel = iepData.readingLevel || 'Not Assessed';
-              const studentName = getStudentName();
-
-              // Calculate key metrics
-              const passedCount = objectives.filter(obj => obj.latestInterventionPassed || obj.isPassed).length;
-              const totalCount = objectives.length;
-              const totalAttempts = objectives.reduce((sum, obj) => sum + (obj.interventionAttempts || 0), 0);
-              const categoriesWithInterventions = objectives.filter(obj => obj.interventionAttempts > 0);
-              const averageScore = totalCount > 0 ? Math.round(objectives.reduce((sum, obj) => sum + (obj.assessmentScore || obj.score || 0), 0) / totalCount) : 0;
-
-              // Create concise, professional summary
-              let summary = `${studentName} is currently at the ${readingLevel} reading level`;
-
-              if (totalCount > 0) {
-                summary += `, with ${passedCount} of ${totalCount} literacy domain${totalCount > 1 ? 's' : ''} mastered (${averageScore}% average performance)`;
+              if (!iepData?.objectives || iepData.objectives.length === 0) {
+                return `${getStudentName()} requires comprehensive assessment data to establish baseline performance and intervention needs.`;
               }
 
-              summary += `. Initial assessment revealed: ${objectives.map(obj => `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`).join(', ')}`;
+              const studentName = getStudentName();
+              const currentIepData = iepData;
+
+              // Calculate performance metrics for more detailed analysis
+              const averageScore = currentIepData.objectives.reduce((sum, obj) => sum + (obj.assessmentScore || obj.score || 0), 0) / currentIepData.objectives.length;
+              const performanceRange = Math.round(averageScore);
+
+              const availableCategories = currentIepData.objectives.map(obj => obj.categoryName);
+              // Check mastery considering both initial assessment AND intervention success
+              const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed || obj.latestInterventionPassed);
+              const allPassed = passedCategories.length === availableCategories.length && availableCategories.length > 0;
+
+              // Reading Level Achievement Summary
+              let summary = `Reading Level Achievement: ${studentName} is currently functioning at the ${currentIepData?.readingLevel || 'Not Assessed'} reading level`;
+
+              if (allPassed) {
+                summary += `, demonstrating complete mastery across all ${availableCategories.length} assessed literacy domain${availableCategories.length > 1 ? 's' : ''}: ${availableCategories.join(', ')}. With an average performance of ${performanceRange}%, this achievement reflects strong foundational reading skills and readiness for advancement to the next developmental reading level.`;
+              } else {
+                // Check for domains that still need work (failed both initial AND intervention)
+                const pendingCategories = currentIepData.objectives.filter(obj => !obj.isPassed && !obj.latestInterventionPassed);
+                const pendingCategoryNames = pendingCategories.map(obj => obj.categoryName);
+                const pendingScores = pendingCategories.map(obj => `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`);
+
+                summary += `, requiring targeted development in ${pendingCategoryNames.length} critical literacy domain${pendingCategoryNames.length > 1 ? 's' : ''}: ${pendingScores.join(', ')}. Current performance indicates specific skill gaps that benefit from systematic intervention approaches. The average assessment performance of ${performanceRange}% suggests ${performanceRange >= 50 ? 'emerging competencies that can be strengthened' : 'foundational skills requiring intensive support'} through evidence-based instructional strategies.`;
+              }
+
+              // Initial Assessment Performance
+              const performanceDetails = currentIepData.objectives.map(obj => {
+                const score = obj.assessmentScore || obj.score || 0;
+                const questionData = obj.totalQuestions ? ` (${obj.correctAnswers || 0}/${obj.totalQuestions} questions correct)` : '';
+                return `${obj.categoryName}: ${score}%${questionData}`;
+              });
+
+              const failedCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+
+              summary += ` Initial Assessment Performance: The comprehensive initial assessment revealed the following detailed performance profile: ${performanceDetails.join('; ')}.`;
+
+              if (failedCategories.length > 0) {
+                const interventionCategoriesDetails = failedCategories.map(obj => {
+                  const score = obj.assessmentScore || obj.score || 0;
+                  if (score < 25) return `${obj.categoryName} (significant challenge at ${score}%)`;
+                  else if (score < 50) return `${obj.categoryName} (moderate difficulty at ${score}%)`;
+                  else return `${obj.categoryName} (approaching proficiency at ${score}%)`;
+                });
+
+                summary += ` Assessment results indicate ${failedCategories.length} domain${failedCategories.length > 1 ? 's' : ''} requiring intervention: ${interventionCategoriesDetails.join(', ')}.`;
+              }
+
+              // Add concise intervention and status summary
+              const totalAttempts = currentIepData.objectives.reduce((total, obj) => total + (obj.interventionAttempts || 0), 0);
+              const categoriesWithInterventions = currentIepData.objectives.filter(obj => obj.hasIntervention && obj.interventionAttempts > 0);
 
               if (totalAttempts > 0) {
-                const successfulInterventions = categoriesWithInterventions.filter(obj => obj.latestInterventionPassed).length;
-                summary += `. Intervention progress: ${totalAttempts} attempt${totalAttempts > 1 ? 's' : ''} across ${categoriesWithInterventions.length} categor${categoriesWithInterventions.length > 1 ? 'ies' : 'y'}, with ${successfulInterventions} successful completion${successfulInterventions !== 1 ? 's' : ''}`;
+                const interventionDetails = categoriesWithInterventions.map(obj => {
+                  const improvementData = obj.interventionImprovement !== undefined ? ` with ${obj.interventionImprovement >= 0 ? '+' : ''}${obj.interventionImprovement}% improvement` : '';
+                  const latestScore = obj.latestInterventionScore ? ` (latest: ${obj.latestInterventionScore}%)` : '';
+                  return `${obj.categoryName} (${obj.interventionAttempts} attempt${obj.interventionAttempts > 1 ? 's' : ''}${improvementData}${latestScore})`;
+                });
+
+                const successfulInterventions = categoriesWithInterventions.filter(obj => obj.latestInterventionPassed);
+
+                summary += ` Intervention Progress: ${studentName} has actively engaged in ${totalAttempts} intervention session${totalAttempts > 1 ? 's' : ''} across ${categoriesWithInterventions.length} literacy domain${categoriesWithInterventions.length > 1 ? 's' : ''}: ${interventionDetails.join('; ')}.`;
+
+                if (successfulInterventions.length > 0) {
+                  summary += ` Successfully achieved mastery in ${successfulInterventions.length} domain${successfulInterventions.length > 1 ? 's' : ''} (${successfulInterventions.map(obj => obj.categoryName).join(', ')}).`;
+                }
               }
 
-              // Add status and next steps
-              if (passedCount === totalCount && totalCount > 0) {
-                summary += `. Status: Complete mastery achieved - ready for reading level advancement.`;
-              } else if (totalCount > 0) {
-                const needingWork = totalCount - passedCount;
-                summary += `. Status: ${needingWork} domain${needingWork > 1 ? 's' : ''} requiring continued intervention support.`;
+              // Add current status
+              if (allPassed) {
+                summary += ` Current Status: Complete mastery achieved - ready for reading level advancement.`;
               } else {
-                summary += `. Status: Assessment data pending.`;
+                const needingWork = currentIepData.objectives.filter(obj => !obj.isPassed);
+                summary += ` Current Status: ${needingWork.length} domain${needingWork.length > 1 ? 's' : ''} requiring continued intervention support.`;
               }
 
               return summary;
