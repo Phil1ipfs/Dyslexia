@@ -641,14 +641,17 @@ class IEPController {
           supportLevel: obj.supportLevel,
           remarks: obj.remarks,
           mainAssessmentRemarks: obj.mainAssessmentRemarks, // ✅ PRESERVE main assessment remarks
-          interventionHistory: obj.interventionHistory ? [...obj.interventionHistory] : []
+          interventionHistory: obj.interventionHistory ? obj.interventionHistory.map(attempt => ({
+            ...attempt,
+            teacherRemarks: attempt.teacherRemarks || '' // ✅ PRESERVE individual attempt remarks
+          })) : []
         };
       });
 
       console.log(`📚 Preserving teacher data for ${Object.keys(originalTeacherData).length} objectives`);
 
-      // Regenerate objectives with fresh intervention data (this preserves comprehensive data)
-      iepReport.generateObjectivesFromCategoryResults(latestResults);
+      // ✅ FIX: DON'T regenerate objectives - just update them in place to preserve teacher data
+      // iepReport.generateObjectivesFromCategoryResults(latestResults); // ❌ REMOVED - This was wiping out teacher data!
 
       // Enhanced objectives processing with fresh intervention data
       iepReport.objectives = iepReport.objectives.map(objective => {
@@ -675,17 +678,26 @@ class IEPController {
             objective.interventionCompleted = categoryData.interventionCompleted || false;
             objective.interventionId = categoryData.currentInterventionId || null;
 
-            // Map fresh intervention history
-            objective.interventionHistory = categoryData.interventionHistory.map((attempt, index) => ({
-              attemptNumber: attempt.attemptNumber || (index + 1),
-              score: attempt.score || 0,
-              isPassed: attempt.isPassed || false,
-              attemptedAt: attempt.attemptedAt || attempt.completedAt || new Date(),
-              reason: attempt.attemptReason || attempt.reason || 'intervention_attempt',
-              revisionNumber: attempt.revisionNumber || 1,
-              // Preserve any existing teacher remarks for this attempt
-              teacherRemarks: originalTeacherData[objective.categoryName]?.interventionHistory?.[index]?.teacherRemarks || attempt.teacherRemarks || ''
-            }));
+            // Map fresh intervention history - ✅ FIX: Match by attemptNumber instead of array index
+            objective.interventionHistory = categoryData.interventionHistory.map((attempt, index) => {
+              const attemptNumber = attempt.attemptNumber || (index + 1);
+
+              // ✅ FIX: Find matching teacher remarks by attemptNumber, not array index
+              const originalAttempt = originalTeacherData[objective.categoryName]?.interventionHistory?.find(
+                original => original.attemptNumber === attemptNumber
+              );
+
+              return {
+                attemptNumber: attemptNumber,
+                score: attempt.score || 0,
+                isPassed: attempt.isPassed || false,
+                attemptedAt: attempt.attemptedAt || attempt.completedAt || new Date(),
+                reason: attempt.attemptReason || attempt.reason || 'intervention_attempt',
+                revisionNumber: attempt.revisionNumber || 1,
+                // ✅ FIX: Preserve teacher remarks by matching attemptNumber
+                teacherRemarks: originalAttempt?.teacherRemarks || attempt.teacherRemarks || ''
+              };
+            });
 
             // Set latest intervention data
             const latestAttempt = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
