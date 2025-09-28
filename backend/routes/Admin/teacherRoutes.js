@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const teacherProfileController = require('../../controllers/Teachers/teacherProfileController');
 const studentAdminController = require('../../controllers/studentAdminController');
 const { studentValidation, sanitizeRequest } = require('../../middleware/validationMiddleware');
+const { validateParams } = require('../../middleware/objectIdValidation');
 const multer = require('multer');
 const upload = multer();
 
@@ -50,7 +51,7 @@ router.get('/parents', async (req, res) => {
 });
 
 // Get teacher by ID
-router.get('/teachers/:id', async (req, res) => {
+router.get('/teachers/:id', validateParams.id, async (req, res) => {
     try {
         const teachersDb = mongoose.connection.useDb('teachers');
         const teacher = await teachersDb.collection('profile').findOne({
@@ -110,7 +111,7 @@ router.get('/students', async (req, res) => {
 });
 
 // Get student by ID
-router.get('/students/:id', async (req, res) => {
+router.get('/students/:id', validateParams.id, async (req, res) => {
     try {
         const db = mongoose.connection.useDb('test');
         const student = await db.collection('users').findOne({
@@ -161,10 +162,10 @@ router.delete('/teachers/:id', teacherProfileController.deleteTeacher);
 router.post('/students', sanitizeRequest, studentValidation.createStudent, upload.single('profileImage'), studentAdminController.createStudent);
 
 // Update student (PUT)
-router.put('/students/:id', sanitizeRequest, studentValidation.studentId, upload.single('profileImage'), studentAdminController.updateStudent);
+router.put('/students/:id', validateParams.id, sanitizeRequest, studentValidation.studentId, upload.single('profileImage'), studentAdminController.updateStudent);
 
 // Delete student (DELETE)
-router.delete('/students/:id', studentAdminController.deleteStudent);
+router.delete('/students/:id', validateParams.id, studentAdminController.deleteStudent);
 
 // GET /api/admin/manage/students/idNumber/:idNumber
 router.get('/students/idNumber/:idNumber', async (req, res) => {

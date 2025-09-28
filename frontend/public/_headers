@@ -1,0 +1,24 @@
+# Netlify Security Headers Configuration
+# This file addresses all OWASP ZAP findings for production deployment
+
+/*
+  # Content Security Policy - Fixes ZAP: "Content Security Policy (CSP) Header Not Set"
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+  # Anti-clickjacking protection - Fixes ZAP: "Missing Anti-clickjacking Header"
+  X-Frame-Options: DENY
+
+  # MIME-sniffing protection - Fixes ZAP: "X-Content-Type-Options Header Missing"
+  X-Content-Type-Options: nosniff
+
+  # Additional security headers
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
+
+  # HTTPS enforcement (only set on HTTPS)
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+# Specific headers for API routes (if serving from same domain)
+/api/*
+  Content-Security-Policy: default-src 'self'; script-src 'none'; style-src 'none'; img-src 'none'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'

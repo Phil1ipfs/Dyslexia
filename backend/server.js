@@ -10,6 +10,7 @@ const axios = require('axios');
 const s3Client = require('./config/s3');
 const { generalLimiter, authLimiter, uploadLimiter, passwordChangeLimiter } = require('./middleware/rateLimiter');
 const { sessionMiddleware } = require('./middleware/sessionManager');
+const { secureErrorHandler } = require('./middleware/secureErrorHandler');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
@@ -1238,32 +1239,8 @@ connectDB().then(async (connected) => {
 // Add security error handler (must be after routes)
 app.use(securityErrorHandler);
 
-// Global error handler
-app.use((err, req, res, next) => {
-  // Track security event if not already handled
-  if (req.trackSecurityEvent && err.status >= 400) {
-    const eventType = err.status === 401 ? 'authFailures' :
-                     err.status === 403 ? 'permissionViolations' :
-                     err.status === 429 ? 'rateLimitViolations' :
-                     'suspiciousActivities';
-
-    req.trackSecurityEvent(eventType, {
-      error: err.message,
-      statusCode: err.status,
-      stack: err.stack?.substring(0, 500) // First 500 chars only
-    });
-  }
-
-  console.error('Global error handler:', err);
-
-  if (!res.headersSent) {
-    res.status(err.status || 500).json({
-      success: false,
-      message: err.message || 'Internal server error',
-      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
-    });
-  }
-});
+// Global secure error handler (replaces old insecure error handler)
+app.use(secureErrorHandler);
 
 // Start the server
 app.listen(PORT, async () => {

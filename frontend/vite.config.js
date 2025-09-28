@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { securityHeaders } from './vite-plugins/security-headers.js';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -15,7 +16,8 @@ export default defineConfig(({ command, mode }) => {
           babelrc: false,
           configFile: false,
         }
-      })
+      }),
+      securityHeaders() // Add security headers plugin
     ],
     resolve: {
       extensions: ['.mjs', '.js', '.jsx', '.json', '.ts', '.tsx'],
