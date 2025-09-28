@@ -205,3 +205,491 @@
   most critical vulnerabilities while maintaining system performance and usability. The       
   implemented security measures follow industry best practices and provide comprehensive      
   protection against common web application attacks.
+
+
+
+
+
+  
+  🚀 AWS EC2 Deployment Tutorial for LITEREXIA Backend
+
+  Phase 1: AWS Setup and EC2 Instance Creation
+
+  Step 1: AWS Account and Security Setup
+
+  1. Log into AWS Console
+    - Go to https://aws.amazon.com/console/
+    - Sign in to your AWS account
+  2. Create a Key Pair for SSH Access
+  # In AWS Console:
+  # EC2 Dashboard → Key Pairs → Create Key Pair
+  # Name: literexia-backend-key
+  # Type: RSA
+  # Format: .pem (for Linux/Mac) or .ppk (for Windows PuTTY)
+  # Download and save securely
+
+  Step 2: Launch EC2 Instance
+
+  1. Navigate to EC2 Dashboard
+    - Services → EC2 → Launch Instance
+  2. Configure Instance
+  Name: literexia-backend-server
+  Application and OS Images: Ubuntu Server 22.04 LTS (Free Tier)
+  Instance Type: t2.micro (Free Tier) or t3.small (Recommended)
+  Key Pair: literexia-backend-key (created above)
+  3. Configure Security Group
+  Security Group Name: literexia-backend-sg
+  Description: Security group for Literexia backend server
+
+  Inbound Rules:
+  - Type: SSH, Port: 22, Source: My IP (your current IP)
+  - Type: HTTP, Port: 80, Source: Anywhere (0.0.0.0/0)
+  - Type: HTTPS, Port: 443, Source: Anywhere (0.0.0.0/0)
+  - Type: Custom TCP, Port: 5001, Source: Anywhere (0.0.0.0/0)
+  4. Configure Storage
+  Storage: 8-20 GB gp3 (adjust based on needs)
+  5. Launch Instance
+    - Review and Launch
+    - Wait for instance to be in "Running" state
+
+  Phase 2: Server Setup and Configuration
+
+  Step 3: Connect to Your EC2 Instance
+
+  For Linux/Mac:
+  # Set correct permissions for your key file
+  chmod 400 literexia-backend-key.pem
+
+  # Connect to your instance
+  ssh -i "literexia-backend-key.pem" ubuntu@your-ec2-public-ip
+
+  For Windows (using PuTTY):
+  Host: ubuntu@your-ec2-public-ip
+  Port: 22
+  SSH → Auth → Private key: literexia-backend-key.ppk
+
+  Step 4: Update System and Install Dependencies
+
+  # Update system packages
+  sudo apt update && sudo apt upgrade -y
+
+  # Install Node.js (using NodeSource repository for latest LTS)
+  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+  sudo apt-get install -y nodejs
+
+  # Verify installation
+  node --version
+  npm --version
+
+  # Install PM2 for process management
+  sudo npm install -g pm2
+
+  # Install Nginx for reverse proxy
+  sudo apt install nginx -y
+
+  # Install Git
+  sudo apt install git -y
+
+  # Install unzip (for file management)
+  sudo apt install unzip -y
+
+  Phase 3: Deploy Your Application
+
+  Step 5: Clone and Setup Your Backend
+
+  # Create application directory
+  sudo mkdir -p /var/www/literexia
+  sudo chown ubuntu:ubuntu /var/www/literexia
+  cd /var/www/literexia
+
+  # Clone your repository (replace with your repo URL)
+  git clone https://github.com/Phil1ipfs/Dyslexia.git .
+
+  # Navigate to backend directory
+  cd backend
+
+  # Install dependencies
+  npm install
+
+  # Install production dependencies only (optional for smaller footprint)
+  # npm ci --only=production
+
+  Step 6: Configure Environment Variables
+
+  # Create production environment file
+  sudo nano .env
+
+  # Add your production environment variables:
+
+  # Production Environment Variables
+  NODE_ENV=production
+  PORT=5001
+
+  # MongoDB Connection (use your MongoDB Atlas connection string)
+  MONGO_URI=mongodb+srv://johncasingal63:GqrI1M4qlAq8u1R0@cluster0.0f8ylb8.mongodb.net/?re    
+  tryWrites=true&w=majority&appName=Cluster0
+
+  # OpenAI API Key
+  OPENAI_API_KEY=sk-proj-uXZQdxOizSIh_u0kakEK6W0WJMvZCns8-MVz6sQ6gge2Ibbe0dGriXj1izxLKl8B3    
+  vP2-9E7IiT3BlbkFJ03HYh2nZIgWr5BOdRmaUQx2d7UQ_stuaqHkMPAeSf0S11XEoqh6iJC2Mm5aQ82lj8n0olUi    
+  lYA
+  OPENAI_MODEL=gpt-3.5-turbo
+
+  # AWS S3 Configuration
+  AWS_ACCESS_KEY_ID=AKIATG6MGJER7LWMZW5C
+  AWS_SECRET_ACCESS_KEY=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
+  AWS_REGION=ap-southeast-2
+  AWS_BUCKET_NAME=literexia-bucket
+
+  # Email Configuration
+  EMAIL_USER=markcaram10@gmail.com
+  EMAIL_PASSWORD=tawg bbhl qqkg icbe
+
+  # Frontend URL (update with your production frontend URL)
+  FRONTEND_URL=http://your-ec2-public-ip:3000
+
+  # API URL
+  VITE_API_URL=http://your-ec2-public-ip:5001
+
+  # Save and exit (Ctrl+X, Y, Enter)
+
+  # Set proper permissions for .env file
+  chmod 600 .env
+
+  Step 7: Test Your Application
+
+  # Start the application manually to test
+  npm start
+
+  # Test if it's working (in another terminal or browser)
+  curl http://localhost:5001/test
+
+  Phase 4: Production Setup with PM2 and Nginx
+
+  Step 8: Configure PM2 for Process Management
+
+  # Stop the manual npm start if running
+  # Ctrl+C
+
+  # Create PM2 ecosystem file
+  nano ecosystem.config.js
+
+  module.exports = {
+    apps: [{
+      name: 'literexia-backend',
+      script: 'server.js',
+      cwd: '/var/www/literexia/backend',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 5001
+      },
+      error_file: '/var/log/literexia/error.log',
+      out_file: '/var/log/literexia/out.log',
+      log_file: '/var/log/literexia/combined.log',
+      time: true
+    }]
+  };
+
+  # Create log directory
+  sudo mkdir -p /var/log/literexia
+  sudo chown ubuntu:ubuntu /var/log/literexia
+
+  # Start application with PM2
+  pm2 start ecosystem.config.js
+
+  # Set PM2 to start on system boot
+  pm2 startup
+  sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u ubuntu    
+   --hp /home/ubuntu
+
+  # Save PM2 configuration
+  pm2 save
+
+  # Check status
+  pm2 status
+  pm2 logs literexia-backend
+
+  Step 9: Configure Nginx Reverse Proxy
+
+  # Create Nginx configuration
+  sudo nano /etc/nginx/sites-available/literexia-backend
+
+  server {
+      listen 80;
+      server_name your-ec2-public-ip your-domain.com;
+
+      # Security headers
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header Referrer-Policy "no-referrer-when-downgrade" always;
+      add_header Content-Security-Policy "default-src 'self' http: https: ws: wss: data:      
+  blob: 'unsafe-inline'; frame-ancestors 'self';" always;
+
+      # File upload limit
+      client_max_body_size 10M;
+
+      # API routes
+      location /api/ {
+          proxy_pass http://localhost:5001;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection 'upgrade';
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_cache_bypass $http_upgrade;
+          proxy_read_timeout 300s;
+          proxy_connect_timeout 75s;
+      }
+
+      # Test route
+      location /test {
+          proxy_pass http://localhost:5001;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection 'upgrade';
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_cache_bypass $http_upgrade;
+      }
+
+      # Health check
+      location /health {
+          access_log off;
+          return 200 "healthy\n";
+          add_header Content-Type text/plain;
+      }
+  }
+
+  # Enable the site
+  sudo ln -s /etc/nginx/sites-available/literexia-backend /etc/nginx/sites-enabled/
+
+  # Remove default site
+  sudo rm /etc/nginx/sites-enabled/default
+
+  # Test Nginx configuration
+  sudo nginx -t
+
+  # Restart Nginx
+  sudo systemctl restart nginx
+
+  # Enable Nginx to start on boot
+  sudo systemctl enable nginx
+
+  Phase 5: SSL Certificate Setup (Optional but Recommended)
+
+  Step 10: Install SSL Certificate with Let's Encrypt
+
+  # Install Certbot
+  sudo apt install snapd
+  sudo snap install core; sudo snap refresh core
+  sudo snap install --classic certbot
+
+  # Create symlink
+  sudo ln -s /snap/bin/certbot /usr/bin/certbot
+
+  # Get SSL certificate (replace with your domain)
+  sudo certbot --nginx -d your-domain.com
+
+  # Test automatic renewal
+  sudo certbot renew --dry-run
+
+  Phase 6: Monitoring and Maintenance
+
+  Step 11: Setup Monitoring
+
+  # Install monitoring tools
+  sudo apt install htop -y
+
+  # Create monitoring script
+  nano /home/ubuntu/monitor.sh
+
+  #!/bin/bash
+  # Literexia Backend Monitoring Script
+
+  echo "=== Literexia Backend Status ==="
+  echo "Date: $(date)"
+  echo ""
+
+  echo "=== PM2 Status ==="
+  pm2 status
+
+  echo ""
+  echo "=== Nginx Status ==="
+  sudo systemctl status nginx --no-pager
+
+  echo ""
+  echo "=== Disk Usage ==="
+  df -h
+
+  echo ""
+  echo "=== Memory Usage ==="
+  free -h
+
+  echo ""
+  echo "=== API Health Check ==="
+  curl -s http://localhost:5001/test || echo "API not responding"
+
+  echo ""
+  echo "=== Recent Logs ==="
+  pm2 logs literexia-backend --lines 10 --nostream
+
+  # Make executable
+  chmod +x /home/ubuntu/monitor.sh
+
+  # Test monitoring script
+  ./monitor.sh
+
+  Step 12: Setup Log Rotation
+
+  # Create logrotate configuration
+  sudo nano /etc/logrotate.d/literexia
+
+  /var/log/literexia/*.log {
+      daily
+      missingok
+      rotate 14
+      compress
+      notifempty
+      create 0644 ubuntu ubuntu
+      postrotate
+          pm2 reload literexia-backend
+      endscript
+  }
+
+  Phase 7: Final Testing and Verification
+
+  Step 13: Comprehensive Testing
+
+  # Test all endpoints
+  echo "Testing basic connectivity..."
+  curl http://your-ec2-public-ip/test
+
+  echo "Testing API..."
+  curl http://your-ec2-public-ip/api/test
+
+  # Check logs
+  pm2 logs literexia-backend --lines 20
+
+  # Check system resources
+  htop
+
+  Phase 8: Maintenance Scripts
+
+  Step 14: Create Useful Scripts
+
+  Deployment Script:
+  nano /home/ubuntu/deploy.sh
+
+  #!/bin/bash
+  # Literexia Backend Deployment Script
+
+  echo "Starting deployment..."
+  cd /var/www/literexia
+
+  # Pull latest changes
+  git pull origin main
+
+  # Navigate to backend
+  cd backend
+
+  # Install dependencies
+  npm install
+
+  # Restart application
+  pm2 restart literexia-backend
+
+  # Check status
+  pm2 status
+
+  echo "Deployment completed!"
+
+  Backup Script:
+  nano /home/ubuntu/backup.sh
+
+  #!/bin/bash
+  # Literexia Backend Backup Script
+
+  BACKUP_DIR="/home/ubuntu/backups"
+  DATE=$(date +%Y-%m-%d_%H-%M-%S)
+
+  mkdir -p $BACKUP_DIR
+
+  # Backup application
+  tar -czf $BACKUP_DIR/literexia-backend-$DATE.tar.gz /var/www/literexia/backend
+
+  # Backup logs
+  tar -czf $BACKUP_DIR/literexia-logs-$DATE.tar.gz /var/log/literexia
+
+  echo "Backup completed: $BACKUP_DIR/literexia-backend-$DATE.tar.gz"
+
+  # Make scripts executable
+  chmod +x /home/ubuntu/deploy.sh
+  chmod +x /home/ubuntu/backup.sh
+
+  Phase 9: Security Hardening
+
+  Step 15: Additional Security Measures
+
+  # Install fail2ban for SSH protection
+  sudo apt install fail2ban -y
+
+  # Configure firewall
+  sudo ufw enable
+  sudo ufw allow ssh
+  sudo ufw allow 'Nginx Full'
+  sudo ufw allow 5001
+  sudo ufw status
+
+  # Setup automatic security updates
+  sudo apt install unattended-upgrades -y
+  sudo dpkg-reconfigure -plow unattended-upgrades
+
+  Important URLs After Deployment:
+
+  Backend API: http://your-ec2-public-ip/api/test
+  Health Check: http://your-ec2-public-ip/health
+  Security Report: http://your-ec2-public-ip/api/security/report
+  Test Endpoint: http://your-ec2-public-ip/test
+
+  Common Commands for Management:
+
+  # PM2 Management
+  pm2 status                    # Check status
+  pm2 logs literexia-backend   # View logs
+  pm2 restart literexia-backend # Restart app
+  pm2 reload literexia-backend  # Reload with zero downtime
+
+  # Nginx Management
+  sudo systemctl status nginx   # Check status
+  sudo systemctl restart nginx  # Restart Nginx
+  sudo nginx -t                 # Test configuration
+
+  # System Monitoring
+  ./monitor.sh                  # Run monitoring script
+  htop                         # System resources
+  df -h                        # Disk usage
+
+  Troubleshooting Common Issues:
+
+  1. Application won't start:
+  pm2 logs literexia-backend
+  cd /var/www/literexia/backend && npm start
+  2. Nginx 502 errors:
+  sudo nginx -t
+  pm2 status
+  curl http://localhost:5001/test
+  3. Database connection issues:
+  # Check environment variables
+  cat /var/www/literexia/backend/.env | grep MONGO_URI
+
+  Your LITEREXIA backend is now deployed on AWS EC2 with production-grade setup including     
+  process management, reverse proxy, monitoring, and security measures!
