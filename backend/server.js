@@ -1260,7 +1260,7 @@ app.use(secureErrorHandler);
 
 // Start the server
 app.listen(PORT, async () => {
-  console.log(`\n✅ Server is running on port ${PORT}`);
+  console.log(`\n✅ Server is running on port ${PORT} - Data Integrity Fixes Applied`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`API URL: http://localhost:${PORT}`);
 
@@ -1274,7 +1274,9 @@ app.listen(PORT, async () => {
     console.warn('⚠️ Could not run automatic data fix:', error.message);
   }
 
-  // Run complete automatic progression validation
+  // ❌ DISABLED: Run complete automatic progression validation
+  // DISABLED: This was causing automatic progression without teacher approval
+  /*
   try {
     const AutomaticProgressionValidationService = require('./services/AutomaticProgressionValidationService');
     console.log('🔄 Starting automatic progression validation...');
@@ -1283,6 +1285,8 @@ app.listen(PORT, async () => {
   } catch (error) {
     console.warn('⚠️ Could not run automatic progression validation:', error.message);
   }
+  */
+  console.log('⚠️ AUTOMATIC PROGRESSION DISABLED - Teacher-triggered only via IEP dashboard');
 
   // Start automatic processing of complete assessments
   try {
@@ -1359,5 +1363,27 @@ app.listen(PORT, async () => {
     console.log('🎯 Category results fix service auto-started - will check and fix category statistics every 5 minutes');
   } catch (error) {
     console.warn('⚠️ Could not start category results fix service:', error.message);
+  }
+
+  // Start automatic data processor (generates missing category_results)
+  try {
+    const AutomaticDataProcessor = require('./services/AutomaticDataProcessor');
+
+    console.log('🤖 Starting automatic data processing...');
+    await AutomaticDataProcessor.initializeAutoProcessing();
+    console.log('✅ Automatic data processor initialized - will process missing category_results');
+  } catch (error) {
+    console.warn('⚠️ Could not start automatic data processor:', error.message);
+  }
+
+  // Start automatic IEP report generator
+  try {
+    const AutomaticIEPReportGenerator = require('./services/AutomaticIEPReportGenerator');
+
+    console.log('📋 Starting automatic IEP report generation...');
+    await AutomaticIEPReportGenerator.initializeAutoGeneration();
+    console.log('✅ Automatic IEP report generator initialized - will generate IEP reports from assessments and interventions');
+  } catch (error) {
+    console.warn('⚠️ Could not start automatic IEP report generator:', error.message);
   }
 });

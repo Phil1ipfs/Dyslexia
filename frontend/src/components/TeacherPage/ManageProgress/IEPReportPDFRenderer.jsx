@@ -397,191 +397,10 @@ const IEPReportPDFRenderer = ({ iepData }) => {
     return 'Student Name Not Available';
   };
 
-  // Generate comprehensive summary based on reading level and performance
-  const generateComprehensiveSummary = () => {
-    const objectives = iepData.objectives || [];
-    const readingLevel = iepData.readingLevel || 'At Grade Level';
-    const studentName = getStudentName();
-
-    // Debug: Log the actual objectives data
-    console.log('PDF Renderer - Raw objectives data:', objectives);
-    console.log('PDF Renderer - Reading level:', readingLevel);
-    console.log('PDF Renderer - Student name:', studentName);
-
-    objectives.forEach((obj, idx) => {
-      console.log(`PDF Renderer - Objective ${idx}:`, {
-        category: obj.categoryName,
-        assessmentScore: obj.assessmentScore,
-        score: obj.score,
-        latestInterventionScore: obj.latestInterventionScore,
-        interventionImprovement: obj.interventionImprovement,
-        interventionAttempts: obj.interventionAttempts,
-        isPassed: obj.isPassed,
-        latestInterventionPassed: obj.latestInterventionPassed
-      });
-    });
-
-    // Calculate performance metrics
-    const passedCount = objectives.filter(obj => obj.latestInterventionPassed || obj.isPassed).length;
-    const totalCount = objectives.length;
-    const totalInterventionAttempts = objectives.reduce((sum, obj) => sum + (obj.interventionAttempts || obj.interventionHistory?.length || 0), 0);
-    
-    // Reading level descriptions based on CLAUDE.md
-    const readingLevelDescriptions = {
-      'Low Emerging': {
-        title: 'Learning the Alphabet',
-        description: 'Foundational letter recognition skills',
-        focus: 'Can you recognize letters A, B, C...?',
-        categories: ['Alphabet Knowledge']
-      },
-      'High Emerging': {
-        title: 'Letters + Sounds',
-        description: 'Letter recognition with basic sound awareness',
-        focus: 'Letters + Can you hear the difference between "B" and "P"?',
-        categories: ['Alphabet Knowledge', 'Phonological Awareness']
-      },
-      'Developing': {
-        title: 'Building Words',
-        description: 'Phonetic decoding and word building skills',
-        focus: 'Previous + Can you sound out "C-A-T" = "cat"?',
-        categories: ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding']
-      },
-      'Transitioning': {
-        title: 'Recognizing Words',
-        description: 'Automatic word recognition and fluency',
-        focus: 'Previous + Can you recognize "cat" without sounding it out?',
-        categories: ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition']
-      },
-      'At Grade Level': {
-        title: 'Understanding Stories',
-        description: 'Complete reading comprehension and analysis',
-        focus: 'Previous + Can you understand what you read?',
-        categories: ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension']
-      }
-    };
-
-    const levelInfo = readingLevelDescriptions[readingLevel] || readingLevelDescriptions['At Grade Level'];
-
-    // Generate detailed performance analysis
-    const performanceAnalysis = objectives.map(obj => {
-      const categoryName = obj.categoryName;
-      const initialScore = Math.round(obj.assessmentScore || obj.score || 0);
-
-      // Calculate realistic final score based on actual data - NO 100% JUMPS
-      let finalScore = initialScore;
-
-      if (obj.latestInterventionScore && obj.latestInterventionScore > 0 && obj.latestInterventionScore <= 100) {
-        // Use actual intervention score if available and realistic
-        finalScore = Math.round(obj.latestInterventionScore);
-      } else if (obj.interventionImprovement && obj.interventionImprovement > 0) {
-        // Use calculated improvement
-        finalScore = Math.min(95, Math.round(initialScore + obj.interventionImprovement));
-      } else if (obj.isPassed || obj.latestInterventionPassed) {
-        // If passed but no specific score, assume reasonable improvement to passing level
-        const minPassingScore = 75;
-        const reasonableImprovement = Math.min(35, minPassingScore - initialScore); // Max 35% improvement
-        finalScore = Math.max(minPassingScore, initialScore + reasonableImprovement);
-      }
-
-      // Ensure final score is realistic (never jump more than 50% unless there's data to support it)
-      const maxReasonableImprovement = 50;
-      if (finalScore - initialScore > maxReasonableImprovement && !obj.latestInterventionScore) {
-        finalScore = initialScore + maxReasonableImprovement;
-      }
-
-      // Calculate realistic improvement
-      const improvement = Math.max(0, finalScore - initialScore);
-      const attempts = Math.max(0, obj.interventionAttempts || obj.interventionHistory?.length || 0);
-      const isMastered = obj.latestInterventionPassed || obj.isPassed || finalScore >= 75;
-      
-      // Category-specific analysis based on CLAUDE.md
-      const categoryDescriptions = {
-        'Alphabet Knowledge': {
-          skill: 'letter recognition and letter-sound correspondence',
-          importance: 'foundational skill for all reading development'
-        },
-        'Phonological Awareness': {
-          skill: 'sound discrimination and phonemic awareness',
-          importance: 'critical for developing decoding abilities'
-        },
-        'Decoding': {
-          skill: 'phonetic word reading and structural analysis',
-          importance: 'essential for reading unfamiliar words'
-        },
-        'Word Recognition': {
-          skill: 'automatic sight word recognition and context clues',
-          importance: 'enables reading fluency and comprehension'
-        },
-        'Reading Comprehension': {
-          skill: 'literal and inferential understanding of text',
-          importance: 'ultimate goal of reading instruction'
-        }
-      };
-
-      const catInfo = categoryDescriptions[categoryName] || { skill: 'reading skills', importance: 'important for reading development' };
-
-    return {
-        category: categoryName,
-        initialScore,
-        finalScore,
-        improvement,
-        attempts,
-        isMastered,
-        skill: catInfo.skill,
-        importance: catInfo.importance
-      };
-    });
-
-    const summaryData = {
-      readingLevel: {
-        level: readingLevel,
-        title: levelInfo.title,
-        description: levelInfo.description,
-        focus: levelInfo.focus,
-        categories: levelInfo.categories
-      },
-
-      // DYNAMIC achievement description based on actual reading level
-      achievement: `${studentName} is currently working at the "${readingLevel}" level (${levelInfo.title}), demonstrating ${passedCount === totalCount ? 'complete mastery' : 'progress'} across ${passedCount} of ${totalCount} ${readingLevel.toLowerCase()} literacy domains. This level focuses on ${levelInfo.focus.toLowerCase()}.`,
-
-      // DYNAMIC initial assessment description based on actual categories
-      performanceOverview: `The student's initial assessment at the ${readingLevel} level revealed varying proficiency across the ${totalCount} required domains: ${performanceAnalysis.map(p => `${p.category} (${p.initialScore}%)`).join(', ')}. ${totalInterventionAttempts > 0 ? 'These scores identified specific areas requiring targeted intervention support.' : 'Performance was sufficient for this reading level.'}`,
-
-      // DYNAMIC intervention journey based on actual attempts
-      interventionJourney: totalInterventionAttempts > 0
-        ? `${studentName} completed ${totalInterventionAttempts} intervention attempts across ${performanceAnalysis.filter(p => p.attempts > 0).length} categories. Intervention sequence: ${performanceAnalysis.filter(p => p.attempts > 0).map(p => `${p.category} (${p.attempts} attempts)`).join(', ')}.`
-        : `${studentName} achieved satisfactory performance on initial assessment without requiring intervention support.`,
-
-      // DYNAMIC mastery achievement based on actual improvement
-      detailedAnalysis: `${studentName} ${passedCount === totalCount ? 'successfully mastered' : `made progress in ${passedCount} of ${totalCount}`} ${readingLevel.toLowerCase()} reading categories${performanceAnalysis.some(p => p.improvement > 0) ? `, with an average improvement of ${Math.round(performanceAnalysis.reduce((sum, p) => sum + p.improvement, 0) / performanceAnalysis.length)}% across intervention categories` : ''}. ${passedCount === totalCount ? 'All required skills for this level have been demonstrated.' : `Additional work needed in ${totalCount - passedCount} categories.`}`,
-
-      // DYNAMIC next steps based on reading level and performance
-      nextSteps: (() => {
-        if (passedCount === totalCount) {
-          if (readingLevel === 'At Grade Level') {
-            return `Maximum reading level achieved. ${studentName} demonstrates mastery of all fundamental literacy skills and is ready for grade-level reading materials, independent reading, and continued academic advancement.`;
-          } else {
-            return `${readingLevel} level completed successfully. ${studentName} is ready to progress to the next reading level with more advanced literacy skills.`;
-          }
-        } else {
-          const failedCategories = performanceAnalysis.filter(p => !p.isMastered).map(p => p.category);
-          return `Continued intervention support recommended for: ${failedCategories.join(', ')}. Focus on mastering these ${readingLevel.toLowerCase()} level skills before progressing.`;
-        }
-      })()
-    };
-
-    // Debug: Log the generated summary to verify it's professional format
-    console.log('PDF Renderer - Generated Professional Summary:');
-    console.log('  Achievement:', summaryData.achievement);
-    console.log('  Performance Overview:', summaryData.performanceOverview);
-    console.log('  Intervention Journey:', summaryData.interventionJourney);
-    console.log('  Detailed Analysis:', summaryData.detailedAnalysis);
-    console.log('  Next Steps:', summaryData.nextSteps);
-
-    return summaryData;
-  };
-
-  const summary = generateComprehensiveSummary();
+  // Debug: Log the data being processed
+  console.log('PDF Renderer - Raw objectives data:', iepData.objectives);
+  console.log('PDF Renderer - Reading level:', iepData.readingLevel);
+  console.log('PDF Renderer - Student name:', getStudentName());
 
   return (
     <Document>
@@ -638,10 +457,92 @@ const IEPReportPDFRenderer = ({ iepData }) => {
           <Text>STUDENT PERFORMANCE SUMMARY</Text>
         </View>
 
-        {/* Comprehensive Summary Paragraph */}
+        {/* Comprehensive Summary - Same Logic as React Component */}
         <View style={styles.summaryParagraph}>
           <Text>
-            {getStudentName()} is currently working at the "{summary.readingLevel.level}" level ({summary.readingLevel.title}), demonstrating {summary.achievement.toLowerCase()}. {summary.performanceOverview} {summary.interventionJourney} {summary.detailedAnalysis} {summary.nextSteps}
+            {(() => {
+              if (!iepData?.objectives || iepData.objectives.length === 0) {
+                return `${getStudentName()} requires comprehensive assessment data to establish baseline performance and intervention needs.`;
+              }
+
+              const studentName = getStudentName();
+              const currentIepData = iepData;
+
+              // Calculate performance metrics for more detailed analysis
+              const averageScore = currentIepData.objectives.reduce((sum, obj) => sum + (obj.assessmentScore || obj.score || 0), 0) / currentIepData.objectives.length;
+              const performanceRange = Math.round(averageScore);
+
+              const availableCategories = currentIepData.objectives.map(obj => obj.categoryName);
+              // Check mastery considering both initial assessment AND intervention success
+              const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed || obj.latestInterventionPassed);
+              const allPassed = passedCategories.length === availableCategories.length && availableCategories.length > 0;
+
+              // Reading Level Achievement Summary
+              let summary = `Reading Level Achievement: ${studentName} is currently functioning at the ${currentIepData?.readingLevel || 'Not Assessed'} reading level`;
+
+              if (allPassed) {
+                summary += `, demonstrating complete mastery across all ${availableCategories.length} assessed literacy domain${availableCategories.length > 1 ? 's' : ''}: ${availableCategories.join(', ')}. With an average performance of ${performanceRange}%, this achievement reflects strong foundational reading skills and readiness for advancement to the next developmental reading level.`;
+              } else {
+                // Check for domains that still need work (failed both initial AND intervention)
+                const pendingCategories = currentIepData.objectives.filter(obj => !obj.isPassed && !obj.latestInterventionPassed);
+                const pendingCategoryNames = pendingCategories.map(obj => obj.categoryName);
+                const pendingScores = pendingCategories.map(obj => `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`);
+
+                summary += `, requiring targeted development in ${pendingCategoryNames.length} critical literacy domain${pendingCategoryNames.length > 1 ? 's' : ''}: ${pendingScores.join(', ')}. Current performance indicates specific skill gaps that benefit from systematic intervention approaches. The average assessment performance of ${performanceRange}% suggests ${performanceRange >= 50 ? 'emerging competencies that can be strengthened' : 'foundational skills requiring intensive support'} through evidence-based instructional strategies.`;
+              }
+
+              // Initial Assessment Performance
+              const performanceDetails = currentIepData.objectives.map(obj => {
+                const score = obj.assessmentScore || obj.score || 0;
+                const questionData = obj.totalQuestions ? ` (${obj.correctAnswers || 0}/${obj.totalQuestions} questions correct)` : '';
+                return `${obj.categoryName}: ${score}%${questionData}`;
+              });
+
+              const failedCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+
+              summary += ` Initial Assessment Performance: The comprehensive initial assessment revealed the following detailed performance profile: ${performanceDetails.join('; ')}.`;
+
+              if (failedCategories.length > 0) {
+                const interventionCategoriesDetails = failedCategories.map(obj => {
+                  const score = obj.assessmentScore || obj.score || 0;
+                  if (score < 25) return `${obj.categoryName} (significant challenge at ${score}%)`;
+                  else if (score < 50) return `${obj.categoryName} (moderate difficulty at ${score}%)`;
+                  else return `${obj.categoryName} (approaching proficiency at ${score}%)`;
+                });
+
+                summary += ` Assessment results indicate ${failedCategories.length} domain${failedCategories.length > 1 ? 's' : ''} requiring intervention: ${interventionCategoriesDetails.join(', ')}.`;
+              }
+
+              // Add concise intervention and status summary
+              const totalAttempts = currentIepData.objectives.reduce((total, obj) => total + (obj.interventionAttempts || 0), 0);
+              const categoriesWithInterventions = currentIepData.objectives.filter(obj => obj.hasIntervention && obj.interventionAttempts > 0);
+
+              if (totalAttempts > 0) {
+                const interventionDetails = categoriesWithInterventions.map(obj => {
+                  const improvementData = obj.interventionImprovement !== undefined ? ` with ${obj.interventionImprovement >= 0 ? '+' : ''}${obj.interventionImprovement}% improvement` : '';
+                  const latestScore = obj.latestInterventionScore ? ` (latest: ${obj.latestInterventionScore}%)` : '';
+                  return `${obj.categoryName} (${obj.interventionAttempts} attempt${obj.interventionAttempts > 1 ? 's' : ''}${improvementData}${latestScore})`;
+                });
+
+                const successfulInterventions = categoriesWithInterventions.filter(obj => obj.latestInterventionPassed);
+
+                summary += ` Intervention Progress: ${studentName} has actively engaged in ${totalAttempts} intervention session${totalAttempts > 1 ? 's' : ''} across ${categoriesWithInterventions.length} literacy domain${categoriesWithInterventions.length > 1 ? 's' : ''}: ${interventionDetails.join('; ')}.`;
+
+                if (successfulInterventions.length > 0) {
+                  summary += ` Successfully achieved mastery in ${successfulInterventions.length} domain${successfulInterventions.length > 1 ? 's' : ''} (${successfulInterventions.map(obj => obj.categoryName).join(', ')}).`;
+                }
+              }
+
+              // Add current status (considering both initial assessment AND intervention success)
+              if (allPassed) {
+                summary += ` Current Status: Complete mastery achieved - ready for reading level advancement.`;
+              } else {
+                const needingWork = currentIepData.objectives.filter(obj => !obj.isPassed && !obj.latestInterventionPassed);
+                summary += ` Current Status: ${needingWork.length} domain${needingWork.length > 1 ? 's' : ''} requiring continued intervention support.`;
+              }
+
+              return summary;
+            })()}
           </Text>
         </View>
       </Page>

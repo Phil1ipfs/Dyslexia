@@ -99,11 +99,22 @@ router.post('/test-intervention-score/:studentId/:category', async (req, res) =>
 
     // Apply the intervention fix
     const mongoose = require('mongoose');
+
+    // Use the actual existing intervention result ID for student 202533333
+    let actualInterventionResultId;
+    if (parseInt(studentId) === 202533333 && category === 'Phonological Awareness') {
+      // Use the existing intervention result ID that has an intervention assessment
+      actualInterventionResultId = new mongoose.Types.ObjectId('68d85df47794011dd9b3532e');
+      console.log(`[INTERVENTION SCORE TEST] Using actual intervention result ID: ${actualInterventionResultId}`);
+    } else {
+      actualInterventionResultId = new mongoose.Types.ObjectId(); // Mock for other tests
+    }
+
     const result = await CategoryResultsService.updateCategoryFromIntervention(
       parseInt(studentId),
       category,
       interventionScore || 100, // Default to 100% if not provided
-      new mongoose.Types.ObjectId(), // Mock intervention result ID
+      actualInterventionResultId, // Use actual intervention result ID when available
       readingLevel // 🎯 FIX: Pass reading level to prevent cross-level contamination
     );
 
@@ -177,9 +188,12 @@ router.post('/fix-student-intervention-scores/:studentId', async (req, res) => {
             if (highestInterventionScore > originalScore) {
               console.log(`[INTERVENTION SCORE FIX] 🔄 Updating ${category.categoryName}: ${originalScore}% → ${highestInterventionScore}% (intervention score)`);
 
-              // Update category score and status
-              categoryResult.categories[i].score = highestInterventionScore;
-              categoryResult.categories[i].isPassed = true;
+              // 🔒 PRESERVE ORIGINAL DATA - Update intervention status only
+              console.log(`[INTERVENTION FIX] 🔒 PRESERVING original assessment: score=${categoryResult.categories[i].score}%, isPassed=${categoryResult.categories[i].isPassed}`);
+              console.log(`[INTERVENTION FIX] ✅ Intervention success (${highestInterventionScore}%) tracked in history only`);
+
+              // ❌ REMOVED: categoryResult.categories[i].score = highestInterventionScore;  // PRESERVE original score
+              // ❌ REMOVED: categoryResult.categories[i].isPassed = true;  // PRESERVE original isPassed
               categoryResult.categories[i].interventionCompleted = true;
               categoryResult.categories[i].interventionRequired = false;
 
@@ -234,6 +248,70 @@ router.post('/fix-student-intervention-scores/:studentId', async (req, res) => {
 
   } catch (error) {
     console.error('[INTERVENTION SCORE FIX] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Route to clean up cross-level contamination for specific student
+ * ✅ NEW: Removes intervention attempts that were incorrectly saved to wrong reading level records
+ */
+router.post('/cleanup-contamination/:studentId', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    console.log(`[CONTAMINATION CLEANUP API] Manual contamination cleanup triggered for student ${studentId}`);
+    const result = await CategoryResultsService.cleanupCrossLevelContamination(parseInt(studentId));
+    res.json(result);
+  } catch (error) {
+    console.error('[CONTAMINATION CLEANUP API] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Route to clean up cross-level contamination for ALL students
+ * ✅ NEW: Removes intervention attempts that were incorrectly saved to wrong reading level records
+ */
+router.post('/cleanup-contamination-all', async (req, res) => {
+  try {
+    console.log(`[CONTAMINATION CLEANUP API] Manual contamination cleanup triggered for ALL students`);
+
+    const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
+    const User = require('../../models/userModel');
+
+    // Get all students with valid reading levels
+    const allStudents = await User.find({
+      readingLevel: { $in: ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'] }
+    });
+
+    let totalCleanupActions = 0;
+    let cleanedStudents = 0;
+    let results = [];
+
+    for (const student of allStudents) {
+      const cleanupResult = await CategoryResultsService.cleanupCrossLevelContamination(student.idNumber);
+
+      if (cleanupResult.success && cleanupResult.cleanupActions.length > 0) {
+        cleanedStudents++;
+        totalCleanupActions += cleanupResult.cleanupActions.length;
+        results.push({
+          studentId: student.idNumber,
+          cleanupActions: cleanupResult.cleanupActions.length,
+          details: cleanupResult.cleanupActions
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Contamination cleanup completed for all students`,
+      studentsChecked: allStudents.length,
+      studentsWithContamination: cleanedStudents,
+      totalCleanupActions: totalCleanupActions,
+      cleanupResults: results
+    });
+  } catch (error) {
+    console.error('[CONTAMINATION CLEANUP API] Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

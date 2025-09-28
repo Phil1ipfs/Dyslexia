@@ -41,6 +41,8 @@ import {
 import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
 import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
 import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
+import AuthService from '../../../services/authService';
+import { API_BASE_URL } from '../../../services/config';
 import { pdf } from '@react-pdf/renderer';
 import IEPReportPDFRenderer from './IEPReportPDFRenderer';
 import { toast } from '../../../utils/toastHelper';
@@ -94,6 +96,9 @@ const IEPReport = ({
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 2;
   
+  // Reading level progression confirmation dialog state
+  const [showProgressionDialog, setShowProgressionDialog] = useState(false);
+  
   // Teacher profile state
   const [teacherProfile, setTeacherProfile] = useState(null);
 
@@ -102,15 +107,31 @@ const IEPReport = ({
 
   // Get student name
   const getStudentName = () => {
+    // Debug logging to see what data we have
+    console.log('getStudentName debug:', {
+      currentIepData_studentId: currentIepData?.studentId,
+      student: student,
+      student_firstName: student?.firstName,
+      student_lastName: student?.lastName,
+      student_name: student?.name
+    });
+
     if (currentIepData?.studentId?.firstName && currentIepData?.studentId?.lastName) {
       return `${currentIepData.studentId.firstName} ${currentIepData.studentId.lastName}`;
     } else if (student?.firstName && student?.lastName) {
       return `${student.firstName} ${student.lastName}`;
     } else if (student?.name) {
       return student.name;
-    } else {
-      return 'Student';
+    } else if (student?.idNumber && window.studentsGlobalCache) {
+      // Try to find student in global cache by ID number
+      const cachedStudent = window.studentsGlobalCache.find(s => s.idNumber === student.idNumber);
+      if (cachedStudent?.firstName && cachedStudent?.lastName) {
+        return `${cachedStudent.firstName} ${cachedStudent.lastName}`;
+      }
     }
+
+    console.warn('No student name found, using fallback');
+    return 'Student';
   };
 
   // Get parent name for display
@@ -156,6 +177,22 @@ const IEPReport = ({
     }
 
     return 'Parent';
+  };
+
+  // Get teacher name
+  const getTeacherName = () => {
+    try {
+      if (teacherProfile?.firstName && teacherProfile?.lastName) {
+        return `${teacherProfile.firstName} ${teacherProfile.lastName}`;
+      } else if (teacherProfile?.name) {
+        return teacherProfile.name;
+      } else {
+        return 'Teacher';
+      }
+    } catch (error) {
+      console.error('Error getting teacher name:', error);
+      return 'Teacher';
+    }
   };
 
   // Refs for PDF generation
@@ -490,13 +527,25 @@ const IEPReport = ({
       setError(null);
       
       const studentId = student?.id || student?._id;
-      console.log('Loading IEP data for student:', studentId);
-      
-      const response = await IEPService.getIEPReport(studentId);
+      const currentReadingLevel = student?.readingLevel;
+
+      console.log('Loading IEP data for student:', studentId, 'Reading Level:', currentReadingLevel);
+
+      // ✅ CRITICAL FIX: Pass current reading level to get correct IEP
+      const response = await IEPService.getIEPReport(studentId, null, currentReadingLevel);
       
       if (response.success && response.data) {
         console.log('Setting IEP data:', response.data);
         console.log('About to call setIepData...');
+
+        // ✅ VALIDATION: Ensure IEP data matches current student reading level
+        const iepReadingLevel = response.data.readingLevel;
+        if (currentReadingLevel && iepReadingLevel !== currentReadingLevel) {
+          console.warn(`⚠️ IEP reading level mismatch: Expected ${currentReadingLevel}, Got ${iepReadingLevel}`);
+          // Still proceed but log the mismatch for debugging
+        } else {
+          console.log(`✅ IEP reading level validation passed: ${iepReadingLevel}`);
+        }
         
 
           // Use direct state setters with immediate verification
@@ -1270,6 +1319,135 @@ const IEPReport = ({
     }
   };
 
+  // Handler for reading level progression
+  const handleReadingLevelProgression = async () => {
+    if (!canProgressToNextLevel()) {
+      toast.error('Student must complete all categories before progressing to the next reading level');
+      return;
+    }
+
+    // Show custom confirmation dialog
+    setShowProgressionDialog(true);
+  };
+
+  // Confirm reading level progression
+  const confirmReadingLevelProgression = async () => {
+    try {
+      setSaving(true);
+      setShowProgressionDialog(false);
+      toast.loading('Progressing student to next reading level...');
+
+      const token = AuthService.getToken();
+      const response = await fetch(`${API_BASE_URL}api/iep/student/${student.idNumber}/reading-level-progression`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(`Student successfully progressed to ${result.data?.newReadingLevel || 'next level'}!`);
+
+        // ✅ COMPREHENSIVE STATE REFRESH after reading level progression
+        console.log('🔄 Starting comprehensive state refresh after progression...');
+
+        // 1. Clear all cached IEP data
+        setIepData(null);
+        setDataLoaded(false);
+
+        // 2. Clear global state to prevent stale data
+        if (window.iepReportGlobalState) {
+          window.iepReportGlobalState.iepData = null;
+          window.iepReportGlobalState.dataLoaded = false;
+        }
+
+        // 3. Reset loaded student reference to force fresh load
+        if (loadedStudentRef?.current) {
+          loadedStudentRef.current = null;
+        }
+
+        // 4. Notify parent component about progression (refresh student data)
+        if (onDataUpdate && result.data) {
+          console.log('🔄 Notifying parent component of progression...');
+          onDataUpdate(result.data);
+        }
+
+        // 5. Force component re-render with fresh data after slight delay
+        setTimeout(() => {
+          console.log('🔄 Forcing fresh IEP data load with new reading level...');
+          setForceUpdate(prev => prev + 1); // Trigger force update
+          loadIEPData(); // Load data with refreshed student info
+        }, 1500); // Increased delay to ensure backend has processed
+
+        // 6. ✅ ENHANCED: Force complete page refresh to ensure UI updates properly
+        setTimeout(() => {
+          console.log('🔄 Forcing complete page refresh to ensure UI reflects new reading level...');
+          // Option 1: Force window reload to ensure complete UI refresh
+          window.location.reload();
+
+          // Option 2: Alternative - force navigation refresh (if using React Router)
+          // window.location.href = window.location.href;
+        }, 2500); // Additional delay to allow component state updates first
+      } else {
+        throw new Error(result.error || 'Failed to progress reading level');
+      }
+    } catch (error) {
+      console.error('Error progressing reading level:', error);
+      toast.error(`Failed to progress reading level: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Cancel reading level progression
+  const cancelReadingLevelProgression = () => {
+    setShowProgressionDialog(false);
+  };
+
+
+  // Get the next reading level
+  const getNextReadingLevel = () => {
+    if (!currentIepData?.readingLevel) {
+      console.warn('getNextReadingLevel: No current reading level found');
+      return null;
+    }
+
+    const levels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+    const currentIndex = levels.indexOf(currentIepData.readingLevel);
+
+    console.log('getNextReadingLevel debug:', {
+      currentReadingLevel: currentIepData.readingLevel,
+      currentIndex: currentIndex,
+      levels: levels,
+      nextLevel: currentIndex >= 0 && currentIndex < levels.length - 1 ? levels[currentIndex + 1] : null
+    });
+
+    if (currentIndex >= 0 && currentIndex < levels.length - 1) {
+      return levels[currentIndex + 1];
+    }
+
+    return null;
+  };
+
+  // Check if student can progress to next reading level
+  const canProgressToNextLevel = () => {
+    if (!currentIepData?.objectives) return false;
+
+    // Check if all categories are completed and passed
+    const allObjectives = currentIepData.objectives;
+    const completedAndPassed = allObjectives.every(obj =>
+      obj.isCompleted && (obj.isPassed || obj.latestInterventionPassed)
+    );
+
+    // Check if there's a next level available
+    const hasNextLevel = getNextReadingLevel() !== null;
+
+    return completedAndPassed && hasNextLevel;
+  };
+
   // Render parent image with proper fallback (from StudentDetails.jsx)
   const renderParentImage = () => {
     if (parentProfile && parentProfile.profileImageUrl) {
@@ -1358,7 +1536,7 @@ const IEPReport = ({
               <div className="literexia-intervention-basic">
                 <div className="literexia-attempts-info">
                   <span className="literexia-attempts-count">
-                    {objective.interventionAttempts || 0} attempt{(objective.interventionAttempts || 0) !== 1 ? 's' : ''}
+                    {objective.interventionHistory?.length || objective.interventionAttempts || 0} attempt{(objective.interventionHistory?.length || objective.interventionAttempts || 0) !== 1 ? 's' : ''}
                   </span>
                   <span className={`literexia-latest-score ${objective.latestInterventionPassed ? 'passed' : 'failed'}`}>
                     Latest: {latestScore}%
@@ -1641,21 +1819,6 @@ const IEPReport = ({
   };
 
 
-  // Get teacher name
-  const getTeacherName = () => {
-    try {
-      if (teacherProfile?.firstName && teacherProfile?.lastName) {
-        return `${teacherProfile.firstName} ${teacherProfile.lastName}`;
-      } else if (teacherProfile?.name) {
-        return teacherProfile.name;
-    } else {
-        return 'Teacher';
-      }
-    } catch (error) {
-      console.error('Error getting teacher name:', error);
-      return 'Teacher';
-    }
-  };
 
 
   // Get parent email
@@ -1728,8 +1891,16 @@ const IEPReport = ({
             <FaBook />
           </div>
           <div className="literexia-summary-content">
-            <span className="literexia-summary-label">Reading Level</span>
-            <span className="literexia-summary-value">{currentIepData.readingLevel || 'Not Assessed'}</span>
+            <span className="literexia-summary-label">Current Reading Level</span>
+            <span className="literexia-summary-value">
+              {currentIepData.readingLevel || 'Not Assessed'}
+              {currentIepData.readingLevel && (
+                <span className="literexia-current-level-badge">
+                  <FaCheckCircle style={{ marginLeft: '8px', color: '#28a745', fontSize: '14px' }} />
+                  Current
+                </span>
+              )}
+            </span>
           </div>
         </div>
         
@@ -1754,8 +1925,54 @@ const IEPReport = ({
         </div>
       </div>
 
+      {/* Student Progress Actions */}
+      <div className="literexia-progress-actions">
+        <div className="literexia-actions-header">
+          <h3>
+            <FaUserGraduate />
+            Student Progress Actions
+          </h3>
+          <p>Manage student reading level progression</p>
+        </div>
 
-      
+        <div className="literexia-action-buttons">
+          {/* Button 1: Reading Level Progression */}
+          <div className="literexia-action-item">
+            <div className="literexia-action-info">
+              <div className="literexia-action-title">
+                <FaArrowUp className="literexia-action-icon" />
+                Reading Level Progression
+              </div>
+              <div className="literexia-action-description">
+                Progress student to next reading level when all categories are completed and passed
+              </div>
+            </div>
+            <button
+              className="literexia-action-button progression"
+              onClick={handleReadingLevelProgression}
+              disabled={!canProgressToNextLevel() || saving}
+              title={
+                canProgressToNextLevel()
+                  ? "Progress to next reading level"
+                  : !getNextReadingLevel()
+                    ? "Student is already at maximum reading level"
+                    : "Student must complete all categories first"
+              }
+            >
+              {saving ? <FaSpinner className="spinning" /> : <FaArrowUp />}
+              {canProgressToNextLevel()
+                ? 'Progress to Next Level'
+                : !getNextReadingLevel()
+                  ? 'Maximum Level Reached'
+                  : 'Not Ready for Progression'
+              }
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+
       {/* Table section */}
       <div className="literexia-iep-table-container">
         <div className="literexia-iep-table-header">
@@ -1902,7 +2119,7 @@ const IEPReport = ({
                                 <div className="iep-intervention-info">
                                   <div className="iep-intervention-stats">
                                     <div className="iep-attempts-badge">
-                                      {objective.interventionAttempts || 0} attempts
+                                      {objective.interventionHistory?.length || objective.interventionAttempts || 0} attempts
                                     </div>
                                     <div className="iep-score-badge">
                                       Latest: {objective.latestInterventionScore || 0}%
@@ -2243,7 +2460,7 @@ const IEPReport = ({
                 <div className="literexia-intervention-stats-modal">
                   <div className="literexia-stat-item-modal">
                     <span className="literexia-stat-label-modal">Total Attempts</span>
-                    <span className="literexia-stat-value-modal">{interventionModal.objective.interventionAttempts || 0}</span>
+                    <span className="literexia-stat-value-modal">{interventionModal.objective.interventionHistory?.length || interventionModal.objective.interventionAttempts || 0}</span>
                   </div>
                   <div className="literexia-stat-item-modal">
                     <span className="literexia-stat-label-modal">Latest Score</span>
@@ -2532,47 +2749,200 @@ const IEPReport = ({
                 <div className="iep-pdf-performance-summary">
                   <div className="iep-pdf-summary-content">
                     <p className="iep-pdf-summary-text">
-                      <strong>Reading Level Achievement:</strong> {getStudentName()} has successfully achieved the <strong>{currentIepData?.readingLevel || 'Not Assessed'}</strong> 
-                      reading level, demonstrating mastery across all five critical literacy domains: Alphabet Knowledge, Phonological Awareness, Decoding, 
-                      Word Recognition, and Reading Comprehension. This achievement reflects complete mastery of the reading development continuum and 
-                      positions the student for continued academic success.
-                    </p>
-                    
-                    <p className="iep-pdf-summary-text">
-                      <strong>Initial Assessment Performance:</strong> The student's initial assessment revealed varying proficiency levels across reading domains: 
-                      Alphabet Knowledge (33%), Phonological Awareness (7%), Decoding (40%), Word Recognition (33%), and Reading Comprehension (20%). 
-                      These scores identified specific skill gaps requiring targeted intervention support across all foundational literacy areas.
-                    </p>
-                    
-                    <p className="iep-pdf-summary-text">
-                      <strong>Intervention Progress:</strong> {getStudentName()} demonstrated exceptional persistence throughout the intervention process, 
-                      completing {currentIepData?.objectives ? currentIepData.objectives.reduce((total, obj) => total + (obj.interventionAttempts || 0), 0) : 0} 
-                      total intervention attempts across all categories. The intervention sequence included: Alphabet Knowledge (3 attempts), Phonological Awareness (2 attempts), 
-                      Decoding (3 attempts), Word Recognition (5 attempts), and Reading Comprehension (9 attempts).
-                    </p>
-                    
-                    <p className="iep-pdf-summary-text">
-                      <strong>Mastery Achievement:</strong> Through systematic intervention implementation, {getStudentName()} achieved complete mastery (100%) 
-                      across all five reading categories, representing an average improvement of 
+                      <strong>Reading Level Achievement:</strong> {getStudentName()} is currently functioning at the <strong>{currentIepData?.readingLevel || 'Not Assessed'}</strong> reading level
                       {(() => {
-                        if (currentIepData?.objectives) {
-                          const improvements = currentIepData.objectives
-                            .filter(obj => obj.hasIntervention && obj.interventionImprovement)
-                            .map(obj => obj.interventionImprovement);
-                          const avgImprovement = improvements.length > 0 ? 
-                            Math.round(improvements.reduce((a, b) => a + b, 0) / improvements.length) : 0;
-                          return avgImprovement;
+                        if (!currentIepData?.objectives) return ', with comprehensive assessment data pending to establish baseline performance and intervention needs.';
+
+                        const availableCategories = currentIepData.objectives.map(obj => obj.categoryName);
+                        const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
+                        const allPassed = passedCategories.length === availableCategories.length && availableCategories.length > 0;
+
+                        // Calculate performance metrics for more detailed analysis
+                        const averageScore = currentIepData.objectives.reduce((sum, obj) => sum + (obj.assessmentScore || obj.score || 0), 0) / currentIepData.objectives.length;
+                        const performanceRange = Math.round(averageScore);
+
+                        if (allPassed) {
+                          return `, demonstrating complete mastery across all ${availableCategories.length} assessed literacy domain${availableCategories.length > 1 ? 's' : ''}: ${availableCategories.join(', ')}. With an average performance of ${performanceRange}%, this achievement reflects strong foundational reading skills and readiness for advancement to the next developmental reading level. The student's consistent performance above the 75% mastery threshold indicates solid understanding of current grade-level expectations.`;
+                        } else {
+                          const pendingCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+                          const pendingCategoryNames = pendingCategories.map(obj => obj.categoryName);
+                          const pendingScores = pendingCategories.map(obj => `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`);
+
+                          return `, requiring targeted development in ${pendingCategoryNames.length} critical literacy domain${pendingCategoryNames.length > 1 ? 's' : ''}: ${pendingScores.join(', ')}. Current performance indicates specific skill gaps that benefit from systematic intervention approaches. The average assessment performance of ${performanceRange}% suggests ${performanceRange >= 50 ? 'emerging competencies that can be strengthened' : 'foundational skills requiring intensive support'} through evidence-based instructional strategies.`;
                         }
-                        return 0;
-                      })()}% across all intervention categories. The student's learning trajectory demonstrates consistent engagement, 
-                      effective problem-solving strategies, and the ability to apply learned skills in various contexts.
+                      })()}
+                    </p>
+
+                    <p className="iep-pdf-summary-text">
+                      <strong>Initial Assessment Performance:</strong> The comprehensive initial assessment administered across multiple literacy domains revealed the following detailed performance profile:
+                      {(() => {
+                        if (!currentIepData?.objectives || currentIepData.objectives.length === 0) {
+                          return ' Assessment data is not yet available and requires completion to establish baseline performance metrics.';
+                        }
+
+                        const performanceDetails = currentIepData.objectives.map(obj => {
+                          const score = obj.assessmentScore || obj.score || 0;
+                          const questionData = obj.totalQuestions ? ` (${obj.correctAnswers || 0}/${obj.totalQuestions} questions correct)` : '';
+                          return `${obj.categoryName}: ${score}%${questionData}`;
+                        });
+
+                        const failedCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+                        const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
+
+                        // Calculate score distribution
+                        const scores = currentIepData.objectives.map(obj => obj.assessmentScore || obj.score || 0);
+                        const highScores = scores.filter(s => s >= 75).length;
+                        const mediumScores = scores.filter(s => s >= 50 && s < 75).length;
+                        const lowScores = scores.filter(s => s < 50).length;
+
+                        let performanceAnalysis = ` ${performanceDetails.join('; ')}.`;
+
+                        if (failedCategories.length > 0) {
+                          const interventionCategoriesDetails = failedCategories.map(obj => {
+                            const score = obj.assessmentScore || obj.score || 0;
+                            if (score < 25) return `${obj.categoryName} (significant challenge at ${score}%)`;
+                            else if (score < 50) return `${obj.categoryName} (moderate difficulty at ${score}%)`;
+                            else return `${obj.categoryName} (approaching proficiency at ${score}%)`;
+                          });
+
+                          performanceAnalysis += ` Assessment results indicate ${failedCategories.length} domain${failedCategories.length > 1 ? 's' : ''} requiring intervention: ${interventionCategoriesDetails.join(', ')}. Performance distribution shows ${highScores} area${highScores !== 1 ? 's' : ''} at mastery level, ${mediumScores} area${mediumScores !== 1 ? 's' : ''} showing emerging skills, and ${lowScores} area${lowScores !== 1 ? 's' : ''} needing intensive support.`;
+                        } else {
+                          performanceAnalysis += ` All ${currentIepData.objectives.length} assessed literacy domain${currentIepData.objectives.length > 1 ? 's' : ''} exceeded the 75% proficiency threshold, demonstrating strong foundational reading competencies and indicating readiness for grade-level academic challenges.`;
+                        }
+
+                        return performanceAnalysis;
+                      })()}
+                    </p>
+
+                    <p className="iep-pdf-summary-text">
+                      <strong>Intervention Progress:</strong> {getStudentName()}
+                      {(() => {
+                        if (!currentIepData?.objectives) return 'has not yet initiated intervention activities, pending completion of baseline assessment protocols.';
+
+                        const totalAttempts = currentIepData.objectives.reduce((total, obj) => total + (obj.interventionAttempts || 0), 0);
+                        const categoriesWithInterventions = currentIepData.objectives.filter(obj => obj.hasIntervention && obj.interventionAttempts > 0);
+
+                        if (totalAttempts === 0) {
+                          const needingIntervention = currentIepData.objectives.filter(obj => !obj.isPassed);
+                          if (needingIntervention.length > 0) {
+                            return `has been identified for intervention support in ${needingIntervention.length} literacy domain${needingIntervention.length > 1 ? 's' : ''}: ${needingIntervention.map(obj => obj.categoryName).join(', ')}. Intervention protocols are pending implementation based on the comprehensive assessment results, with targeted strategies being developed to address specific learning gaps.`;
+                          } else {
+                            return 'has demonstrated proficiency across all assessed domains and does not require intervention support at this time.';
+                          }
+                        }
+
+                        // Detailed intervention analysis
+                        const interventionDetails = categoriesWithInterventions.map(obj => {
+                          const improvementData = obj.interventionImprovement !== undefined ? ` with ${obj.interventionImprovement >= 0 ? '+' : ''}${obj.interventionImprovement}% improvement` : '';
+                          const latestScore = obj.latestInterventionScore ? ` (latest score: ${obj.latestInterventionScore}%)` : '';
+                          return `${obj.categoryName} (${obj.interventionAttempts} attempt${obj.interventionAttempts > 1 ? 's' : ''}${improvementData}${latestScore})`;
+                        });
+
+                        const successfulInterventions = categoriesWithInterventions.filter(obj => obj.latestInterventionPassed);
+                        const unsuccessfulInterventions = categoriesWithInterventions.filter(obj => !obj.latestInterventionPassed);
+
+                        // Calculate overall intervention effectiveness
+                        const totalImprovements = categoriesWithInterventions
+                          .filter(obj => obj.interventionImprovement !== undefined)
+                          .reduce((sum, obj) => sum + obj.interventionImprovement, 0);
+                        const avgImprovement = categoriesWithInterventions.length > 0 ? Math.round(totalImprovements / categoriesWithInterventions.length) : 0;
+
+                        let progressReport = ` has actively engaged in ${totalAttempts} intervention session${totalAttempts > 1 ? 's' : ''} across ${categoriesWithInterventions.length} literacy domain${categoriesWithInterventions.length > 1 ? 's' : ''}: ${interventionDetails.join('; ')}.`;
+
+                        if (successfulInterventions.length > 0) {
+                          progressReport += ` The student successfully achieved mastery in ${successfulInterventions.length} domain${successfulInterventions.length > 1 ? 's' : ''} (${successfulInterventions.map(obj => obj.categoryName).join(', ')}), demonstrating an average improvement of ${avgImprovement}% across intervention areas. This progress indicates strong responsiveness to targeted instructional support and effective skill acquisition through systematic intervention approaches.`;
+
+                          if (unsuccessfulInterventions.length > 0) {
+                            progressReport += ` Continued intervention focus is recommended for ${unsuccessfulInterventions.length} remaining domain${unsuccessfulInterventions.length > 1 ? 's' : ''}: ${unsuccessfulInterventions.map(obj => obj.categoryName).join(', ')}.`;
+                          }
+                        } else {
+                          progressReport += ` While the student has demonstrated commitment to the intervention process with an average improvement of ${avgImprovement}% across attempted domains, mastery thresholds have not yet been achieved. These results suggest the need for adjusted intervention strategies, increased instructional intensity, or alternative pedagogical approaches to better support the student's learning profile and specific needs.`;
+                        }
+
+                        return progressReport;
+                      })()}
                     </p>
                     
                     <p className="iep-pdf-summary-text">
-                      <strong>Current Status:</strong> {getStudentName()} has successfully completed all required reading interventions and demonstrates 
-                      mastery of fundamental literacy skills. The student's achievement indicates strong readiness for grade-level reading materials, 
-                      independent reading, and continued academic advancement. Continued monitoring and enrichment activities are recommended to 
-                      maintain skill proficiency and support ongoing development.
+                      <strong>Mastery Achievement and Learning Trajectory:</strong>
+                      {(() => {
+                        if (!currentIepData?.objectives || currentIepData.objectives.length === 0) {
+                          return `${getStudentName()} has not yet completed comprehensive assessment protocols. Baseline evaluation is required to establish current performance levels and identify individual learning strengths and areas for growth.`;
+                        }
+
+                        const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
+                        const totalCategories = currentIepData.objectives.length;
+                        const masteryPercentage = Math.round((passedCategories.length / totalCategories) * 100);
+
+                        // Calculate detailed improvement metrics
+                        const improvementData = currentIepData.objectives
+                          .filter(obj => obj.hasIntervention && obj.interventionImprovement !== undefined)
+                          .map(obj => obj.interventionImprovement);
+
+                        const avgImprovement = improvementData.length > 0 ?
+                          Math.round(improvementData.reduce((a, b) => a + b, 0) / improvementData.length) : 0;
+
+                        // Analyze learning patterns
+                        const strongDomains = currentIepData.objectives.filter(obj => (obj.assessmentScore || obj.score || 0) >= 75);
+                        const emergingDomains = currentIepData.objectives.filter(obj => (obj.assessmentScore || obj.score || 0) >= 50 && (obj.assessmentScore || obj.score || 0) < 75);
+                        const challengingDomains = currentIepData.objectives.filter(obj => (obj.assessmentScore || obj.score || 0) < 50);
+
+                        // Overall average score
+                        const averageScore = Math.round(currentIepData.objectives.reduce((sum, obj) => sum + (obj.assessmentScore || obj.score || 0), 0) / totalCategories);
+
+                        if (masteryPercentage === 100) {
+                          return `${getStudentName()} has demonstrated exceptional academic achievement through systematic intervention implementation, attaining complete mastery (100%) across all ${totalCategories} assessed literacy domain${totalCategories > 1 ? 's' : ''} with an overall performance average of ${averageScore}%. The intervention effectiveness data shows an average improvement of ${avgImprovement}% across targeted domains, indicating highly successful responsiveness to instructional support. This comprehensive mastery profile demonstrates the student's strong foundational reading competencies, consistent academic engagement, effective learning strategies, and readiness for advanced literacy challenges at the next developmental level.`;
+                        } else if (masteryPercentage >= 75) {
+                          return `${getStudentName()} has achieved substantial academic progress with ${masteryPercentage}% mastery across assessed literacy domains (${passedCategories.length} of ${totalCategories} categories passed) and an overall performance average of ${averageScore}%. Performance analysis reveals strength in ${strongDomains.length} domain${strongDomains.length !== 1 ? 's' : ''}, emerging competencies in ${emergingDomains.length} area${emergingDomains.length !== 1 ? 's' : ''}, and targeted support needs in ${challengingDomains.length} domain${challengingDomains.length !== 1 ? 's' : ''}. The intervention effectiveness data shows an average improvement of ${avgImprovement}% across intervention areas, demonstrating positive educational outcomes and strong potential for achieving complete mastery with continued targeted support.`;
+                        } else if (masteryPercentage > 0) {
+                          return `${getStudentName()} has achieved emerging mastery with ${masteryPercentage}% completion across assessed literacy domains (${passedCategories.length} of ${totalCategories} categories passed) and an overall performance average of ${averageScore}%. Current achievement profile shows ${strongDomains.length} domain${strongDomains.length !== 1 ? 's' : ''} at proficiency level, ${emergingDomains.length} area${emergingDomains.length !== 1 ? 's' : ''} showing developing skills, and ${challengingDomains.length} domain${challengingDomains.length !== 1 ? 's' : ''} requiring intensive support. Intervention data indicates ${avgImprovement >= 0 ? `positive growth trajectory with ${avgImprovement}% average improvement` : 'ongoing challenges requiring strategy revision'}, suggesting the need for enhanced instructional approaches, increased support intensity, and possibly individualized learning accommodations.`;
+                        } else {
+                          const unsuccessfulDomains = currentIepData.objectives.filter(obj => !obj.isPassed).map(obj => obj.categoryName);
+                          return `${getStudentName()} requires comprehensive intervention support across all assessed literacy domains: ${unsuccessfulDomains.join(', ')}. With an overall performance average of ${averageScore}%, current results indicate significant foundational skill gaps that require intensive, individualized instructional approaches. The intervention data suggests ${avgImprovement !== 0 ? `some responsiveness with ${avgImprovement}% change, but` : 'limited responsiveness, indicating the need for'} alternative pedagogical strategies, increased instructional intensity, multi-sensory teaching approaches, and potentially specialized educational services to effectively address the student's unique learning profile and academic needs.`;
+                        }
+                      })()}
+                    </p>
+
+                    <p className="iep-pdf-summary-text">
+                      <strong>Current Academic Status and Recommendations:</strong>
+                      {(() => {
+                        if (!currentIepData?.objectives || currentIepData.objectives.length === 0) {
+                          return `${getStudentName()} requires comprehensive initial assessment to establish current reading competencies, identify learning strengths, and determine appropriate individualized intervention strategies for optimal academic progress.`;
+                        }
+
+                        const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
+                        const totalCategories = currentIepData.objectives.length;
+                        const allPassed = passedCategories.length === totalCategories;
+                        const hasActiveInterventions = currentIepData.objectives.some(obj => obj.hasIntervention && !obj.latestInterventionPassed);
+
+                        // Calculate current performance metrics
+                        const averageScore = Math.round(currentIepData.objectives.reduce((sum, obj) => sum + (obj.assessmentScore || obj.score || 0), 0) / totalCategories);
+                        const masteryPercentage = Math.round((passedCategories.length / totalCategories) * 100);
+
+                        // Determine next reading level
+                        const readingLevelProgression = {
+                          'Low Emerging': 'High Emerging',
+                          'High Emerging': 'Developing',
+                          'Developing': 'Transitioning',
+                          'Transitioning': 'At Grade Level',
+                          'At Grade Level': 'Advanced'
+                        };
+                        const nextLevel = readingLevelProgression[currentIepData.readingLevel] || 'Next Level';
+
+                        if (allPassed) {
+                          return `${getStudentName()} has successfully achieved mastery across all ${totalCategories} assessed literacy domain${totalCategories > 1 ? 's' : ''} for the ${currentIepData.readingLevel} reading level, with an overall performance average of ${averageScore}%. This comprehensive achievement demonstrates strong foundational reading competencies and indicates exceptional readiness for academic advancement to the ${nextLevel} reading level. The student would benefit from enrichment activities, advanced literacy challenges, and continued progress monitoring to maintain skill proficiency and support accelerated academic growth in reading development.`;
+                        } else if (hasActiveInterventions) {
+                          const pendingCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+                          const pendingDetails = pendingCategories.map(obj => `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`);
+
+                          return `${getStudentName()} is currently engaged in active intervention protocols targeting ${pendingCategories.length} literacy domain${pendingCategories.length > 1 ? 's' : ''}: ${pendingDetails.join(', ')}. With ${masteryPercentage}% current mastery rate and ${averageScore}% overall performance, the student requires continued systematic intervention support, potential revision of instructional strategies, and enhanced educational accommodations to achieve proficiency at the ${currentIepData.readingLevel} reading level. Recommended actions include: regular progress monitoring (weekly), data-driven intervention adjustments, collaborative teacher consultation, and possible referral for additional educational support services.`;
+                        } else {
+                          const failedCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+                          const failedDetails = failedCategories.map(obj => `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`);
+
+                          return `${getStudentName()} requires immediate implementation of intensive intervention protocols in ${failedCategories.length} critical literacy domain${failedCategories.length > 1 ? 's' : ''}: ${failedDetails.join(', ')}. With current performance metrics showing ${masteryPercentage}% mastery rate and ${averageScore}% overall academic achievement, priority actions include: development of individualized intervention plans, implementation of evidence-based instructional strategies, provision of specialized educational supports, and establishment of frequent progress monitoring systems. The student would benefit from multi-sensory teaching approaches, reduced cognitive load strategies, and potential consultation with literacy specialists to address identified learning gaps and facilitate academic progress toward mastery at the ${currentIepData.readingLevel} reading level.`;
+                        }
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -2831,6 +3201,78 @@ const IEPReport = ({
         message={successDialogData.message}
         submessage={successDialogData.submessage}
       />
+
+      {/* Reading Level Progression Confirmation Dialog */}
+      {showProgressionDialog && (
+        <div className="literexia-modal-overlay" onClick={cancelReadingLevelProgression}>
+          <div className="literexia-progression-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="literexia-modal-header">
+              <div className="literexia-modal-title">
+                <FaArrowUp className="literexia-modal-icon warning" />
+                <div>
+                  <h3>Confirm Reading Level Progression</h3>
+                  <p>This action will permanently change the student's reading level</p>
+                </div>
+              </div>
+              <button className="literexia-modal-close" onClick={cancelReadingLevelProgression}>
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="literexia-modal-content">
+              <div className="literexia-progression-warning">
+                <div className="literexia-warning-icon">
+                  <FaInfoCircle />
+                </div>
+                <div className="literexia-warning-content">
+                  <h4>
+                    {getNextReadingLevel()
+                      ? `Are you sure you want to progress ${getStudentName()} to the next reading level?`
+                      : `${getStudentName()} is already at the maximum reading level.`
+                    }
+                  </h4>
+                  <div className="literexia-level-progression-info">
+                    <div className="literexia-current-level">
+                      <span className="literexia-level-label">Current Level:</span>
+                      <span className="literexia-level-value">{currentIepData?.readingLevel || 'Not Assessed'}</span>
+                    </div>
+                    <div className="literexia-arrow-separator">
+                      <FaArrowUp />
+                    </div>
+                    <div className="literexia-next-level">
+                      <span className="literexia-level-label">Next Level:</span>
+                      <span className="literexia-level-value next">{getNextReadingLevel() || 'Maximum Level Reached'}</span>
+                    </div>
+                  </div>
+                  <div className="literexia-warning-footer">
+                    <FaInfoCircle className="literexia-warning-footer-icon" />
+                    <strong>This action cannot be undone.</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="literexia-modal-actions">
+                <button 
+                  className="literexia-modal-btn-secondary"
+                  onClick={cancelReadingLevelProgression}
+                  disabled={saving}
+                >
+                  <FaTimes />
+                  Cancel
+                </button>
+                <button 
+                  className="literexia-modal-btn-primary progression"
+                  onClick={confirmReadingLevelProgression}
+                  disabled={saving}
+                >
+                  {saving ? <FaSpinner className="spinning" /> : <FaArrowUp />}
+                  {saving ? 'Progressing...' : 'Progress to Next Level'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
