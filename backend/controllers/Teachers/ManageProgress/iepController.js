@@ -58,25 +58,53 @@ class IEPController {
 
       console.log(`📋 IEP query result: ${iepReport ? 'Found' : 'Not found'} for reading level: ${targetReadingLevel}`);
       
-      // If no IEP report exists, try to create one from category results
+      // ✅ ENHANCED: Handle historical records and progression scenarios
       if (!iepReport) {
-        console.log('No IEP report found, attempting to create from category results');
-        try {
-          iepReport = await IEPController.createFromCategoryResults(studentId, req.user?.id);
-          
-          // Populate the fields after creation
+        console.log(`📋 No IEP found for ${targetReadingLevel}. Checking progression scenarios...`);
+
+        // Check if student has progressed beyond the requested level
+        const levelOrder = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+        const requestedIndex = levelOrder.indexOf(targetReadingLevel);
+        const currentIndex = levelOrder.indexOf(student.readingLevel);
+
+        if (requestedIndex < currentIndex) {
+          // Looking for historical record - find it even if isActive=false
+          console.log(`🔍 Searching for historical IEP: ${targetReadingLevel} (student is now ${student.readingLevel})`);
+          iepReport = await IEPReport.findOne({
+            studentId: new mongoose.Types.ObjectId(studentId),
+            readingLevel: targetReadingLevel
+            // Note: Not filtering by isActive - we want historical records too
+          })
+          .sort({ createdAt: -1 })
+          .populate('studentId', 'idNumber firstName lastName readingLevel')
+          .populate('lastModifiedBy', 'firstName lastName');
+
           if (iepReport) {
-            iepReport = await IEPReport.findById(iepReport._id)
-              .populate('studentId', 'idNumber firstName lastName readingLevel')
-              .populate('lastModifiedBy', 'firstName lastName');
+            console.log(`✅ Found historical IEP for ${targetReadingLevel}`);
           }
-        } catch (createError) {
-          console.error('Failed to create IEP from category results:', createError.message);
-          return res.status(404).json({
-            success: false,
-            error: 'No IEP report available and could not create from assessment data',
-            details: createError.message
-          });
+        } else {
+          // Try to create from category results for current/future levels
+          console.log('Attempting to create IEP from category results');
+          try {
+            const testDb = mongoose.connection.useDb('test');
+            const categoryResults = await testDb.collection('category_results').findOne({
+              studentId: parseInt(student.idNumber),
+              readingLevel: targetReadingLevel
+            });
+
+            if (categoryResults) {
+              iepReport = await IEPController.createIEPFromCategoryResults(student.idNumber, categoryResults);
+
+              // Populate the fields after creation
+              if (iepReport) {
+                iepReport = await IEPReport.findById(iepReport._id)
+                  .populate('studentId', 'idNumber firstName lastName readingLevel')
+                  .populate('lastModifiedBy', 'firstName lastName');
+              }
+            }
+          } catch (createError) {
+            console.error('Failed to create IEP from category results:', createError.message);
+          }
         }
       }
       
@@ -622,12 +650,18 @@ class IEPController {
 
       // Method 1: Try with ObjectId format
       try {
+        // ✅ CRITICAL FIX: Filter by BOTH studentObjectId AND readingLevel to prevent cross-level contamination
         latestResults = await categoryResultsCollection.findOne(
-          { studentObjectId: new mongoose.Types.ObjectId(studentId) },
+          {
+            studentObjectId: new mongoose.Types.ObjectId(studentId),
+            readingLevel: iepReport.readingLevel  // ✅ ADD reading level filter to prevent contamination
+          },
           { sort: { assessmentDate: -1 } }
         );
         if (latestResults) {
-          console.log('✅ Found category results using studentObjectId');
+          console.log(`✅ Found category results using studentObjectId for reading level: ${iepReport.readingLevel}`);
+        } else {
+          console.log(`⚠️ No category results found using studentObjectId for reading level: ${iepReport.readingLevel}`);
         }
       } catch (err) {
         console.log('Method 1 failed, trying alternative...');
@@ -641,13 +675,19 @@ class IEPController {
         });
 
         if (student) {
+          // ✅ CRITICAL FIX: Filter by BOTH studentId AND readingLevel to prevent cross-level contamination
           latestResults = await categoryResultsCollection.findOne(
-            { studentId: student.idNumber },
+            {
+              studentId: student.idNumber,
+              readingLevel: iepReport.readingLevel  // ✅ ADD reading level filter to prevent contamination
+            },
             { sort: { assessmentDate: -1 } }
           );
 
           if (latestResults) {
-            console.log(`✅ Found category results using student number: ${student.idNumber}`);
+            console.log(`✅ Found category results using student number: ${student.idNumber} for reading level: ${iepReport.readingLevel}`);
+          } else {
+            console.log(`⚠️ No category results found for student ${student.idNumber} at reading level: ${iepReport.readingLevel}`);
           }
         }
       }
@@ -1513,6 +1553,26 @@ class IEPController {
 
       console.log(`✅ Student ${student.idNumber} (${student._id}) progressed from ${currentLevel} to ${newLevel}`);
 
+      // ✅ ENHANCED: Create new category_results for the new reading level
+      await IEPController.createCategoryResultsForNewLevel(student.idNumber, newLevel, currentLevel);
+
+      // ✅ COORDINATION FIX: Create new IEP report for the new reading level
+      console.log(`📋 Creating new IEP report for reading level: ${newLevel}`);
+      try {
+        const categoryResults = await testDb.collection('category_results').findOne({
+          studentId: parseInt(student.idNumber),
+          readingLevel: newLevel
+        });
+
+        if (categoryResults) {
+          await IEPController.createIEPFromCategoryResults(student.idNumber, categoryResults);
+          console.log(`✅ Created new IEP report for ${newLevel} level`);
+        }
+      } catch (iepError) {
+        console.warn(`⚠️ IEP report creation failed: ${iepError.message}`);
+        // Don't fail the progression, just log the warning
+      }
+
       res.json({
         success: true,
         data: {
@@ -1532,6 +1592,159 @@ class IEPController {
         error: 'Failed to progress reading level',
         message: error.message
       });
+    }
+  }
+
+  // ✅ SIMPLIFIED: Create category_results for new reading level after progression
+  static async createCategoryResultsForNewLevel(studentId, newLevel, previousLevel) {
+    try {
+      console.log(`🚀 PROGRESSION: ${studentId} from ${previousLevel} → ${newLevel}`);
+
+      const testDb = mongoose.connection.useDb('test');
+      const categoryResultsCollection = testDb.collection('category_results');
+
+      // ✅ STEP 1: Find and preserve existing category data
+      console.log(`📊 STEP 1: Finding existing category_results...`);
+
+      let existingResult = null;
+      const queries = [
+        { studentId: parseInt(studentId) },
+        { studentId: studentId.toString() },
+        { studentId: studentId }
+      ];
+
+      for (const query of queries) {
+        const results = await categoryResultsCollection
+          .find(query)
+          .sort({ assessmentDate: -1 })
+          .limit(1)
+          .toArray();
+
+        if (results?.length > 0) {
+          existingResult = results[0];
+          console.log(`📊 ✅ Found existing record: ${existingResult._id}`);
+          break;
+        }
+      }
+
+      // ✅ STEP 2: Define categories for each reading level
+      const levelCategories = {
+        'Low Emerging': ['Alphabet Knowledge'],
+        'High Emerging': ['Alphabet Knowledge', 'Phonological Awareness'],
+        'Developing': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding'],
+        'Transitioning': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition'],
+        'At Grade Level': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension']
+      };
+
+      const newCategories = levelCategories[newLevel] || [];
+      console.log(`📋 New level (${newLevel}) requires: ${newCategories.join(', ')}`);
+
+      // ✅ STEP 3: Create categories with preserved data AND main_assessment integration
+      const mainAssessmentCollection = testDb.collection('main_assessment');
+
+      const categories = await Promise.all(newCategories.map(async categoryName => {
+        // Check if this category exists in previous level and preserve its data
+        const existingCategory = existingResult?.categories?.find(cat => cat.categoryName === categoryName);
+
+        // ✅ COORDINATION FIX: Fetch totalQuestions from main_assessment
+        let totalQuestions = 0;
+        try {
+          const mainAssessment = await mainAssessmentCollection.findOne({
+            readingLevel: newLevel,
+            category: categoryName,
+            isActive: true
+          });
+          totalQuestions = mainAssessment?.questions?.length || 0;
+          console.log(`📊 ${categoryName}: ${totalQuestions} questions from main_assessment (${newLevel})`);
+        } catch (assessmentError) {
+          console.warn(`⚠️ Could not fetch main_assessment for ${categoryName}: ${assessmentError.message}`);
+        }
+
+        // ✅ CORRECT: Always create fresh placeholder categories for new reading level (per CLAUDE.md)
+        console.log(`✨ FRESH PLACEHOLDER: ${categoryName} for ${newLevel} level`);
+        return {
+            categoryName: categoryName,
+            totalQuestions: totalQuestions, // ✅ FIXED: Use actual count from main_assessment
+            correctAnswers: 0,
+            totalPossibleMatches: 0,
+            correctMatches: 0,
+            score: 0,
+            isPassed: false,
+            passingThreshold: 75,
+            isCompleted: false,
+            lastQuestionAnswered: '',
+            interventionRequired: false,
+            interventionAttempts: 0,
+            interventionCompleted: false,
+            currentInterventionId: null,
+            interventionHistory: [],
+            _id: new mongoose.Types.ObjectId()
+          };
+      }));
+
+      // ✅ STEP 4: Calculate overall metrics for new record
+      const completedCategories = categories.filter(cat => cat.isCompleted).length;
+      const passedCategories = categories.filter(cat => cat.isPassed).length;
+      const allCategoriesPassed = categories.length > 0 && categories.every(cat => cat.isPassed);
+      const overallScore = categories.length > 0
+        ? Math.round(categories.reduce((sum, cat) => sum + (cat.score || 0), 0) / categories.length)
+        : 0;
+
+      console.log(`📊 METRICS: ${passedCategories}/${categories.length} passed, overall: ${overallScore}%`);
+
+      // ✅ STEP 5: Create new category_results record
+      const newCategoryResult = {
+        studentId: parseInt(studentId), // Ensure consistent format
+        assessmentDate: new Date(),
+        categories: categories,
+        overallScore: overallScore,
+        completedCategories: completedCategories,
+        totalCategories: categories.length,
+        allCategoriesPassed: allCategoriesPassed,
+        readingLevel: newLevel,
+        readingLevelUpdated: true,
+        progressionFrom: previousLevel,
+        progressionDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // ✅ STEP 6: ATOMIC TRANSACTION - Delete old, insert new (ensures no multiple records)
+      console.log(`🔒 STEP 6: Starting atomic transaction for DELETE-INSERT operation...`);
+
+      const session = await mongoose.startSession();
+
+      try {
+        await session.withTransaction(async () => {
+          // Delete old record within transaction
+          if (existingResult) {
+            const deleteResult = await categoryResultsCollection.deleteOne(
+              { _id: existingResult._id },
+              { session }
+            );
+            if (deleteResult.deletedCount > 0) {
+              console.log(`🗑️ ✅ Deleted old record: ${existingResult._id}`);
+            } else {
+              throw new Error(`Failed to delete old record: ${existingResult._id}`);
+            }
+          }
+
+          // Insert new record within same transaction
+          const insertResult = await categoryResultsCollection.insertOne(newCategoryResult, { session });
+          if (!insertResult.insertedId) {
+            throw new Error('Failed to create new category_results record');
+          }
+
+          console.log(`✨ ✅ Created new record: ${insertResult.insertedId} for ${newLevel}`);
+          console.log(`🔒 ✅ ATOMIC SUCCESS: ${studentId} progression complete: ${previousLevel} → ${newLevel}`);
+        });
+      } finally {
+        await session.endSession();
+      }
+
+    } catch (error) {
+      console.error('Error creating category_results for new level:', error);
+      throw error;
     }
   }
 
@@ -1595,6 +1808,201 @@ class IEPController {
       });
     }
   }
+
+  // ✅ MISSING FUNCTION: Create fresh IEP report for new reading level during progression
+  static async createIEPFromCategoryResults(studentId, categoryResults) {
+    try {
+      console.log(`📋 IEP PROGRESSION: Creating fresh IEP for student ${studentId}, level ${categoryResults.readingLevel}`);
+
+      // ✅ STEP 1: Get student information
+      const User = require('../../../models/userModel');
+      const student = await User.findOne({ idNumber: parseInt(studentId) });
+      if (!student) {
+        throw new Error(`Student not found: ${studentId}`);
+      }
+
+      // ✅ STEP 2: Preserve existing IEP reports (set isActive: false)
+      console.log(`📚 PRESERVING: Setting existing IEP reports to inactive for student ${studentId}`);
+      await IEPReport.updateMany(
+        {
+          studentId: student._id,
+          isActive: true
+        },
+        {
+          $set: {
+            isActive: false,
+            completedAt: new Date(),
+            completionReason: `Progressed to ${categoryResults.readingLevel}`
+          }
+        }
+      );
+
+      // ✅ STEP 3: Determine progression source (find previous level)
+      const currentLevel = categoryResults.readingLevel;
+      const levelOrder = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+      const currentIndex = levelOrder.indexOf(currentLevel);
+      const previousLevel = currentIndex > 0 ? levelOrder[currentIndex - 1] : null;
+
+      // ✅ STEP 4: Create fresh IEP report with placeholder objectives
+      console.log(`✨ CREATING: Fresh IEP report for ${currentLevel} level`);
+      const freshIEPReport = new IEPReport({
+        studentId: student._id,
+        studentNumber: studentId.toString(),
+        readingLevel: currentLevel,
+        overallScore: categoryResults.overallScore || 0,
+        basedOnAssessmentId: categoryResults._id,
+        isActive: true,
+        academicYear: new Date().getFullYear().toString(),
+
+        // ✅ PROGRESSION TRACKING (per CLAUDE.md)
+        progressionFrom: previousLevel,
+        progressionDate: new Date(),
+
+        // Initialize with empty objectives (will be populated below)
+        objectives: []
+      });
+
+      // ✅ STEP 5: Generate fresh placeholder objectives using model method
+      freshIEPReport.generateObjectivesFromCategoryResults(categoryResults);
+
+      // ✅ STEP 6: Override objectives to ensure they are fresh placeholders
+      console.log(`🎯 OBJECTIVES: Creating fresh placeholders for ${currentLevel} level`);
+      freshIEPReport.objectives = freshIEPReport.objectives.map(objective => ({
+        ...objective,
+        // ✅ FRESH PLACEHOLDERS - Reset all progress tracking
+        status: 'not_started',
+        completed: false,
+        score: 0,
+        assessmentScore: 0,
+        correctAnswers: 0,
+        isCompleted: false,
+        isPassed: false,
+        hasIntervention: false,
+        interventionId: null,
+        interventionName: '',
+        interventionStatus: 'not_needed',
+        interventionAttempts: 0,
+        interventionCompleted: false,
+        interventionHistory: [],
+        latestInterventionScore: 0,
+        latestInterventionPassed: false,
+        interventionImprovement: 0,
+        interventionCreatedAt: null,
+        supportLevel: 'extensive', // Default support level for new level
+        remarks: '',
+        mainAssessmentRemarks: '',
+        lastUpdated: new Date()
+      }));
+
+      // ✅ STEP 7: Save the fresh IEP report
+      const savedIEPReport = await freshIEPReport.save();
+
+      console.log(`✅ IEP PROGRESSION COMPLETE: Created fresh IEP report ${savedIEPReport._id}`);
+      console.log(`📊 Fresh objectives created: ${savedIEPReport.objectives.length} categories`);
+      console.log(`🔄 Progression: ${previousLevel} → ${currentLevel}`);
+
+      return savedIEPReport;
+
+    } catch (error) {
+      console.error(`❌ IEP PROGRESSION ERROR: Failed to create IEP for student ${studentId}:`, error);
+      throw new Error(`IEP creation failed: ${error.message}`);
+    }
+  }
+
+  // ✅ NEW: Fix category isPassed status when intervention succeeded but status not updated
+  static async fixCategoryPassedStatus(req, res) {
+    try {
+      const { studentId } = req.params;
+
+      console.log(`🔧 [FIX PASSED STATUS] Starting fix for student ${studentId}`);
+
+      // Get current IEP report
+      const iepReport = await IEPReport.findOne({
+        studentId: mongoose.Types.ObjectId(studentId),
+        isActive: true
+      });
+
+      if (!iepReport) {
+        return res.status(404).json({
+          success: false,
+          message: 'No active IEP report found for student'
+        });
+      }
+
+      let fixedCount = 0;
+      const fixedCategories = [];
+
+      // Check each objective for intervention success
+      for (const objective of iepReport.objectives) {
+        const { categoryName, interventionHistory } = objective;
+
+        // Check if any intervention passed but category still marked as failed
+        const hasPassedIntervention = interventionHistory.some(attempt =>
+          attempt.isPassed === true && attempt.score >= 75
+        );
+
+        if (hasPassedIntervention && !objective.isPassed) {
+          // Fix the status
+          objective.isPassed = true;
+          objective.status = 'mastered';
+          objective.interventionCompleted = true;
+          objective.interventionRequired = false;
+
+          // Update score to highest intervention score
+          const highestScore = Math.max(...interventionHistory.map(h => h.score || 0));
+          objective.score = Math.max(objective.score, highestScore);
+
+          fixedCount++;
+          fixedCategories.push({
+            category: categoryName,
+            newStatus: 'mastered',
+            newScore: objective.score
+          });
+
+          console.log(`✅ [FIX PASSED STATUS] Fixed ${categoryName}: now marked as passed (${objective.score}%)`);
+        }
+      }
+
+      if (fixedCount > 0) {
+        // Save the updated IEP report
+        await iepReport.save();
+
+        console.log(`🎉 [FIX PASSED STATUS] Fixed ${fixedCount} categories for student ${studentId}`);
+
+        return res.status(200).json({
+          success: true,
+          message: `Fixed ${fixedCount} category status issues`,
+          data: {
+            studentId,
+            fixedCount,
+            fixedCategories,
+            totalObjectives: iepReport.objectives.length
+          }
+        });
+      } else {
+        console.log(`ℹ️ [FIX PASSED STATUS] No fixes needed for student ${studentId}`);
+
+        return res.status(200).json({
+          success: true,
+          message: 'No category status issues found',
+          data: {
+            studentId,
+            fixedCount: 0,
+            totalObjectives: iepReport.objectives.length
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error(`❌ [FIX PASSED STATUS] Error fixing student ${req.params.studentId}:`, error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fix category passed status',
+        error: error.message
+      });
+    }
+  }
+
 }
 
 module.exports = IEPController; 

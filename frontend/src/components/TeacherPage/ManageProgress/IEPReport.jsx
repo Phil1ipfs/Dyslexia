@@ -1349,12 +1349,38 @@ const IEPReport = ({
       const result = await response.json();
 
       if (result.success) {
-        toast.success(`Student successfully progressed to ${result.newReadingLevel}!`);
+        toast.success(`Student successfully progressed to ${result.data?.newReadingLevel || 'next level'}!`);
 
-        // Refresh the IEP data to show new reading level
+        // ✅ COMPREHENSIVE STATE REFRESH after reading level progression
+        console.log('🔄 Starting comprehensive state refresh after progression...');
+
+        // 1. Clear all cached IEP data
+        setIepData(null);
+        setDataLoaded(false);
+
+        // 2. Clear global state to prevent stale data
+        if (window.iepReportGlobalState) {
+          window.iepReportGlobalState.iepData = null;
+          window.iepReportGlobalState.dataLoaded = false;
+        }
+
+        // 3. Reset loaded student reference to force fresh load
+        if (loadedStudentRef?.current) {
+          loadedStudentRef.current = null;
+        }
+
+        // 4. Notify parent component about progression (refresh student data)
+        if (onDataUpdate && result.data) {
+          console.log('🔄 Notifying parent component of progression...');
+          onDataUpdate(result.data);
+        }
+
+        // 5. Force component re-render with fresh data after slight delay
         setTimeout(() => {
-          loadIEPData();
-        }, 1000);
+          console.log('🔄 Forcing fresh IEP data load with new reading level...');
+          setForceUpdate(prev => prev + 1); // Trigger force update
+          loadIEPData(); // Load data with refreshed student info
+        }, 1500); // Increased delay to ensure backend has processed
       } else {
         throw new Error(result.error || 'Failed to progress reading level');
       }
@@ -1374,15 +1400,25 @@ const IEPReport = ({
 
   // Get the next reading level
   const getNextReadingLevel = () => {
-    if (!currentIepData?.readingLevel) return null;
-    
+    if (!currentIepData?.readingLevel) {
+      console.warn('getNextReadingLevel: No current reading level found');
+      return null;
+    }
+
     const levels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
     const currentIndex = levels.indexOf(currentIepData.readingLevel);
-    
+
+    console.log('getNextReadingLevel debug:', {
+      currentReadingLevel: currentIepData.readingLevel,
+      currentIndex: currentIndex,
+      levels: levels,
+      nextLevel: currentIndex >= 0 && currentIndex < levels.length - 1 ? levels[currentIndex + 1] : null
+    });
+
     if (currentIndex >= 0 && currentIndex < levels.length - 1) {
       return levels[currentIndex + 1];
     }
-    
+
     return null;
   };
 
@@ -1490,7 +1526,7 @@ const IEPReport = ({
               <div className="literexia-intervention-basic">
                 <div className="literexia-attempts-info">
                   <span className="literexia-attempts-count">
-                    {objective.interventionAttempts || 0} attempt{(objective.interventionAttempts || 0) !== 1 ? 's' : ''}
+                    {objective.interventionHistory?.length || objective.interventionAttempts || 0} attempt{(objective.interventionHistory?.length || objective.interventionAttempts || 0) !== 1 ? 's' : ''}
                   </span>
                   <span className={`literexia-latest-score ${objective.latestInterventionPassed ? 'passed' : 'failed'}`}>
                     Latest: {latestScore}%
@@ -1905,10 +1941,21 @@ const IEPReport = ({
               className="literexia-action-button progression"
               onClick={handleReadingLevelProgression}
               disabled={!canProgressToNextLevel() || saving}
-              title={canProgressToNextLevel() ? "Progress to next reading level" : "Student must complete all categories first"}
+              title={
+                canProgressToNextLevel()
+                  ? "Progress to next reading level"
+                  : !getNextReadingLevel()
+                    ? "Student is already at maximum reading level"
+                    : "Student must complete all categories first"
+              }
             >
               {saving ? <FaSpinner className="spinning" /> : <FaArrowUp />}
-              {canProgressToNextLevel() ? 'Progress to Next Level' : 'Not Ready for Progression'}
+              {canProgressToNextLevel()
+                ? 'Progress to Next Level'
+                : !getNextReadingLevel()
+                  ? 'Maximum Level Reached'
+                  : 'Not Ready for Progression'
+              }
             </button>
           </div>
 
@@ -2062,7 +2109,7 @@ const IEPReport = ({
                                 <div className="iep-intervention-info">
                                   <div className="iep-intervention-stats">
                                     <div className="iep-attempts-badge">
-                                      {objective.interventionAttempts || 0} attempts
+                                      {objective.interventionHistory?.length || objective.interventionAttempts || 0} attempts
                                     </div>
                                     <div className="iep-score-badge">
                                       Latest: {objective.latestInterventionScore || 0}%
@@ -3168,7 +3215,12 @@ const IEPReport = ({
                   <FaInfoCircle />
                 </div>
                 <div className="literexia-warning-content">
-                  <h4>Are you sure you want to progress {getStudentName()} to the next reading level?</h4>
+                  <h4>
+                    {getNextReadingLevel()
+                      ? `Are you sure you want to progress ${getStudentName()} to the next reading level?`
+                      : `${getStudentName()} is already at the maximum reading level.`
+                    }
+                  </h4>
                   <div className="literexia-level-progression-info">
                     <div className="literexia-current-level">
                       <span className="literexia-level-label">Current Level:</span>
@@ -3179,7 +3231,7 @@ const IEPReport = ({
                     </div>
                     <div className="literexia-next-level">
                       <span className="literexia-level-label">Next Level:</span>
-                      <span className="literexia-level-value next">{getNextReadingLevel()}</span>
+                      <span className="literexia-level-value next">{getNextReadingLevel() || 'Maximum Level Reached'}</span>
                     </div>
                   </div>
                   <div className="literexia-warning-footer">
