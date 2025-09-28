@@ -55,54 +55,96 @@ class IntegrationTriggerService {
 
       return analysis;
     } catch (error) {
-      // ✅ AUTOMATIC DUPLICATE KEY ERROR HANDLING FOR MULTIPLE READING LEVELS
+      // ✅ ENHANCED AUTOMATIC DUPLICATE KEY ERROR HANDLING FOR MULTIPLE READING LEVELS
       if (error.code === 11000 && error.message.includes('studentId_1_categoryId_1')) {
-        console.log(`[INTEGRATION TRIGGER] 🔧 AUTOMATIC FIX: Duplicate key error for student ${categoryResult.studentId} - this means student has multiple reading levels`);
+        console.log(`[INTEGRATION TRIGGER] 🔧 ENHANCED AUTOMATIC FIX: Duplicate key error for student ${categoryResult.studentId} - this means student has multiple reading levels`);
 
         try {
-          // Find existing prescriptive analysis for this student/category combination
-          const existingForDifferentLevel = await PrescriptiveAnalysis.findOne({
+          // 1. First check if we already have analysis for THIS specific reading level using categoryResultId
+          console.log(`[INTEGRATION TRIGGER] 🔍 Step 1: Checking by categoryResultId to avoid index conflicts`);
+          const existingByCategoryResultId = await PrescriptiveAnalysis.findOne({
+            categoryResultId: categoryResult._id
+          });
+
+          if (existingByCategoryResultId) {
+            console.log(`[INTEGRATION TRIGGER] ✅ Analysis already exists for this category result: ${existingByCategoryResultId._id}`);
+            return existingByCategoryResultId;
+          }
+
+          // 2. Check by reading level specifically (bypassing problematic studentId+categoryId index)
+          console.log(`[INTEGRATION TRIGGER] 🔍 Step 2: Checking by readingLevel (${categoryResult.readingLevel}) only`);
+          const existingForThisLevel = await PrescriptiveAnalysis.findOne({
             studentId: categoryResult.studentId,
-            $or: [
-              { categoryId: { $exists: true } }, // Legacy field
-              { 'insights.overallScore': { $exists: true } } // Modern field
-            ]
+            readingLevel: categoryResult.readingLevel
           }).sort({ createdAt: -1 });
 
-          if (existingForDifferentLevel) {
-            console.log(`[INTEGRATION TRIGGER] ✅ Found existing analysis for different reading level: ${existingForDifferentLevel.readingLevel}`);
-            console.log(`[INTEGRATION TRIGGER] 🎯 Current request is for reading level: ${categoryResult.readingLevel}`);
+          if (existingForThisLevel) {
+            console.log(`[INTEGRATION TRIGGER] ✅ Found analysis for this reading level: ${existingForThisLevel._id}`);
 
-            // Check if we already have analysis for THIS specific reading level
-            const existingForThisLevel = await PrescriptiveAnalysis.findOne({
+            // Link this category result to the existing analysis if not already linked
+            if (!existingForThisLevel.categoryResultId) {
+              existingForThisLevel.categoryResultId = categoryResult._id;
+              await existingForThisLevel.save();
+              console.log(`[INTEGRATION TRIGGER] 🔗 Linked existing analysis to category result`);
+            }
+
+            return existingForThisLevel;
+          }
+
+          // 3. Create new analysis using ONLY categoryResultId approach (bypassing problematic indexes)
+          console.log(`[INTEGRATION TRIGGER] 🔄 Step 3: Creating new analysis using categoryResultId-only approach`);
+
+          // Use existing prescription generation method
+          const analysisData = await prescriptiveAnalyticsService.generatePrescriptionOnly(categoryResult._id);
+
+          if (analysisData) {
+            // Create analysis with explicit categoryResultId and remove problematic fields
+            const safeAnalysisData = {
+              ...analysisData,
+              categoryResultId: categoryResult._id,
               studentId: categoryResult.studentId,
-              readingLevel: categoryResult.readingLevel
-            });
+              readingLevel: categoryResult.readingLevel,
+              // Remove categoryId field that's causing the duplicate key issue
+              categoryId: undefined
+            };
 
-            if (existingForThisLevel) {
-              console.log(`[INTEGRATION TRIGGER] ✅ Analysis already exists for reading level ${categoryResult.readingLevel}: ${existingForThisLevel._id}`);
-              return existingForThisLevel;
-            }
+            const newAnalysis = new PrescriptiveAnalysis(safeAnalysisData);
+            const savedAnalysis = await newAnalysis.save();
 
-            // Try a different approach - use categoryResultId as unique identifier
-            console.log(`[INTEGRATION TRIGGER] 🔄 Creating analysis using categoryResultId as unique identifier`);
-            const analysisWithCategoryResultId = await prescriptiveAnalyticsService.generatePrescriptionOnly(categoryResult._id);
+            console.log(`[INTEGRATION TRIGGER] ✅ SUCCESS: Created prescriptive analysis bypassing index conflicts: ${savedAnalysis._id}`);
+            return savedAnalysis;
+          }
 
-            if (analysisWithCategoryResultId) {
-              console.log(`[INTEGRATION TRIGGER] ✅ SUCCESS: Created prescriptive analysis for ${categoryResult.readingLevel} level using categoryResultId`);
-              return analysisWithCategoryResultId;
-            }
+          // 4. Fallback: Generate minimal analysis to ensure system continuity
+          console.log(`[INTEGRATION TRIGGER] 🔄 Step 4: Creating minimal fallback analysis`);
+          const fallbackAnalysis = await this.createMinimalAnalysis(categoryResult);
+
+          if (fallbackAnalysis) {
+            console.log(`[INTEGRATION TRIGGER] ✅ SUCCESS: Created minimal fallback analysis: ${fallbackAnalysis._id}`);
+            return fallbackAnalysis;
           }
 
           // If all else fails, log the issue but don't break the flow
-          console.log(`[INTEGRATION TRIGGER] ⚠️ Could not resolve duplicate key error automatically`);
-          console.log(`[INTEGRATION TRIGGER] 💡 This indicates database index needs to be updated to include readingLevel`);
+          console.log(`[INTEGRATION TRIGGER] ⚠️ Could not resolve duplicate key error automatically after all attempts`);
+          console.log(`[INTEGRATION TRIGGER] 💡 This indicates database indexes need to be updated to include readingLevel`);
 
           await this.logError(categoryResult, error);
           return null;
 
         } catch (retryError) {
-          console.error('[INTEGRATION TRIGGER] Error in automatic duplicate key fix:', retryError);
+          console.error('[INTEGRATION TRIGGER] Error in enhanced automatic duplicate key fix:', retryError);
+
+          // Final fallback: Try to create minimal analysis even if main generation fails
+          try {
+            const emergencyAnalysis = await this.createMinimalAnalysis(categoryResult);
+            if (emergencyAnalysis) {
+              console.log(`[INTEGRATION TRIGGER] 🚨 EMERGENCY SUCCESS: Created minimal analysis as last resort: ${emergencyAnalysis._id}`);
+              return emergencyAnalysis;
+            }
+          } catch (emergencyError) {
+            console.error('[INTEGRATION TRIGGER] Emergency fallback also failed:', emergencyError);
+          }
+
           await this.logError(categoryResult, retryError);
           return null;
         }
@@ -400,6 +442,260 @@ class IntegrationTriggerService {
         error: error.message
       };
     }
+  }
+
+  /**
+   * Create minimal prescriptive analysis as fallback when main generation fails
+   * This ensures system continuity and prevents complete failure
+   *
+   * @param {Object} categoryResult - Category result data
+   * @returns {Object} Minimal prescriptive analysis
+   */
+  static async createMinimalAnalysis(categoryResult) {
+    try {
+      console.log(`[INTEGRATION TRIGGER] 🔧 Creating minimal fallback analysis for student ${categoryResult.studentId}`);
+
+      // Create basic analysis structure that avoids problematic indexes
+      const minimalAnalysis = {
+        categoryResultId: categoryResult._id,
+        studentId: categoryResult.studentId,
+        readingLevel: categoryResult.readingLevel,
+        assessmentDate: new Date(),
+        assessmentType: "main",
+
+        // Basic skill mastery based on category results
+        skillMastery: this.generateBasicSkillMastery(categoryResult),
+
+        // Basic ability estimates
+        abilityEstimates: this.generateBasicAbilityEstimates(categoryResult),
+
+        // Basic error patterns
+        errorPatterns: this.generateBasicErrorPatterns(categoryResult),
+
+        // Basic insights
+        insights: {
+          strengths: this.identifyBasicStrengths(categoryResult),
+          weaknesses: this.identifyBasicWeaknesses(categoryResult),
+          overallReadiness: this.calculateBasicReadiness(categoryResult),
+          recommendedAction: this.determineBasicAction(categoryResult),
+          passedCategories: this.countPassedCategories(categoryResult),
+          failedCategories: this.countFailedCategories(categoryResult),
+          overallScore: categoryResult.overallScore || 0
+        },
+
+        // Basic intervention plan if needed
+        interventionPlan: this.generateBasicInterventionPlan(categoryResult),
+
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        generatedBy: "fallback_system",
+        generationReason: "duplicate_key_error_bypass"
+      };
+
+      // Create the analysis document directly (avoiding problematic fields)
+      const newAnalysis = new PrescriptiveAnalysis(minimalAnalysis);
+      const savedAnalysis = await newAnalysis.save();
+
+      console.log(`[INTEGRATION TRIGGER] ✅ Successfully created minimal analysis: ${savedAnalysis._id}`);
+      return savedAnalysis;
+
+    } catch (error) {
+      console.error('[INTEGRATION TRIGGER] Error creating minimal analysis:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate basic skill mastery data from category results
+   */
+  static generateBasicSkillMastery(categoryResult) {
+    const skillMastery = {};
+
+    if (categoryResult.categories && Array.isArray(categoryResult.categories)) {
+      categoryResult.categories.forEach(category => {
+        const score = category.score || 0;
+        const masteryProbability = Math.max(0.1, Math.min(0.9, score / 100));
+
+        skillMastery[category.categoryName] = {
+          masteryProbability: masteryProbability,
+          totalQuestions: category.totalQuestions || 1,
+          correctAnswers: Math.round((score / 100) * (category.totalQuestions || 1)),
+          score: score,
+          isPassed: category.isPassed || false,
+          status: score >= 75 ? "STRONG" : score >= 50 ? "DEVELOPING" : "NEEDS_IMPROVEMENT",
+          responseHistory: []
+        };
+      });
+    }
+
+    return skillMastery;
+  }
+
+  /**
+   * Generate basic ability estimates from category results
+   */
+  static generateBasicAbilityEstimates(categoryResult) {
+    const abilityEstimates = {};
+
+    if (categoryResult.categories && Array.isArray(categoryResult.categories)) {
+      categoryResult.categories.forEach(category => {
+        const score = category.score || 0;
+        // Convert percentage to IRT scale (-3 to +3)
+        const abilityEstimate = ((score - 50) / 50) * 2; // Rough conversion
+        abilityEstimates[category.categoryName] = Math.max(-3, Math.min(3, abilityEstimate));
+      });
+    }
+
+    return abilityEstimates;
+  }
+
+  /**
+   * Generate basic error patterns from category results
+   */
+  static generateBasicErrorPatterns(categoryResult) {
+    const errorPatterns = {};
+
+    if (categoryResult.categories && Array.isArray(categoryResult.categories)) {
+      categoryResult.categories.forEach(category => {
+        if (category.score < 75) {
+          errorPatterns[category.categoryName] = {
+            error_type: "general_difficulty",
+            error_rate: 100 - category.score,
+            severity: category.score < 50 ? "high" : "moderate",
+            pattern_analysis: "Fallback analysis - detailed patterns require full system"
+          };
+        }
+      });
+    }
+
+    return errorPatterns;
+  }
+
+  /**
+   * Identify basic strengths from category results
+   */
+  static identifyBasicStrengths(categoryResult) {
+    const strengths = [];
+
+    if (categoryResult.categories && Array.isArray(categoryResult.categories)) {
+      categoryResult.categories.forEach(category => {
+        if (category.score >= 75) {
+          strengths.push(`${category.categoryName} - ${category.score}%`);
+        }
+      });
+    }
+
+    return strengths.length > 0 ? strengths : ["Assessment completed"];
+  }
+
+  /**
+   * Identify basic weaknesses from category results
+   */
+  static identifyBasicWeaknesses(categoryResult) {
+    const weaknesses = [];
+
+    if (categoryResult.categories && Array.isArray(categoryResult.categories)) {
+      categoryResult.categories.forEach(category => {
+        if (category.score < 75) {
+          weaknesses.push(`${category.categoryName} - ${category.score}%`);
+        }
+      });
+    }
+
+    return weaknesses.length > 0 ? weaknesses : ["No specific weaknesses identified"];
+  }
+
+  /**
+   * Calculate basic readiness assessment
+   */
+  static calculateBasicReadiness(categoryResult) {
+    const overallScore = categoryResult.overallScore || 0;
+
+    if (overallScore >= 75) {
+      return "Ready for next level";
+    } else if (overallScore >= 50) {
+      return "Needs some intervention";
+    } else {
+      return "Requires intensive intervention";
+    }
+  }
+
+  /**
+   * Determine basic recommended action
+   */
+  static determineBasicAction(categoryResult) {
+    const overallScore = categoryResult.overallScore || 0;
+    const failedCategories = this.countFailedCategories(categoryResult);
+
+    if (failedCategories === 0) {
+      return "continue_to_next_level";
+    } else if (overallScore >= 60) {
+      return "targeted_intervention";
+    } else {
+      return "comprehensive_intervention";
+    }
+  }
+
+  /**
+   * Count passed categories
+   */
+  static countPassedCategories(categoryResult) {
+    if (!categoryResult.categories || !Array.isArray(categoryResult.categories)) {
+      return 0;
+    }
+
+    return categoryResult.categories.filter(category =>
+      category.isPassed || (category.score && category.score >= 75)
+    ).length;
+  }
+
+  /**
+   * Count failed categories
+   */
+  static countFailedCategories(categoryResult) {
+    if (!categoryResult.categories || !Array.isArray(categoryResult.categories)) {
+      return 0;
+    }
+
+    return categoryResult.categories.filter(category =>
+      !category.isPassed && (!category.score || category.score < 75)
+    ).length;
+  }
+
+  /**
+   * Generate basic intervention plan
+   */
+  static generateBasicInterventionPlan(categoryResult) {
+    const failedCategories = [];
+
+    if (categoryResult.categories && Array.isArray(categoryResult.categories)) {
+      categoryResult.categories.forEach(category => {
+        if (!category.isPassed && (!category.score || category.score < 75)) {
+          failedCategories.push(category.categoryName);
+        }
+      });
+    }
+
+    if (failedCategories.length === 0) {
+      return {
+        required: false,
+        priority: [],
+        specificFocus: {}
+      };
+    }
+
+    return {
+      required: true,
+      priority: failedCategories,
+      specificFocus: failedCategories.reduce((acc, category) => {
+        acc[category] = {
+          focus: "general_improvement",
+          recommendedActivities: ["review_fundamentals", "practice_exercises"],
+          questionDistribution: { "general": 100 }
+        };
+        return acc;
+      }, {})
+    };
   }
 }
 
