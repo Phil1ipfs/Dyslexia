@@ -2479,46 +2479,20 @@ class CategoryResultsService {
           categories: record.categories.map(cat => cat.categoryName)
         })));
 
-        // 🚨 CRITICAL FIX: If reading level filtering fails, try without reading level as last resort
-        // This prevents complete failure while still logging the issue
-        if (readingLevel) {
-          console.warn(`[INTERVENTION UPDATE] 🚨 FALLBACK: Trying without reading level filter as emergency measure`);
-          const fallbackQuery = {
-            studentId: parseInt(studentId),
-            'categories.categoryName': category
-          };
+        // 🛡️ CROSS-LEVEL CONTAMINATION PREVENTION:
+        // NO FALLBACK LOGIC - This was causing interventions to be saved to wrong reading levels!
+        // If the exact reading level + category combination doesn't exist, the intervention
+        // belongs to a reading level that doesn't have this category yet, which means
+        // the category_results record needs to be created properly first.
 
-          const fallbackResult = await CategoryResult.findOne(fallbackQuery);
-          if (fallbackResult) {
-            console.warn(`[INTERVENTION UPDATE] ⚠️ FALLBACK SUCCESS: Found record with reading level ${fallbackResult.readingLevel} (expected ${readingLevel})`);
-            console.warn(`[INTERVENTION UPDATE] ⚠️ This indicates a data inconsistency that needs investigation`);
+        console.error(`[INTERVENTION UPDATE] 🚨 STRICT MODE: No fallback logic - preventing cross-level contamination`);
+        console.error(`[INTERVENTION UPDATE] 📋 Possible causes:`);
+        console.error(`   1. Student just progressed reading levels and category_results not created yet`);
+        console.error(`   2. Race condition between progression and intervention completion`);
+        console.error(`   3. Data integrity issue - missing category_results record`);
+        console.error(`[INTERVENTION UPDATE] 🔧 Solution: Ensure category_results exists for current reading level before intervention`);
 
-            // Log the discrepancy for debugging
-            console.error(`[INTERVENTION UPDATE] 🚨 DATA INCONSISTENCY DETECTED:`);
-            console.error(`   Expected reading level: ${readingLevel}`);
-            console.error(`   Found reading level: ${fallbackResult.readingLevel}`);
-            console.error(`   This should be investigated and fixed manually`);
-
-            // Continue with the fallback result but flag it
-            const fallbackUpdateResult = await this.performCategoryUpdateLogic(
-              fallbackResult,
-              category,
-              interventionScore,
-              interventionResultId,
-              parseInt(studentId),
-              `FALLBACK_UPDATE_READING_LEVEL_MISMATCH_${readingLevel}_vs_${fallbackResult.readingLevel}`
-            );
-
-            return {
-              success: true,
-              result: fallbackUpdateResult,
-              warning: `Data inconsistency: Expected ${readingLevel}, found ${fallbackResult.readingLevel}`,
-              requiresManualReview: true
-            };
-          }
-        }
-
-        throw new Error(`Category result not found for student ${studentId}, category ${category}, reading level ${readingLevel}`);
+        throw new Error(`STRICT MODE: Category result not found for student ${studentId}, category ${category}, reading level ${readingLevel}. No fallback to prevent cross-level contamination.`);
       }
 
       // Use helper method to perform the actual update
@@ -2617,10 +2591,25 @@ class CategoryResultsService {
       categoryResult.categories[categoryIndex].interventionHistory = [];
     }
 
+    // 🔍 FETCH INTERVENTION ASSESSMENT ID FROM INTERVENTION RESULTS
+    let interventionAssessmentId = null;
+    try {
+      const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+      const interventionResult = await InterventionResults.findById(interventionResultId);
+      if (interventionResult && interventionResult.interventionAssessmentId) {
+        interventionAssessmentId = interventionResult.interventionAssessmentId;
+        console.log(`[INTERVENTION UPDATE] ✅ Found interventionAssessmentId: ${interventionAssessmentId}`);
+      } else {
+        console.warn(`[INTERVENTION UPDATE] ⚠️ No interventionAssessmentId found for interventionResultId: ${interventionResultId}`);
+      }
+    } catch (fetchError) {
+      console.error(`[INTERVENTION UPDATE] ❌ Error fetching interventionAssessmentId:`, fetchError.message);
+    }
+
     const attemptNumber = categoryResult.categories[categoryIndex].interventionHistory.length + 1;
     const interventionEntry = {
       attemptNumber: attemptNumber,
-      interventionId: null, // Will be set if available
+      interventionId: interventionAssessmentId, // ✅ Now properly set from intervention_results
       interventionResultId: interventionResultId,
       score: interventionScore,
       isPassed: interventionScore >= 75,

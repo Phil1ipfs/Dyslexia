@@ -332,14 +332,27 @@ interventionResultsSchema.post('save', async function(doc) {
     try {
       const CategoryResultsService = require('../../../services/Teachers/CategoryResultsService');
 
-      console.log(`[INTERVENTION RESULTS] ✅ Intervention passed - triggering category_results update for student ${doc.studentId}, category ${doc.category}, reading level ${doc.readingLevel}`);
+      // 🛡️ FINAL SAFETY CHECK: Verify student's current reading level
+      // This prevents race conditions where student progresses between intervention creation and completion
+      const User = require('../../userModel');
+      const currentUser = await User.findOne({ idNumber: doc.studentId });
+      const currentReadingLevel = currentUser ? currentUser.readingLevel : doc.readingLevel;
+
+      if (currentReadingLevel !== doc.readingLevel) {
+        console.warn(`[INTERVENTION RESULTS] ⚠️ READING LEVEL MISMATCH DETECTED:`);
+        console.warn(`   Intervention created at: ${doc.readingLevel}`);
+        console.warn(`   Student current level: ${currentReadingLevel}`);
+        console.warn(`   Using current reading level to prevent cross-level contamination`);
+      }
+
+      console.log(`[INTERVENTION RESULTS] ✅ Intervention passed - triggering category_results update for student ${doc.studentId}, category ${doc.category}, reading level ${currentReadingLevel}`);
 
       const updateResult = await CategoryResultsService.updateCategoryFromIntervention(
         doc.studentId,
         doc.category,
         doc.score,
         doc._id,
-        doc.readingLevel  // 🎯 FIX: Pass reading level to prevent cross-level contamination
+        currentReadingLevel  // 🛡️ SAFETY: Use current reading level, not stale intervention reading level
       );
 
       console.log(`[INTERVENTION RESULTS] 🔍 Update result:`, JSON.stringify(updateResult, null, 2));
