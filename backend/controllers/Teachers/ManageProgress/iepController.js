@@ -695,10 +695,14 @@ class IEPController {
           objective.isPassed = categoryData.isPassed || false;
           objective.passingThreshold = categoryData.passingThreshold || 75;
 
+          // ✅ CRITICAL FIX: Check if category has intervention data OR if IEP already has intervention history
+          const hasNewInterventionData = categoryData.interventionHistory && categoryData.interventionHistory.length > 0;
+          const hasExistingInterventionData = originalTeacherData[objective.categoryName]?.interventionHistory && originalTeacherData[objective.categoryName].interventionHistory.length > 0;
+
           // Update comprehensive intervention data
-          if (categoryData.interventionHistory && categoryData.interventionHistory.length > 0) {
+          if (hasNewInterventionData || hasExistingInterventionData) {
             objective.hasIntervention = true;
-            objective.interventionAttempts = categoryData.interventionAttempts || categoryData.interventionHistory.length;
+            objective.interventionAttempts = categoryData.interventionAttempts || categoryData.interventionHistory?.length || originalTeacherData[objective.categoryName]?.interventionHistory?.length || 0;
             objective.interventionCompleted = categoryData.interventionCompleted || false;
             objective.interventionId = categoryData.currentInterventionId || null;
 
@@ -706,10 +710,21 @@ class IEPController {
             const originalHistory = originalTeacherData[objective.categoryName]?.interventionHistory || [];
             console.log(`  🔍 DEBUG: Preserving intervention history for ${objective.categoryName}`);
             console.log(`    📋 Original history count: ${originalHistory.length}`);
-            console.log(`    📋 New category data count: ${categoryData.interventionHistory.length}`);
+            console.log(`    📋 New category data count: ${categoryData.interventionHistory?.length || 0}`);
+            console.log(`    📋 Has new intervention data: ${hasNewInterventionData}`);
+            console.log(`    📋 Has existing intervention data: ${hasExistingInterventionData}`);
 
-            // Map fresh intervention history with enhanced teacher remarks preservation
-            objective.interventionHistory = categoryData.interventionHistory.map((attempt, index) => {
+            // ✅ CRITICAL FIX: If no new intervention data but has existing data, preserve existing entirely
+            if (!hasNewInterventionData && hasExistingInterventionData) {
+              console.log(`    🔒 No new intervention data - preserving existing intervention history entirely`);
+              objective.interventionHistory = originalHistory.map(attempt => ({
+                ...attempt,
+                // Ensure teacher remarks are preserved as-is
+                teacherRemarks: attempt.teacherRemarks || ''
+              }));
+            } else {
+              // Map fresh intervention history with enhanced teacher remarks preservation
+              objective.interventionHistory = (categoryData.interventionHistory || []).map((attempt, index) => {
               const attemptNumber = attempt.attemptNumber || (index + 1);
 
               // ✅ ENHANCED: Try multiple matching strategies for teacher remarks preservation
@@ -775,9 +790,12 @@ class IEPController {
                 }
               }
             }
+            }  // ✅ Close the "else" block for enhanced intervention mapping
 
-            // Set latest intervention data
-            const latestAttempt = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
+            // Set latest intervention data - use intervention history from objective (which now has preserved data)
+            const latestAttempt = objective.interventionHistory?.length > 0
+              ? objective.interventionHistory[objective.interventionHistory.length - 1]
+              : null;
             objective.latestInterventionScore = latestAttempt?.score || 0;
             objective.latestInterventionPassed = latestAttempt?.isPassed || false;
             objective.interventionImprovement = Math.max(0, (objective.latestInterventionScore || 0) - (objective.assessmentScore || 0));

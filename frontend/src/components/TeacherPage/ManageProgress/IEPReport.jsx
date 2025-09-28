@@ -509,13 +509,25 @@ const IEPReport = ({
       setError(null);
       
       const studentId = student?.id || student?._id;
-      console.log('Loading IEP data for student:', studentId);
-      
-      const response = await IEPService.getIEPReport(studentId);
+      const currentReadingLevel = student?.readingLevel;
+
+      console.log('Loading IEP data for student:', studentId, 'Reading Level:', currentReadingLevel);
+
+      // ✅ CRITICAL FIX: Pass current reading level to get correct IEP
+      const response = await IEPService.getIEPReport(studentId, null, currentReadingLevel);
       
       if (response.success && response.data) {
         console.log('Setting IEP data:', response.data);
         console.log('About to call setIepData...');
+
+        // ✅ VALIDATION: Ensure IEP data matches current student reading level
+        const iepReadingLevel = response.data.readingLevel;
+        if (currentReadingLevel && iepReadingLevel !== currentReadingLevel) {
+          console.warn(`⚠️ IEP reading level mismatch: Expected ${currentReadingLevel}, Got ${iepReadingLevel}`);
+          // Still proceed but log the mismatch for debugging
+        } else {
+          console.log(`✅ IEP reading level validation passed: ${iepReadingLevel}`);
+        }
         
 
           // Use direct state setters with immediate verification
@@ -1813,8 +1825,16 @@ const IEPReport = ({
             <FaBook />
           </div>
           <div className="literexia-summary-content">
-            <span className="literexia-summary-label">Reading Level</span>
-            <span className="literexia-summary-value">{currentIepData.readingLevel || 'Not Assessed'}</span>
+            <span className="literexia-summary-label">Current Reading Level</span>
+            <span className="literexia-summary-value">
+              {currentIepData.readingLevel || 'Not Assessed'}
+              {currentIepData.readingLevel && (
+                <span className="literexia-current-level-badge">
+                  <FaCheckCircle style={{ marginLeft: '8px', color: '#28a745', fontSize: '14px' }} />
+                  Current
+                </span>
+              )}
+            </span>
           </div>
         </div>
         
