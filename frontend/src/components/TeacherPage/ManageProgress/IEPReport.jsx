@@ -3051,13 +3051,19 @@ const IEPReport = ({
                 </div>
                 <div className="literexia-warning-content">
                   <h4>Are you sure you want to progress {getStudentName()} to the next reading level?</h4>
-                  <p>This action will:</p>
-                  <ul className="literexia-progression-list">
-                    <li><FaCheckCircle className="literexia-list-icon" />Update their reading level</li>
-                    <li><FaCheckCircle className="literexia-list-icon" />Delete old category_results records</li>
-                    <li><FaCheckCircle className="literexia-list-icon" />Create fresh category_results for the new level</li>
-                    <li><FaCheckCircle className="literexia-list-icon" />Preserve all intervention history and progress</li>
-                  </ul>
+                  <div className="literexia-level-progression-info">
+                    <div className="literexia-current-level">
+                      <span className="literexia-level-label">Current Level:</span>
+                      <span className="literexia-level-value">{currentIepData?.readingLevel || 'Not Assessed'}</span>
+                    </div>
+                    <div className="literexia-arrow-separator">
+                      <FaArrowUp />
+                    </div>
+                    <div className="literexia-next-level">
+                      <span className="literexia-level-label">Next Level:</span>
+                      <span className="literexia-level-value next">{getNextReadingLevel()}</span>
+                    </div>
+                  </div>
                   <div className="literexia-warning-footer">
                     <FaInfoCircle className="literexia-warning-footer-icon" />
                     <strong>This action cannot be undone.</strong>
