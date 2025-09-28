@@ -1077,7 +1077,7 @@ connectDB().then(async (connected) => {
     }
     // Load IEP routes
     try {
-      const iepRoutes = require('./routes/Teachers/ManageProgress/iepRoutes');
+      const iepRoutes = require('./routes/Teachers/iepRoutes');
       app.use('/api/iep', iepRoutes);
       console.log('✅ Loaded IEP routes at /api/iep/*');
     } catch (error) {
@@ -1136,7 +1136,7 @@ connectDB().then(async (connected) => {
 
 // Start the server
 app.listen(PORT, async () => {
-  console.log(`\n✅ Server is running on port ${PORT}`);
+  console.log(`\n✅ Server is running on port ${PORT} - Data Integrity Fixes Applied`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`API URL: http://localhost:${PORT}`);
 
@@ -1235,5 +1235,27 @@ app.listen(PORT, async () => {
     console.log('🎯 Category results fix service auto-started - will check and fix category statistics every 5 minutes');
   } catch (error) {
     console.warn('⚠️ Could not start category results fix service:', error.message);
+  }
+
+  // Start automatic data processor (generates missing category_results)
+  try {
+    const AutomaticDataProcessor = require('./services/AutomaticDataProcessor');
+
+    console.log('🤖 Starting automatic data processing...');
+    await AutomaticDataProcessor.initializeAutoProcessing();
+    console.log('✅ Automatic data processor initialized - will process missing category_results');
+  } catch (error) {
+    console.warn('⚠️ Could not start automatic data processor:', error.message);
+  }
+
+  // Start automatic IEP report generator
+  try {
+    const AutomaticIEPReportGenerator = require('./services/AutomaticIEPReportGenerator');
+
+    console.log('📋 Starting automatic IEP report generation...');
+    await AutomaticIEPReportGenerator.initializeAutoGeneration();
+    console.log('✅ Automatic IEP report generator initialized - will generate IEP reports from assessments and interventions');
+  } catch (error) {
+    console.warn('⚠️ Could not start automatic IEP report generator:', error.message);
   }
 });

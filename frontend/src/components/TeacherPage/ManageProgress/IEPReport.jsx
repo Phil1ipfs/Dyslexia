@@ -158,6 +158,22 @@ const IEPReport = ({
     return 'Parent';
   };
 
+  // Get teacher name
+  const getTeacherName = () => {
+    try {
+      if (teacherProfile?.firstName && teacherProfile?.lastName) {
+        return `${teacherProfile.firstName} ${teacherProfile.lastName}`;
+      } else if (teacherProfile?.name) {
+        return teacherProfile.name;
+      } else {
+        return 'Teacher';
+      }
+    } catch (error) {
+      console.error('Error getting teacher name:', error);
+      return 'Teacher';
+    }
+  };
+
   // Refs for PDF generation
   const reportRef = useRef();
 
@@ -1270,6 +1286,75 @@ const IEPReport = ({
     }
   };
 
+  // Handler for reading level progression
+  const handleReadingLevelProgression = async () => {
+    if (!canProgressToNextLevel()) {
+      toast.error('Student must complete all categories before progressing to the next reading level');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to progress ${getStudentName()} to the next reading level? This will:\n\n` +
+      '• Update their reading level\n' +
+      '• Delete old category_results records\n' +
+      '• Create fresh category_results for the new level\n' +
+      '• Preserve all intervention history and progress\n\n' +
+      'This action cannot be undone.';
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      toast.loading('Progressing student to next reading level...');
+
+      const response = await fetch(`/api/iep/progress-reading-level/${student.idNumber}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(`Student successfully progressed to ${result.newReadingLevel}!`);
+
+        // Refresh the IEP data to show new reading level
+        setTimeout(() => {
+          loadIEPData();
+        }, 1000);
+      } else {
+        throw new Error(result.error || 'Failed to progress reading level');
+      }
+    } catch (error) {
+      console.error('Error progressing reading level:', error);
+      toast.error(`Failed to progress reading level: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
+  // Check if student can progress to next reading level
+  const canProgressToNextLevel = () => {
+    if (!currentIepData?.objectives) return false;
+
+    // Check if all categories are completed and passed
+    const allObjectives = currentIepData.objectives;
+    const completedAndPassed = allObjectives.every(obj =>
+      obj.isCompleted && (obj.isPassed || obj.latestInterventionPassed)
+    );
+
+    // Get current reading level and check if there's a next level
+    const currentLevel = currentIepData.readingLevel;
+    const levels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+    const currentIndex = levels.indexOf(currentLevel);
+    const hasNextLevel = currentIndex >= 0 && currentIndex < levels.length - 1;
+
+    return completedAndPassed && hasNextLevel;
+  };
+
   // Render parent image with proper fallback (from StudentDetails.jsx)
   const renderParentImage = () => {
     if (parentProfile && parentProfile.profileImageUrl) {
@@ -1641,21 +1726,6 @@ const IEPReport = ({
   };
 
 
-  // Get teacher name
-  const getTeacherName = () => {
-    try {
-      if (teacherProfile?.firstName && teacherProfile?.lastName) {
-        return `${teacherProfile.firstName} ${teacherProfile.lastName}`;
-      } else if (teacherProfile?.name) {
-        return teacherProfile.name;
-    } else {
-        return 'Teacher';
-      }
-    } catch (error) {
-      console.error('Error getting teacher name:', error);
-      return 'Teacher';
-    }
-  };
 
 
   // Get parent email
@@ -1754,8 +1824,43 @@ const IEPReport = ({
         </div>
       </div>
 
+      {/* Student Progress Actions */}
+      <div className="literexia-progress-actions">
+        <div className="literexia-actions-header">
+          <h3>
+            <FaUserGraduate />
+            Student Progress Actions
+          </h3>
+          <p>Manage student reading level progression</p>
+        </div>
 
-      
+        <div className="literexia-action-buttons">
+          {/* Button 1: Reading Level Progression */}
+          <div className="literexia-action-item">
+            <div className="literexia-action-info">
+              <div className="literexia-action-title">
+                <FaArrowUp className="literexia-action-icon" />
+                Reading Level Progression
+              </div>
+              <div className="literexia-action-description">
+                Progress student to next reading level when all categories are completed and passed
+              </div>
+            </div>
+            <button
+              className="literexia-action-button progression"
+              onClick={handleReadingLevelProgression}
+              disabled={!canProgressToNextLevel() || saving}
+              title={canProgressToNextLevel() ? "Progress to next reading level" : "Student must complete all categories first"}
+            >
+              {saving ? <FaSpinner className="spinning" /> : <FaArrowUp />}
+              {canProgressToNextLevel() ? 'Progress to Next Level' : 'Not Ready for Progression'}
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+
       {/* Table section */}
       <div className="literexia-iep-table-container">
         <div className="literexia-iep-table-header">

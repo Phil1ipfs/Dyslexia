@@ -188,9 +188,12 @@ router.post('/fix-student-intervention-scores/:studentId', async (req, res) => {
             if (highestInterventionScore > originalScore) {
               console.log(`[INTERVENTION SCORE FIX] 🔄 Updating ${category.categoryName}: ${originalScore}% → ${highestInterventionScore}% (intervention score)`);
 
-              // Update category score and status
-              categoryResult.categories[i].score = highestInterventionScore;
-              categoryResult.categories[i].isPassed = true;
+              // 🔒 PRESERVE ORIGINAL DATA - Update intervention status only
+              console.log(`[INTERVENTION FIX] 🔒 PRESERVING original assessment: score=${categoryResult.categories[i].score}%, isPassed=${categoryResult.categories[i].isPassed}`);
+              console.log(`[INTERVENTION FIX] ✅ Intervention success (${highestInterventionScore}%) tracked in history only`);
+
+              // ❌ REMOVED: categoryResult.categories[i].score = highestInterventionScore;  // PRESERVE original score
+              // ❌ REMOVED: categoryResult.categories[i].isPassed = true;  // PRESERVE original isPassed
               categoryResult.categories[i].interventionCompleted = true;
               categoryResult.categories[i].interventionRequired = false;
 

@@ -128,10 +128,11 @@ const fixInterventionSuccess = async (req, res) => {
 
           // If intervention score is higher and passed, update the category
           if (highestScore >= 75 && (!originalPassed || highestScore > originalScore)) {
-            console.log(`[MANUAL FIX] Updating ${category.categoryName}: ${originalScore}% → ${highestScore}%`);
+            console.log(`[MANUAL FIX] 🔒 PRESERVING original data for ${category.categoryName}: score=${originalScore}%, isPassed=${originalPassed}`);
+            console.log(`[MANUAL FIX] ✅ Intervention success (${highestScore}%) tracked in history only`);
 
-            categoryResults.categories[i].isPassed = true;
-            categoryResults.categories[i].score = highestScore;
+            // ❌ REMOVED: categoryResults.categories[i].isPassed = true;  // PRESERVE original isPassed
+            // ❌ REMOVED: categoryResults.categories[i].score = highestScore;  // PRESERVE original score
             categoryResults.categories[i].interventionRequired = false;
             categoryResults.categories[i].interventionCompleted = true;
 

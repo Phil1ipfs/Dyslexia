@@ -2759,23 +2759,19 @@ class CategoryResultsService {
 
     categoryResult.categories[categoryIndex].interventionHistory.push(interventionEntry);
 
-    // ✅ UPDATE CATEGORY STATUS BASED ON INTERVENTION SUCCESS
+    // ✅ UPDATE INTERVENTION STATUS ONLY - PRESERVE ORIGINAL ASSESSMENT DATA
     if (interventionScore >= 75) {
-      categoryResult.categories[categoryIndex].isPassed = true;
+      // ✅ ONLY update intervention-related fields, NOT original assessment data
       categoryResult.categories[categoryIndex].interventionRequired = false;
       categoryResult.categories[categoryIndex].interventionCompleted = true;
 
-      // ✅ CRITICAL FIX: Update category score to use intervention score when higher
-      if (interventionScore > originalScore) {
-        console.log(`[INTERVENTION UPDATE] 🔄 Updating category score: ${originalScore}% → ${interventionScore}% (intervention score higher)`);
-        categoryResult.categories[categoryIndex].score = interventionScore;
-      } else {
-        console.log(`[INTERVENTION UPDATE] ℹ️ Keeping original score: ${originalScore}% (higher than intervention ${interventionScore}%)`);
-      }
-
-      console.log(`[INTERVENTION UPDATE] ✅ Category now PASSED via intervention (${interventionScore}%)`);
+      // 🔒 PRESERVE ORIGINAL DATA: Original score and isPassed remain unchanged
+      console.log(`[INTERVENTION UPDATE] 🔒 PRESERVING original assessment: score=${originalScore}%, isPassed=${categoryResult.categories[categoryIndex].isPassed}`);
+      console.log(`[INTERVENTION UPDATE] ✅ Intervention passed (${interventionScore}%) - tracked in history only`);
+      console.log(`[INTERVENTION UPDATE] 📊 Category completion determined by: original pass OR intervention success`);
     } else {
       console.log(`[INTERVENTION UPDATE] ❌ Intervention failed (${interventionScore}% < 75%)`);
+      console.log(`[INTERVENTION UPDATE] 🔒 PRESERVING original assessment: score=${originalScore}%, isPassed=${categoryResult.categories[categoryIndex].isPassed}`);
     }
 
     categoryResult.categories[categoryIndex].interventionResultId = interventionResultId;
