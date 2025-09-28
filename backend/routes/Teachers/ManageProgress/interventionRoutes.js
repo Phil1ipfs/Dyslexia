@@ -1,0 +1,356 @@
+// routes/Teachers/ManageProgress/interventionRoutes.js
+const express = require('express');
+const router = express.Router();
+const InterventionController = require('../../../controllers/Teachers/ManageProgress/interventionController');
+const { auth, authorize } = require('../../../middleware/auth');
+const mongoose = require('mongoose');
+const multer = require('multer');
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+// Initialize controller
+const interventionController = new InterventionController();
+
+// Diagnostic route for troubleshooting (admin only)
+router.get('/debug', auth, authorize('admin'), async (req, res) => {
+  try {
+    const { studentId, category } = req.query;
+    const results = {};
+    
+    // Check MongoDB connection
+    results.mongoConnected = mongoose.connection.readyState === 1;
+    
+    // List collections
+    results.collections = await mongoose.connection.db.listCollections().toArray();
+    results.collectionNames = results.collections.map(c => c.name);
+    
+    // If studentId provided, try to find by different methods
+    if (studentId) {
+      const User = require('../../../models/userModel');
+      
+      results.studentLookups = {
+        byIdNumber: await User.findOne({ idNumber: studentId }).lean(),
+        byObjectId: mongoose.Types.ObjectId.isValid(studentId) ? 
+          await User.findById(studentId).lean() : null
+      };
+      
+      if (results.studentLookups.byIdNumber) {
+        results.studentLookups.studentObjectId = results.studentLookups.byIdNumber._id;
+      }
+      
+      // Check prescriptive analysis
+      if (category) {
+        const PrescriptiveAnalysis = require('../../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+        
+        // Try different ways to find prescriptive analysis
+        results.prescriptiveAnalysis = {
+          byIdNumber: await PrescriptiveAnalysis.findOne({ 
+            studentIdNumber: studentId,
+            categoryId: category
+          }).lean(),
+          byObjectId: results.studentLookups.studentObjectId ? 
+            await PrescriptiveAnalysis.findOne({
+              studentId: results.studentLookups.studentObjectId,
+              categoryId: category
+            }).lean() : null
+        };
+        
+        // Check category results
+        const normalizedCategory = category.toLowerCase().replace(/\s+/g, '_');
+        
+        try {
+          results.categoryResults = {
+            byIdNumber: await mongoose.connection.db
+              .collection('category_results')
+              .findOne({
+                studentId: studentId,
+                "categories.categoryName": { $regex: new RegExp(normalizedCategory, 'i') }
+              }),
+            byNumericId: await mongoose.connection.db
+              .collection('category_results')
+              .findOne({
+                studentId: parseInt(studentId),
+                "categories.categoryName": { $regex: new RegExp(normalizedCategory, 'i') }
+              }),
+            byObjectId: results.studentLookups.studentObjectId ? 
+              await mongoose.connection.db
+                .collection('category_results')
+                .findOne({
+                  studentId: results.studentLookups.studentObjectId.toString(),
+                  "categories.categoryName": { $regex: new RegExp(normalizedCategory, 'i') }
+                }) : null
+          };
+        } catch (err) {
+          results.categoryResultsError = err.message;
+        }
+      }
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: results
+    });
+  } catch (error) {
+    console.error('Error in debug route:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error running diagnostics',
+      error: error.message
+    });
+  }
+});
+
+// API endpoints with specific paths (these must come before parameterized routes)
+// Get main assessment questions
+router.get('/questions/main', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.getMainAssessmentQuestions(req, res);
+      // Controller handles the response, so we don't need to return anything here
+    } catch (error) {
+      console.error('Error in GET /questions/main route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// ❌ REMOVED: Additional duplicate template routes
+// GET    /templates/questions
+// PUT    /templates/questions/:templateId
+// DELETE /templates/questions/:templateId
+
+
+// ❌ REMOVED: All template routes from intervention endpoints
+// Template operations should ONLY go through /api/templates/* routes (templatesController.js)
+// These duplicate routes were causing intervention additional questions to be saved as new templates
+//
+// Correct template endpoints:
+// - GET    /api/templates/sentences (templatesController.getSentenceTemplates)
+// - POST   /api/templates/sentences (templatesController.createSentenceTemplate)
+// - PUT    /api/templates/sentences/:id (templatesController.updateSentenceTemplate)
+// - DELETE /api/templates/sentences/:id (templatesController.deleteSentenceTemplate)
+
+// ❌ REMOVED: Final duplicate template routes
+// POST   /templates/questions
+// GET    /templates/all
+//
+// All template operations should use the proper templates controller endpoints:
+// /api/templates/* routes in templatesController.js
+
+// Check if an intervention exists for a student and category
+router.get('/check', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.checkExistingIntervention(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in GET /check route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Get all interventions for a student
+router.get('/student/:studentId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.getStudentInterventions(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in GET /student/:studentId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Upload file directly to S3 with public access (RECOMMENDED)
+router.post('/upload-file',
+  auth,
+  authorize('teacher', 'admin'),
+  upload.single('file'), // Add multer middleware for file upload
+  async (req, res) => {
+    try {
+      await interventionController.uploadFileToS3(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /upload-file route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing file upload',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Get a pre-signed URL for S3 uploads (DEPRECATED - use /upload-file instead)
+router.post('/upload-url', auth, authorize('teacher', 'admin'),
+  async (req, res) => {
+    try {
+      await interventionController.getUploadUrl(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /upload-url route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Record a response to an intervention question
+router.post('/responses', auth, authorize('teacher', 'admin', 'student'), 
+  async (req, res) => {
+    try {
+      await interventionController.recordResponse(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /responses route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Parameterized routes (these must come after specific routes)
+// Get an intervention by ID
+router.get('/:interventionId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.getInterventionById(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in GET /:interventionId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Create a new intervention
+router.post('/', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.createIntervention(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST / route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Update an existing intervention
+router.put('/:interventionId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.updateIntervention(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in PUT /:interventionId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Delete an intervention
+router.delete('/:interventionId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.deleteIntervention(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in DELETE /:interventionId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Push an intervention to mobile
+router.post('/:interventionId/push', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.pushToMobile(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /:interventionId/push route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Activate an intervention by setting its status to 'active'
+router.put('/:interventionId/activate', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.activateIntervention(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in PUT /:interventionId/activate route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing activation request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Update all existing interventions (admin only)
+router.post('/update-existing', auth, authorize('admin'), 
+  async (req, res) => {
+    try {
+      const result = await interventionController.updateExistingInterventions(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /update-existing route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing update request',
+        error: error.message
+      });
+    }
+  }
+);
+
+module.exports = router;

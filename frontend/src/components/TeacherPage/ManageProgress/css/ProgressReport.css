@@ -1,0 +1,3185 @@
+/* src/components/TeacherDashboard/StudentProgress/StudentProgressStyles.css */
+
+/* Main container */
+.student-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #333;
+  background-color: #fff;
+  padding: 0;
+  max-width: 100%;
+  letter-spacing: -0.01em;
+}
+
+/* Progress info section with brain icon */
+.student-progress-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 0.5rem;
+  border-left: 4px solid #3B4F81;
+  box-shadow: 0 4px 15px rgba(59, 79, 129, 0.15);
+  position: relative;
+}
+
+.student-progress-info-icon {
+  font-size: 2rem;
+  color: #3B4F81;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.student-progress-info-text h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #3B4F81;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.student-progress-info-text p {
+  margin: 0;
+  color: #3B4F81;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.student-progress-info-text strong {
+  color: #3B4F81;
+  font-weight: 600;
+}
+
+/* Summary Cards at the top */
+.student-progress-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Centered summary cards (3 cards) */
+.student-progress-summary-cards-centered {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.student-progress-summary-cards-centered .student-progress-summary-card {
+  flex: 0 0 280px;
+  max-width: 280px;
+}
+
+.student-progress-summary-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 20px rgba(59, 79, 129, 0.12);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s, box-shadow 0.3s;
+  opacity: 0;
+  transform: translateY(20px);
+  height: 100%;
+  min-height: 120px;
+}
+
+.student-progress-summary-card.animate {
+  animation: fadeSlideUp 0.5s forwards;
+}
+
+.student-progress-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 79, 129, 0.15);
+  background: linear-gradient(135deg, #f7f9fc 0%, #edf2f7 100%);
+}
+
+.student-progress-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.student-progress-card-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #4a5494, #3B4F81);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);
+}
+
+.student-progress-card-value {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #4a5494;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.student-progress-card-value .student-progress-counter {
+  display: inline-block;
+}
+
+/* Reading Level badge */
+.student-progress-reading-level {
+  font-weight: 700;
+  padding: 0.625rem 1.25rem;
+  border-radius: 50px;
+  font-size: 1.125rem;
+  letter-spacing: 0.025em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Reading Level Badge Colors - Aligned with other components */
+.student-progress-reading-level.reading-level-early {
+  background: linear-gradient(135deg, #1e548d, #3B4F81);
+  color: white;
+}
+
+.student-progress-reading-level.reading-level-developing {
+  background: linear-gradient(135deg, #FF9800, #F57C00);
+  color: white;
+}
+
+.student-progress-reading-level.reading-level-fluent {
+  background: linear-gradient(135deg, #4CAF50, #388E3C);
+  color: white;
+}
+
+.student-progress-reading-level.reading-level-advanced {
+  background: linear-gradient(135deg, #3F51B5, #303F9F);
+  color: white;
+}
+
+.student-progress-reading-level.reading-level-not-assessed {
+  background: linear-gradient(135deg, #F9A825, #F57F17);
+  color: white;
+}
+
+.student-progress-card-label {
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: auto;
+  letter-spacing: -0.01em;
+}
+
+/* Weekly Assessment Tracker */
+.student-progress-weekly-tracker {
+  /* We're not using this anymore */
+  display: none;
+}
+
+.student-progress-weekly-tracker-filters {
+  margin-bottom: 1.5rem;
+}
+
+.student-progress-weekly-tracker-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.student-progress-completion-bar {
+  margin-bottom: 1.5rem;
+}
+
+.student-progress-completion-bar-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4a5494;
+}
+
+.student-progress-completion-count {
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.student-progress-completion-bar-container {
+  height: 0.75rem;
+  background-color: #e5e7eb;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.student-progress-completion-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #4a5494;
+  border-radius: 8px;
+  transition: width 1s ease;
+}
+
+.student-progress-completion-bar-percentage {
+  position: absolute;
+  top: 0;
+  right: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  line-height: 0.75rem;
+}
+
+.student-progress-category-completion h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #4a5494;
+  margin: 0 0 1.25rem 0;
+}
+
+.student-progress-category-completion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.25rem;
+}
+
+.student-progress-category-completion-item {
+  margin-bottom: 1rem;
+}
+
+.student-progress-category-completion-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.student-progress-category-completion-name {
+  font-weight: 500;
+  color: #4a5494;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-category-completion-count {
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.student-progress-category-completion-bar-container {
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.student-progress-category-completion-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 1s ease;
+}
+
+.student-progress-category-completion-bar-fill.achieved {
+  background-color: #4a5494;
+}
+
+.student-progress-category-completion-bar-fill.developing {
+  background-color: #4a5494;
+}
+
+.student-progress-category-completion-bar-fill.emerging {
+  background-color: #4a5494;
+}
+
+/* Filter section */
+.student-progress-filters {
+  /* We're not using this anymore */
+  display: none;
+}
+
+.student-progress-filter-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4a5494;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.student-progress-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.student-progress-filter-group label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #4a5494;
+}
+
+.student-progress-filter-select {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  font-size: 0.95rem;
+  color: #4b5563;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234a5494'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+}
+
+.student-progress-section-title {
+  margin: 0 0 2rem 0;
+  color: #4a5494;
+  font-size: 1.375rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f3f8;
+}
+
+.student-progress-section-icon {
+  color: #4a5494;
+  font-size: 1.25rem;
+}
+
+.student-progress-category-results {
+  /* We're not using this anymore */
+  display: none;
+}
+
+.student-progress-category-table-container {
+  /* We're not using this anymore */
+  display: none;
+}
+
+.student-progress-category-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  text-align: left;
+  overflow: hidden;
+}
+
+.student-progress-category-table th {
+  background-color: #f7f9fc;
+  padding: 1rem;
+  font-weight: 600;
+  color: #4a5494;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.student-progress-th-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-th-icon {
+  font-size: 0.9rem;
+}
+
+.student-progress-category-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #4b5563;
+  vertical-align: middle;
+}
+
+.student-progress-category-table tr:last-child td {
+  border-bottom: none;
+}
+
+.student-progress-category-table tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.student-progress-category-table tr {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.student-progress-category-table tr.animate {
+  animation: fadeSlideRight 0.5s forwards;
+}
+
+.student-progress-category-table tr:hover {
+  background-color: #f0f3f8;
+}
+
+.student-progress-category-label {
+  font-weight: 500;
+  color: #4a5494;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-score-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  background-color: #4a5494;
+  color: white;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-align: center;
+  min-width: 3rem;
+}
+
+.student-progress-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 50px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.student-progress-status-badge.achieved {
+  background-color: #dcf5e7;
+  color: #0f766e;
+}
+
+.student-progress-status-badge.in-progress {
+  background-color: #fff1db;
+  color: #b45309;
+}
+
+.student-progress-view-recommendations-btn {
+  background-color: #4a5494;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.student-progress-view-recommendations-btn:hover {
+  background-color: #3B4F81;
+}
+
+.student-progress-categories-attention {
+  display: flex;
+  gap: 1.25rem;
+  background-color: #fff1db;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #f59e0b;
+  align-items: center;
+}
+
+.student-progress-attention-icon {
+  font-size: 1.75rem;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.student-progress-attention-message {
+  flex: 1;
+}
+
+.student-progress-attention-message h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.student-progress-attention-message p {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+.student-progress-attention-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.student-progress-attention-category {
+  background-color: rgba(255, 255, 255, 0.6);
+  padding: 0.75rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.student-progress-attention-category-name {
+  font-weight: 500;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-attention-category-score {
+  font-weight: 600;
+  color: #92400e;
+}
+
+.student-progress-attention-category-gap {
+  font-size: 0.85rem;
+  color: #b45309;
+}
+
+/* Process Note - Matching the style from PreAssessmentResults */
+.student-progress-process-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border-left: 4px solid #4CAF50;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.15);
+}
+
+.student-progress-process-note-icon {
+  font-size: 2rem;
+  color: #4CAF50;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.student-progress-process-note-text p {
+  margin: 0;
+  color: #2E7D32;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.student-progress-process-note-text strong {
+  color: #2E7D32;
+  font-weight: 600;
+}
+
+/* Empty state */
+.student-progress-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #f4f6ff;
+  border-radius: 16px;
+  color: #4a5494;
+  border: 2px dashed rgba(74, 84, 148, 0.3);
+}
+
+.student-progress-empty-state svg {
+  margin-bottom: 1rem;
+  color: #4a5494;
+  opacity: 0.7;
+}
+
+.student-progress-empty-state h3 {
+  margin: 1rem 0 0.5rem 0;
+  color: #4a5494;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.student-progress-empty-state p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #4b5563;
+}
+
+/* Animations */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 1200px) {
+  .student-progress-summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .student-progress-category-completion-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+  
+  .student-progress-attention-categories {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .student-progress-info {
+    flex-direction: column;
+  }
+  
+  .student-progress-summary-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .student-progress-filters {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .student-progress-filter-group {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.75rem;
+  }
+  
+  .student-progress-filter-select {
+    width: 100%;
+  }
+  
+  .student-progress-category-completion-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .student-progress-attention-categories {
+    grid-template-columns: 1fr;
+  }
+  
+  .student-progress-categories-attention {
+    flex-direction: column;
+  }
+  
+  .student-progress-process-note {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 576px) {
+  .student-progress-category-table-container {
+    margin: 0 -1.25rem;
+    width: calc(100% + 2.5rem);
+  }
+  
+  .student-progress-category-table {
+    min-width: 650px;
+  }
+}
+
+/* Weekly Assessment Tracker - Updated Styles */
+.student-progress-completion-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.student-progress-completion-status.mastered {
+  background-color: #dcf5e7;
+  color: #0f766e;
+}
+
+.student-progress-completion-status.in-progress {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.student-progress-completion-status.needs-attention {
+  background-color: #fff1db;
+  color: #b45309;
+}
+
+.student-progress-completion-status.not-started {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.student-progress-completion-details {
+  margin: 0.75rem 0;
+}
+
+.student-progress-completion-score {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.student-progress-completion-score strong {
+  color: #4a5494;
+  font-weight: 600;
+}
+
+.student-progress-category-completion-bar-fill.mastered {
+  background-color: #10b981;
+}
+
+.student-progress-category-completion-bar-fill.in-progress {
+  background-color: #3b82f6;
+}
+
+.student-progress-category-completion-bar-fill.needs-attention {
+  background-color: #f59e0b;
+}
+
+.student-progress-category-completion-bar-fill.not-started {
+  background-color: #9ca3af;
+}
+
+.student-progress-question-breakdown {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.student-progress-question-indicator {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.student-progress-question-indicator.correct {
+  background-color: #dcf5e7;
+  color: #0f766e;
+  border: 1px solid #10b981;
+}
+
+.student-progress-question-indicator.incorrect {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #9ca3af;
+}
+
+.student-progress-future-status {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #4a5494;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-future-status::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+}
+
+/* Category Progress - Simplified Styles */
+.student-progress-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.student-progress-category-card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  position: relative;
+  border-top: 4px solid #9ca3af;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.student-progress-category-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.student-progress-category-card.passed {
+  border-top-color: #10b981;
+}
+
+.student-progress-category-card.in-progress {
+  border-top-color: #3b82f6;
+}
+
+.student-progress-category-card.not-started {
+  border-top-color: #9ca3af;
+}
+
+.student-progress-category-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.student-progress-category-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: #f0f9ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a5494;
+  font-size: 1.2rem;
+  margin-right: 1rem;
+}
+
+.student-progress-category-info {
+  flex: 1;
+}
+
+.student-progress-category-info h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.student-progress-category-metrics {
+  display: flex;
+  gap: 1rem;
+}
+
+.student-progress-score {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #4a5494;
+}
+
+.student-progress-count {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.student-progress-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.student-progress-status.passed {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.student-progress-status.in-progress {
+  background-color: #dbeafe;
+  color: #1d40af;
+}
+
+.student-progress-status.not-started {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.student-progress-dots {
+  display: flex;
+  justify-content: space-between;
+  margin: 1rem 0;
+}
+
+.student-progress-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  border: 2px solid #d1d5db;
+}
+
+.student-progress-dot.correct {
+  background-color: #10b981;
+  border-color: #059669;
+}
+
+.student-progress-message {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 0.75rem;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .student-progress-category-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Combined Category Section */
+.student-progress-category-section {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(59, 79, 129, 0.12);
+  border: 1px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+
+/* Category Action Section */
+.student-progress-category-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.student-progress-view-recommendations-btn {
+  background-color: #4a5494;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+}
+
+.student-progress-view-recommendations-btn:hover {
+  background-color: #3B4F81;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(59, 79, 129, 0.2);
+}
+
+.student-progress-success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #059669;
+  font-weight: 600;
+  padding: 0.6rem 1rem;
+  background-color: #d1fae5;
+  border-radius: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Status colors */
+.student-progress-status.needs-attention {
+  background-color: #fff1db;
+  color: #b45309;
+}
+
+.student-progress-category-card.needs-attention {
+  border-top-color: #f59e0b;
+}
+
+/* Simplify the attention warning */
+.student-progress-categories-attention {
+  display: flex;
+  gap: 1.25rem;
+  background-color: #fff1db;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #f59e0b;
+  align-items: center;
+}
+
+.student-progress-attention-message {
+  flex: 1;
+}
+
+.student-progress-attention-message h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.student-progress-attention-message p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+/* Unified Recommendations Button Section */
+.student-progress-unified-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.student-progress-unified-recommendations-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #4a5494;
+  color: white;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.student-progress-unified-recommendations-btn:hover {
+  background-color: #3c4677;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.student-progress-unified-info {
+  margin-top: 0.75rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Intervention Progress Indicator */
+.student-progress-intervention-status {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  background-color: #f0f9ff;
+  border-radius: 8px;
+  border-left: 3px solid #0ea5e9;
+}
+
+.student-progress-intervention-icon {
+  color: #0ea5e9;
+  margin-right: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.student-progress-intervention-progress {
+  flex: 1;
+}
+
+.student-progress-intervention-label {
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.student-progress-intervention-bar {
+  height: 8px;
+  background-color: #e0f2fe;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.student-progress-intervention-fill {
+  height: 100%;
+  background-color: #0ea5e9;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Additional Status Classes for Intervention States */
+.student-progress-category-card.intervention-complete {
+  border-top-color: #059669;
+}
+
+.student-progress-status.intervention-complete {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.student-progress-category-card.intervention-progress {
+  border-top-color: #0ea5e9;
+}
+
+.student-progress-status.intervention-progress {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+/* Enhanced Question Details Styles */
+.student-progress-category-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.student-progress-expand-btn {
+  background: none;
+  border: none;
+  color: #4a5494;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.student-progress-expand-btn:hover {
+  background-color: #f1f3f9;
+  color: #3B4F81;
+  transform: scale(1.1);
+}
+
+.student-progress-needs-attention {
+  margin-top: 0.5rem;
+}
+
+.student-progress-attention-badge {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Question Details Section */
+.student-progress-question-details {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e5e7eb;
+  background-color: #f8fafc;
+  border-radius: 0 0 12px 12px;
+  padding: 1.5rem;
+  margin: 1.5rem -1.5rem -1.5rem -1.5rem;
+}
+
+.student-progress-question-details-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  color: #3B4F81;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.student-progress-loading-questions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.student-progress-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #4a5494;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.student-progress-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-progress-question-item {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.student-progress-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.student-progress-question-number {
+  background-color: #3B4F81;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.student-progress-question-id {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.student-progress-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.student-progress-status-badge--correct {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.student-progress-status-badge--incorrect {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.student-progress-question-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-progress-question-text {
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.student-progress-question-media {
+  margin: 0.5rem 0;
+}
+
+.student-progress-image-preview-btn {
+  background-color: #3B4F81;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.student-progress-image-preview-btn:hover {
+  background-color: #4a5494;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.2);
+}
+
+.student-progress-answer-comparison {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.student-progress-answer-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.student-progress-answer-row:last-child {
+  margin-bottom: 0;
+}
+
+.student-progress-answer-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+
+.student-progress-answer-value {
+  flex: 1;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  margin-left: 0.5rem;
+}
+
+.student-progress-answer-value--correct {
+  background-color: #d1fae5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.student-progress-answer-value--incorrect {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.student-progress-no-questions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+}
+
+/* Responsive adjustments for question details */
+@media (max-width: 768px) {
+  .student-progress-question-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .student-progress-answer-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .student-progress-answer-label {
+    min-width: auto;
+  }
+  
+  .student-progress-answer-value {
+    margin-left: 0;
+  }
+}
+
+/* New Side-by-Side Category Layout */
+.student-progress-categories-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.progress-category-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border-left: 4px solid #10b981;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.progress-category-card.needs-attention {
+  border-left-color: #f59e0b;
+}
+
+.progress-category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.progress-category-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.progress-category-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.progress-category-icon {
+  color: #4a5494;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.progress-category-title h3 {
+  color: #1f2937;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+.progress-needs-attention-badge {
+  background-color: #fef3c7;
+  color: #d97706;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.progress-expand-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.progress-expand-btn:hover {
+  background-color: #f3f4f6;
+  color: #4a5494;
+}
+
+.progress-category-metrics {
+  margin-bottom: 1rem;
+}
+
+.progress-score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.progress-score-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.progress-score-fraction {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.progress-dots-container {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s ease;
+}
+
+.progress-dot.correct {
+  background-color: #10b981;
+  border-color: #059669;
+}
+
+.progress-status-message {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.progress-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+.progress-need-more {
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Question Details Styles */
+.progress-question-details {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e5e7eb;
+  background-color: #f8fafc;
+  border-radius: 0 0 12px 12px;
+  padding: 1.5rem;
+  margin: 1.5rem -1.5rem -1.5rem -1.5rem;
+}
+
+.progress-question-details-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  color: #3B4F81;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.progress-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.progress-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #4a5494;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.progress-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.progress-question-item {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.progress-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.progress-question-number {
+  background-color: #3B4F81;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.progress-question-id {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.progress-question-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.progress-question-text {
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.progress-question-media {
+  margin: 0.5rem 0;
+}
+
+.progress-image-preview-btn {
+  background-color: #3B4F81;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.progress-image-preview-btn:hover {
+  background-color: #4a5494;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.2);
+}
+
+.progress-answer-comparison {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.progress-answer-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.progress-answer-row:last-child {
+  margin-bottom: 0;
+}
+
+.progress-answer-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+
+.progress-answer-value {
+  flex: 1;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  margin-left: 0.5rem;
+}
+
+.progress-answer-value--correct {
+  background-color: #d1fae5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.progress-answer-value--incorrect {
+  background-color: #fef3c7;
+  border-color: #fbbf24;
+  color: #d97706;
+}
+
+.progress-no-questions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+}
+
+/* New Individual Row-based Layout (like Pre Assessment Results) */
+.student-progress-categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.student-progress-category-item {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.student-progress-category-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.student-progress-category-passed {
+  border-left: 4px solid #10b981;
+}
+
+.student-progress-category-needs-attention {
+  border-left: 4px solid #f59e0b;
+}
+
+.student-progress-category-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  cursor: default;
+}
+
+.student-progress-category-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.student-progress-category-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #4a5494, #3B4F81);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);
+}
+
+.student-progress-category-info {
+  flex: 1;
+}
+
+.student-progress-category-name {
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.student-progress-needs-attention-badge {
+  background-color: #fef3c7;
+  color: #d97706;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.student-progress-category-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.student-progress-score-display {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #4a5494;
+}
+
+.student-progress-score-fraction {
+  color: #6b7280;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.student-progress-category-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-expand-toggle {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.student-progress-expand-toggle:hover {
+  background-color: #f3f4f6;
+  color: #4a5494;
+  transform: scale(1.1);
+}
+
+.student-progress-dots-container {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 1.5rem 1rem 1.5rem;
+  flex-wrap: wrap;
+}
+
+.student-progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s ease;
+}
+
+.student-progress-dot-correct {
+  background-color: #10b981;
+  border-color: #059669;
+}
+
+.student-progress-dot-empty {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.student-progress-status-summary {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  font-size: 0.9rem;
+}
+
+.student-progress-success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #059669;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  background-color: #d1fae5;
+  border-radius: 8px;
+  justify-content: center;
+}
+
+.student-progress-need-more-message {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+/* Question Details Section for Individual Cards */
+.student-progress-question-details-section {
+  border-top: 2px solid #e5e7eb;
+  background-color: #f8fafc;
+  padding: 1.5rem;
+}
+
+.student-progress-question-details-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem 0;
+  color: #3B4F81;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.student-progress-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.student-progress-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #4a5494;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.student-progress-questions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.student-progress-question-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.student-progress-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.student-progress-question-number {
+  background-color: #3B4F81;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.student-progress-question-id {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.student-progress-question-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-progress-question-text {
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.student-progress-question-media {
+  margin: 0.5rem 0;
+}
+
+.student-progress-image-preview-btn {
+  background-color: #3B4F81;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.student-progress-image-preview-btn:hover {
+  background-color: #4a5494;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.2);
+}
+
+.student-progress-answer-comparison {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.student-progress-answer-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.student-progress-answer-row:last-child {
+  margin-bottom: 0;
+}
+
+.student-progress-answer-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+
+.student-progress-answer-value {
+  flex: 1;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  margin-left: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.student-progress-answer-correct {
+  background-color: #d1fae5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.student-progress-answer-incorrect {
+  background-color: #fef3c7;
+  border-color: #fbbf24;
+  color: #d97706;
+}
+
+.student-progress-no-questions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+}
+
+/* Responsive adjustments for new layout */
+@media (max-width: 768px) {
+  .student-progress-categories-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .student-progress-category-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .student-progress-category-left {
+    width: 100%;
+  }
+  
+  .student-progress-category-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .student-progress-questions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .student-progress-question-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .student-progress-answer-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .student-progress-answer-label {
+    min-width: auto;
+  }
+  
+  .student-progress-answer-value {
+    margin-left: 0;
+  }
+}
+
+
+/* Section Header */
+.student-progress-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+
+/* Responsive adjustments for section header */
+@media (max-width: 768px) {
+  .student-progress-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+/* Phonological Awareness Specific Styles */
+.student-progress-phonological-details {
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid #e2e8f0;
+}
+
+.student-progress-audio-instruction {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #dbeafe;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3b82f6;
+}
+
+.student-progress-audio-icon {
+  color: #3b82f6;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.student-progress-audio-text {
+  color: #1e40af;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.student-progress-matching-pairs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.student-progress-matching-section h5 {
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.student-progress-audio-elements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.student-progress-audio-element {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: #fef3c7;
+  color: #d97706;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: 1px solid #fbbf24;
+}
+
+.student-progress-matching-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.student-progress-matching-option {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: 1px solid #7dd3fc;
+}
+
+.student-progress-matching-response {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid #d1d5db;
+}
+
+.student-progress-matching-response h5 {
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.student-progress-match-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.student-progress-match-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.student-progress-match-pair.correct {
+  background-color: #d1fae5;
+  border-color: #a7f3d0;
+}
+
+.student-progress-match-pair.incorrect {
+  background-color: #fef3c7;
+  border-color: #fbbf24;
+}
+
+.student-progress-match-audio {
+  background-color: #fef3c7;
+  color: #d97706;
+  padding: 0.375rem 0.625rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  min-width: 40px;
+  text-align: center;
+}
+
+.student-progress-match-arrow {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.student-progress-match-letter {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 0.375rem 0.625rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  min-width: 40px;
+  text-align: center;
+}
+
+.student-progress-match-check {
+  font-size: 1rem;
+  margin-left: auto;
+}
+
+.student-progress-match-check.correct {
+  color: #064e3b !important;
+  font-weight: bold;
+}
+
+.student-progress-match-check.incorrect {
+  color: #d97706;
+}
+
+.student-progress-match-summary {
+  background-color: #f3f4f6;
+  padding: 0.75rem;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.student-progress-match-score {
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments for Phonological Awareness */
+@media (max-width: 768px) {
+  .student-progress-matching-pairs {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .student-progress-audio-instruction {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .student-progress-match-pair {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .student-progress-audio-elements,
+  .student-progress-matching-options {
+    justify-content: center;
+  }
+}
+
+/* Word Recognition Specific Styles */
+.student-progress-word-recognition-details {
+  background-color: #f0fdf4;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid #dcfce7;
+}
+
+.student-progress-word-instruction {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #d1fae5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #10b981;
+}
+
+.student-progress-word-icon {
+  color: #10b981;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.student-progress-word-text {
+  color: #065f46;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.student-progress-word-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.student-progress-word-section h5 {
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.student-progress-display-word {
+  background-color: #f3f4f6;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: #1f2937;
+  border: 2px dashed #d1d5db;
+}
+
+.student-progress-word-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.student-progress-word-option {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: 1px solid #7dd3fc;
+}
+
+.student-progress-word-response,
+.student-progress-word-correct {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.student-progress-word-part {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  border: 2px solid;
+}
+
+.student-progress-word-part.correct {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.student-progress-word-part.incorrect {
+  background-color: #fef3c7;
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+/* Decoding Specific Styles */
+.student-progress-decoding-details {
+  background-color: #fef7ff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid #f3e8ff;
+}
+
+.student-progress-decoding-instruction {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #e0e7ff;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #6366f1;
+}
+
+.student-progress-decoding-icon {
+  color: #6366f1;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.student-progress-decoding-text {
+  color: #3730a3;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.student-progress-decoding-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.student-progress-decoding-section h5 {
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.student-progress-decoding-elements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.student-progress-decoding-element {
+  background-color: #f3f4f6;
+  color: #374151;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  border: 2px solid #d1d5db;
+  min-width: 50px;
+  text-align: center;
+}
+
+.student-progress-decoding-response,
+.student-progress-decoding-correct {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.student-progress-decoding-letter {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  border: 2px solid;
+  min-width: 50px;
+  text-align: center;
+}
+
+.student-progress-decoding-letter.correct {
+  background-color: #d1fae5;
+  color: #000000 !important;
+  border-color: #10b981;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.student-progress-decoding-letter.incorrect {
+  background-color: #fef3c7;
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+/* Reading Comprehension Specific Styles */
+.student-progress-comprehension-details {
+  background-color: #fffbeb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid #fef3c7;
+}
+
+.student-progress-comprehension-instruction {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #fef3c7;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #f59e0b;
+}
+
+.student-progress-comprehension-icon {
+  color: #f59e0b;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.student-progress-comprehension-text {
+  color: #92400e;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.student-progress-story-title {
+  background-color: #ffffff;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.student-progress-story-title h5 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.student-progress-comprehension-section h5 {
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.student-progress-comprehension-response,
+.student-progress-comprehension-correct {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+}
+
+.student-progress-comprehension-response.correct {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.student-progress-comprehension-response.incorrect {
+  background-color: #fef3c7;
+  color: #d97706;
+  border: 1px solid #f59e0b;
+}
+
+.student-progress-comprehension-correct {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.student-progress-acceptable-answers {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.student-progress-acceptable-answers small {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+/* Responsive adjustments for all question types */
+@media (max-width: 768px) {
+  .student-progress-word-recognition-details,
+  .student-progress-decoding-details,
+  .student-progress-comprehension-details {
+    padding: 1rem;
+  }
+  
+  .student-progress-word-instruction,
+  .student-progress-decoding-instruction,
+  .student-progress-comprehension-instruction {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .student-progress-word-options,
+  .student-progress-decoding-elements {
+    justify-content: flex-start;
+  }
+  
+  .student-progress-word-response,
+  .student-progress-word-correct,
+  .student-progress-decoding-response,
+  .student-progress-decoding-correct {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+/* ===== READING COMPREHENSION ALL-OR-NOTHING SCORING STYLES ===== */
+.student-progress-rc-all-or-nothing {
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid #4338ca;
+  margin: 1rem 0;
+}
+
+.student-progress-rc-scoring-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.student-progress-rc-scoring-header h5 {
+  color: #374151;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-rc-overall-result {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 2px solid;
+}
+
+.student-progress-rc-overall-result.passed {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.student-progress-rc-overall-result.failed {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+.student-progress-rc-explanation {
+  background-color: #ecfdf5;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #10b981;
+  color: #065f46;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-rc-question-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-progress-rc-qa-pair {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.student-progress-rc-qa-pair.correct {
+  border-left: 4px solid #10b981;
+  background-color: #f0fdf4;
+}
+
+.student-progress-rc-qa-pair.incorrect {
+  border-left: 4px solid #ef4444;
+  background-color: #fefbf2;
+}
+
+.student-progress-rc-question {
+  margin-bottom: 1rem;
+}
+
+.student-progress-rc-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.student-progress-rc-question-num {
+  font-weight: 700;
+  color: #374151;
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.student-progress-rc-status {
+  font-weight: bold;
+  font-size: 1.125rem;
+  padding: 0.25rem;
+  border-radius: 50%;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.student-progress-rc-status.correct {
+  color: #10b981;
+  background-color: #d1fae5;
+}
+
+.student-progress-rc-status.incorrect {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.student-progress-rc-question-text {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.student-progress-rc-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.student-progress-rc-student-answer {
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.student-progress-rc-correct-answer {
+  padding: 0.75rem;
+  background-color: #f0fdf4;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+  font-size: 0.875rem;
+  color: #166534;
+}
+
+.student-progress-rc-acceptable {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 4px;
+  font-style: italic;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Enhanced Reading Comprehension Styles */
+.student-progress-story-passages {
+  margin-bottom: 1.5rem;
+}
+
+.student-progress-story-passages h5 {
+  margin: 0 0 0.75rem 0;
+  color: #495057;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.student-progress-passages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.student-progress-passage-item {
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.student-progress-passage-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.student-progress-passage-image {
+  margin-top: 0.5rem;
+}
+
+.student-progress-sentence-questions {
+  margin-top: 1.5rem;
+}
+
+.student-progress-sentence-questions h5 {
+  margin: 0 0 0.75rem 0;
+  color: #495057;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.student-progress-questions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-progress-sentence-question {
+  padding: 0.75rem;
+  background-color: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.student-progress-sentence-question .student-progress-question-text {
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: #495057;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments for Reading Comprehension All-or-Nothing */
+@media (max-width: 768px) {
+  .student-progress-rc-all-or-nothing {
+    padding: 1rem;
+  }
+
+  .student-progress-rc-scoring-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .student-progress-rc-scoring-header h5 {
+    font-size: 1rem;
+  }
+
+  .student-progress-rc-overall-result {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .student-progress-rc-question-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .student-progress-rc-answers {
+    gap: 0.5rem;
+  }
+}
+
+/* ===== DYNAMIC INTERVENTION PROGRESSION STYLES ===== */
+
+/* Category Status Badges for Dynamic Progression */
+.student-progress-needs-attention-badge {
+  background-color: #fef3c7;
+  color: #d97706;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Blocked Category Styles */
+.student-progress-category-blocked {
+  border-left: 4px solid #dc3545 !important;
+  background-color: #fef2f2;
+  opacity: 0.7;
+}
+
+.student-progress-category-blocked .student-progress-category-icon {
+  background: linear-gradient(135deg, #dc3545, #b91c1c);
+  opacity: 0.8;
+}
+
+.student-progress-category-blocked .student-progress-category-name {
+  color: #991b1b;
+}
+
+/* Needs Revision Category Styles */
+.student-progress-category-needs-revision {
+  border-left: 4px solid #fd7e14 !important;
+  background-color: #fff7ed;
+}
+
+.student-progress-category-needs-revision .student-progress-category-icon {
+  background: linear-gradient(135deg, #fd7e14, #ea580c);
+}
+
+/* Intervention Success Details */
+.intervention-success-details {
+  font-size: 0.8em;
+  margin-top: 4px;
+  opacity: 0.8;
+  background-color: #d1fae5;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #065f46;
+  font-weight: 500;
+}
+
+/* Intervention Revision Details */
+.intervention-revision-details {
+  font-size: 0.8em;
+  margin-top: 4px;
+  opacity: 0.8;
+  background-color: #fef3c7;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #d97706;
+  font-weight: 500;
+}
+
+/* Intervention Needed Details */
+.intervention-needed-details {
+  font-size: 0.8em;
+  margin-top: 4px;
+  opacity: 0.8;
+  background-color: #dbeafe;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Enhanced Status Messages */
+.student-progress-success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #059669;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  background-color: #d1fae5;
+  border-radius: 8px;
+  justify-content: center;
+  border: 1px solid #a7f3d0;
+}
+
+.student-progress-need-more-message {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* Blocked Category Message */
+.student-progress-need-more-message[style*="color: #dc3545"] {
+  color: #dc3545 !important;
+  background-color: #fef2f2;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Not Attempted Category Message */
+.student-progress-need-more-message[style*="color: #6c757d"] {
+  color: #6c757d !important;
+  background-color: #f8f9fa;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Needs Revision Category Message */
+.student-progress-need-more-message[style*="color: #fd7e14"] {
+  color: #fd7e14 !important;
+  background-color: #fff7ed;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #fed7aa;
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Needs Intervention Category Message */
+.student-progress-need-more-message[style*="color: #ffc107"] {
+  color: #d97706 !important;
+  background-color: #fef3c7;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #fbbf24;
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Enhanced Category Stats Display */
+.student-progress-category-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.student-progress-score-display {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #4a5494;
+  line-height: 1;
+}
+
+.student-progress-score-fraction {
+  color: #6b7280;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Intervention Attempt Indicators */
+.intervention-attempt-indicator {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #7dd3fc;
+}
+
+/* Progress Dots for Blocked Categories */
+.student-progress-dot.blocked {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  opacity: 0.5;
+}
+
+/* Responsive Design for Dynamic Progression */
+@media (max-width: 768px) {
+  .student-progress-category-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .student-progress-score-display {
+    font-size: 1.5rem;
+  }
+  
+  .student-progress-score-fraction {
+    font-size: 0.9rem;
+  }
+  
+  .intervention-success-details,
+  .intervention-revision-details,
+  .intervention-needed-details {
+    font-size: 0.75em;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .student-progress-needs-attention-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-progress-category-name {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .student-progress-needs-attention-badge {
+    align-self: flex-start;
+  }
+}

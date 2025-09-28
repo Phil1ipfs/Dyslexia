@@ -1,0 +1,244 @@
+/* StudentProfileCard Component Styles - Unique Naming */
+.student-profile-card {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: auto;
+  position: relative;
+  overflow: hidden;
+  border-top: 5px solid #3B4F81;
+  transition: all 0.2s ease-in-out;
+}
+
+.student-profile-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.student-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.student-profile-avatar {
+  flex-shrink: 0;
+}
+
+.student-profile-avatar-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #4b5563;
+  color: white;
+  font-weight: bold;
+  font-size: 1.25rem;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.student-profile-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-profile-avatar-circle::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.student-profile-name-section {
+  flex: 1;
+}
+
+.student-profile-name {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #3B4F81;
+  line-height: 1.2;
+}
+
+.student-profile-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 1rem;
+  color: #666;
+  background-color: #f0f4fa;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Student details */
+.student-profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.student-profile-detail-row {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.student-profile-detail-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.student-profile-detail-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: rgba(59, 79, 129, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3B4F81;
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+/* Icon specific styling based on type */
+/* Gender-specific styling */
+.student-profile-detail-item .student-profile-gender-icon.female-icon {
+  color: #3B4F81;
+}
+
+.student-profile-detail-item .student-profile-gender-icon.male-icon {
+  background-color: rgba(59, 79, 129, 0.1);
+  color: #3B4F81;
+}
+
+/* Reading level specific styling */
+.student-profile-detail-icon.student-profile-reading-icon.reading-level-early {
+  background-color: rgba(30, 84, 141, 0.1);
+  color: #77abe3;
+}
+
+.student-profile-detail-icon.student-profile-reading-icon.reading-level-developing {
+  color: #FF9800;
+}
+
+.student-profile-detail-icon.student-profile-reading-icon.reading-level-fluent {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.student-profile-detail-icon.student-profile-reading-icon.reading-level-advanced {
+  background-color: rgba(63, 81, 181, 0.1);
+  color: #3F51B5;
+}
+
+.student-profile-detail-icon.student-profile-reading-icon.reading-level-not-assessed {
+  background-color: rgba(160, 158, 158, 0.1);
+  color: #F9A825;
+}
+
+.student-profile-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.student-profile-detail-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.1rem;
+}
+
+.student-profile-detail-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.3;
+}
+
+/* Address specific styling */
+.student-profile-address-item .student-profile-detail-value {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+/* Reading level specific colors */
+.student-profile-detail-value.reading-level-early {
+  color: #1e548d;
+}
+
+.student-profile-detail-value.reading-level-developing {
+  color: #FF9800;
+}
+
+.student-profile-detail-value.reading-level-fluent {
+  color: #4CAF50;
+}
+
+.student-profile-detail-value.reading-level-advanced {
+  color: #3F51B5;
+}
+
+.student-profile-detail-value.reading-level-not-assessed {
+  color: #F9A825;
+}
+
+/* Animation */
+.student-profile-card {
+  animation: studentProfileSlideIn 0.4s ease-out;
+}
+
+@keyframes studentProfileSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 576px) {
+  .student-profile-detail-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .student-profile-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+  
+  .student-profile-name-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}

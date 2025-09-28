@@ -1,0 +1,76 @@
+[
+  {
+    "_id": {
+      "$oid": "68d85e2c7794011dd9b35424"
+    },
+    "studentId": 202533333,
+    "interventionAssessmentId": {
+      "$oid": "68d85d7f7794011dd9b3531e"
+    },
+    "questionId": "int_phonological_awareness_001",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "audio": "Qe",
+        "match": "Eew"
+      },
+      {
+        "audio": "Eew",
+        "match": "Qe"
+      }
+    ],
+    "isCorrect": false,
+    "correctMatches": 0,
+    "totalMatches": 2,
+    "responseTime": 12.4,
+    "answeredAt": {
+      "$date": "2025-09-28T06:05:15.000Z"
+    },
+    "readingLevel": "Developing",
+    "revisionNumber": 2,
+    "createdAt": {
+      "$date": "2025-09-28T06:05:15.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68d85e2c7794011dd9b35425"
+    },
+    "studentId": 202533333,
+    "interventionAssessmentId": {
+      "$oid": "68d85d7f7794011dd9b3531e"
+    },
+    "questionId": "int_phonological_awareness_002",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "audio": "Y",
+        "match": "Tt"
+      },
+      {
+        "audio": "T",
+        "match": "Ss"
+      },
+      {
+        "audio": "F",
+        "match": "Yy"
+      },
+      {
+        "audio": "S",
+        "match": "Ff"
+      }
+    ],
+    "isCorrect": false,
+    "correctMatches": 0,
+    "totalMatches": 4,
+    "responseTime": 19.8,
+    "answeredAt": {
+      "$date": "2025-09-28T06:06:42.000Z"
+    },
+    "readingLevel": "Developing",
+    "revisionNumber": 2,
+    "createdAt": {
+      "$date": "2025-09-28T06:06:42.000Z"
+    }
+  }
+]
