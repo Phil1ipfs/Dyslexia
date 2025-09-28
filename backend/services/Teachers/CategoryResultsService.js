@@ -2528,8 +2528,10 @@ class CategoryResultsService {
         attemptNumber: updateResult.attemptNumber
       };
 
-      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK AFTER INTERVENTION SUCCESS
+      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK AFTER INTERVENTION SUCCESS - DISABLED (Teacher-triggered only)
       // Check if intervention success now qualifies student for reading level progression
+      // DISABLED: Progression now requires manual teacher approval via IEP dashboard button
+      /*
       const student = await User.findOne({ idNumber: studentId });
       if (student) {
         try {
@@ -2559,6 +2561,8 @@ class CategoryResultsService {
           // Don't fail the intervention update if progression fails
         }
       }
+      */
+      console.log(`[INTERVENTION UPDATE] ℹ️ Intervention success for ${category} - teacher can trigger progression via IEP dashboard`);
 
       return successResult;
 
