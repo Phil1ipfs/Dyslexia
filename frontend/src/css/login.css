@@ -61,19 +61,19 @@
 }
 
 .form-input {
-  width: 100%;
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 50px;
-  font-size: 15px;
-  background-color: white;
-  color: #333;
-  transition: box-shadow 0.3s ease;
-  text-align: left;
+  width: 100% !important;
+  padding: 0.8rem 2.5rem !important;
+  border: none !important;
+  border-radius: 50px !important;
+  font-size: 15px !important;
+  background-color: white !important;
+  color: #333 !important;
+  transition: box-shadow 0.3s ease !important;
+  text-align: left !important;
 }
 
 .form-input::placeholder {
-  color: #999;
+  color: #999 !important;
 }
 
 .form-input:focus {
@@ -84,8 +84,8 @@
 .signin-button {
   width: 100%;
   height: 50px;
-  background-color: #FDE37C;
-  color: #000;
+  background-color: #FDE37C !important;;
+  color: #000 !important;;
   border: none;
   border-radius: 50px;
   font-size: 1rem;

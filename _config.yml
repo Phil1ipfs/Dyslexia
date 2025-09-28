@@ -1,0 +1,51 @@
+# Jekyll configuration for GitHub Pages
+
+# Site settings
+title: LITEREXIA
+description: Dyslexia assessment and intervention platform
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# Exclude from processing
+exclude:
+  - node_modules/
+  - backend/node_modules/
+  - frontend/node_modules/
+  - backend/
+  - frontend/
+  - package.json
+  - package-lock.json
+  - "*/package.json"
+  - "*/package-lock.json"
+  - "**/node_modules/"
+  - "**/.env"
+  - "*.log"
+  - ".gitignore"
+  - README.md
+  - LICENSE
+  - vendor/
+  - Gemfile
+  - Gemfile.lock
+
+# Include specific files if needed
+include:
+  - _pages
+  - assets
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Sass/SCSS processing
+sass:
+  sass_dir: _sass
+  style: compressed

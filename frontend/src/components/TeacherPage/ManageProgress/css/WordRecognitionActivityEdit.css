@@ -1,0 +1,929 @@
+/* Word Recognition Activity Edit Modal Styles - Compact Design */
+
+.word-recognition-container {
+  max-width: 95vw;
+  margin: 0 auto;
+  padding: 32px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e1e8ed;
+}
+
+/* Compact Info Banner with Dark Blue Theme */
+.word-recognition-info-banner {
+  background: #4a619a;
+  color: white;
+  padding: 28px 48px;
+  border-radius: 8px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  box-shadow: 0 2px 8px rgba(26, 35, 126, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.word-recognition-info-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.8s ease;
+}
+
+.word-recognition-info-banner:hover::before {
+  left: 100%;
+}
+
+.word-recognition-info-banner .info-icon {
+  color: #e3f2fd;
+  font-size: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.word-recognition-info-banner h3 {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: white;
+}
+
+.word-recognition-info-banner p {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #e3f2fd;
+}
+
+.word-recognition-info-banner strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Compact Question Cards */
+.word-recognition-question-card {
+  background: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 32px;
+  margin-bottom: 28px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transform: translateY(0);
+}
+
+.word-recognition-question-card:hover {
+  border-color: #1a237e;
+  box-shadow: 0 8px 24px rgba(26, 35, 126, 0.15);
+  transform: translateY(-2px);
+}
+
+.word-recognition-question-card:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+/* Compact Question Header */
+.word-recognition-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.word-recognition-question-header h4 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* Compact Remove Button */
+.word-recognition-remove-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
+.word-recognition-remove-btn:hover {
+  background: #b91c1c;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+}
+
+.word-recognition-remove-btn:active {
+  transform: scale(0.95);
+}
+
+/* Compact Form Groups */
+.word-recognition-form-group {
+  margin-bottom: 24px;
+}
+
+.word-recognition-form-group label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.word-recognition-form-group input,
+.word-recognition-form-group select {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid #e1e8ed;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+  color: #1e293b;
+  transform: translateY(0);
+}
+
+.word-recognition-form-group input:focus,
+.word-recognition-form-group select:focus {
+  outline: none;
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+  transform: translateY(-1px);
+  background: #fafbff;
+}
+
+.word-recognition-form-group input:hover,
+.word-recognition-form-group select:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.word-recognition-form-group input::placeholder {
+  color: #94a3b8;
+}
+
+/* Compact Sentence Token Selection */
+.word-recognition-sentence-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  min-height: 60px;
+  align-items: center;
+}
+
+.word-token {
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  user-select: none;
+  font-size: 16px;
+  color: #1e293b;
+  transform: scale(1);
+  position: relative;
+  overflow: hidden;
+}
+
+.word-token::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(26, 35, 126, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.word-token:hover {
+  border-color: #1a237e;
+  background: #f0f4ff;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(26, 35, 126, 0.2);
+}
+
+.word-token:hover::before {
+  left: 100%;
+}
+
+.word-token.selected-blank {
+  background: #1a237e;
+  color: white;
+  border-color: #1a237e;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(26, 35, 126, 0.3);
+  animation: pulse 0.6s ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1.1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1.1); }
+}
+
+/* Compact Preview Section */
+.word-recognition-preview {
+  padding: 16px 20px;
+  background: #f0f4ff;
+  border: 1px solid #1a237e;
+  border-radius: 4px;
+  font-size: 17px;
+  font-weight: 500;
+  color: #1a237e;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+}
+
+/* Compact Auto-generate Button */
+.word-recognition-auto-generate-btn {
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.word-recognition-auto-generate-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.word-recognition-auto-generate-btn:hover {
+  background: #047857;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.word-recognition-auto-generate-btn:hover::before {
+  left: 100%;
+}
+
+.word-recognition-auto-generate-btn:active {
+  transform: scale(0.95);
+}
+
+/* Compact Image Upload Section */
+.word-recognition-image-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  transition: all 0.3s ease;
+}
+
+.word-recognition-image-upload:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+.word-recognition-image-upload-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+}
+
+.word-recognition-image-upload-icon {
+  font-size: 48px;
+  color: #cbd5e1;
+}
+
+.word-recognition-image-upload-text {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.word-recognition-image-uploaded {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.word-recognition-uploaded-image {
+  max-width: 300px;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e5e7eb;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.word-recognition-remove-image {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.word-recognition-remove-image:hover {
+  background: #b91c1c;
+  transform: scale(1.05);
+}
+
+/* Override for when used in image-uploaded context */
+.word-recognition-image-uploaded .word-recognition-remove-image {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #dc2626;
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  gap: 0;
+}
+
+.word-recognition-image-uploaded .word-recognition-remove-image:hover {
+  background: #b91c1c;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.word-recognition-image-uploaded .word-recognition-remove-image:active {
+  transform: scale(0.95);
+}
+
+.word-recognition-upload-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  transform: scale(1);
+}
+
+.word-recognition-upload-btn:hover {
+  background: #2563eb;
+  transform: scale(1.05);
+}
+
+.word-recognition-upload-btn:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+  transform: scale(1);
+}
+
+.word-recognition-upload-btn:disabled:hover {
+  background: #6b7280;
+  transform: scale(1);
+}
+
+.word-recognition-upload-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid white;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.word-recognition-upload-btn:hover {
+  background: #4b5563;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+.word-recognition-upload-btn:active {
+  transform: scale(0.95);
+}
+
+.word-recognition-image-preview {
+  position: relative;
+  display: inline-block;
+  border-radius: 4px;
+  overflow: visible;
+  margin: 0 auto;
+}
+
+.word-recognition-remove-image-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #dc2626;
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.word-recognition-remove-image-btn:hover {
+  background: #b91c1c;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.word-recognition-remove-image-btn:active {
+  transform: scale(0.95);
+}
+
+/* Compact Answer Options Grid */
+.word-recognition-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.word-recognition-option-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e1e8ed;
+  border-radius: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+  position: relative;
+  overflow: hidden;
+}
+
+.word-recognition-option-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #e1e8ed, #cbd5e1);
+  transition: all 0.3s ease;
+}
+
+.word-recognition-option-item:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.word-recognition-option-item:has(input[type="checkbox"]:checked),
+.word-recognition-option-item:has(input[type="radio"]:checked) {
+  background: #ecfdf5;
+  border-color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+  animation: successPulse 0.6s ease-in-out;
+}
+
+.word-recognition-option-item:has(input[type="checkbox"]:checked)::before,
+.word-recognition-option-item:has(input[type="radio"]:checked)::before {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+@keyframes successPulse {
+  0% { transform: translateY(-2px) scale(1); }
+  50% { transform: translateY(-2px) scale(1.02); }
+  100% { transform: translateY(-2px) scale(1); }
+}
+
+.word-recognition-option-item input[type="text"] {
+  margin-bottom: 0;
+  font-weight: 500;
+  font-size: 15px;
+  padding: 10px 12px;
+  border: 1px solid #e1e8ed;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.word-recognition-option-item input[type="text"]:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.word-recognition-correct-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #059669;
+  cursor: pointer;
+  padding: 6px 12px;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.word-recognition-correct-checkbox:hover {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.word-recognition-correct-checkbox input[type="checkbox"],
+.word-recognition-correct-checkbox input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #10b981;
+  position: relative;
+  appearance: none;
+  border: 2px solid #d1d5db;
+  background: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.word-recognition-correct-checkbox input[type="checkbox"] {
+  border-radius: 4px;
+}
+
+.word-recognition-correct-checkbox input[type="radio"] {
+  border-radius: 50%;
+}
+
+.word-recognition-correct-checkbox input[type="checkbox"]:hover,
+.word-recognition-correct-checkbox input[type="radio"]:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.word-recognition-correct-checkbox input[type="checkbox"]:checked,
+.word-recognition-correct-checkbox input[type="radio"]:checked {
+  background: #10b981;
+  border-color: #10b981;
+  animation: checkPulse 0.3s ease-in-out;
+}
+
+.word-recognition-correct-checkbox input[type="checkbox"]:checked::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.word-recognition-correct-checkbox input[type="radio"]:checked::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+}
+
+@keyframes checkPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Compact Add Question Section */
+.word-recognition-add-section {
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e8ed;
+}
+
+.word-recognition-add-question-btn {
+  background: #303462;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+  box-shadow: 0 2px 8px rgba(26, 35, 126, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.word-recognition-add-question-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.word-recognition-add-question-btn:hover {
+  background: #383f77;
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(26, 35, 126, 0.3);
+}
+
+.word-recognition-add-question-btn:hover::before {
+  left: 100%;
+}
+
+.word-recognition-add-question-btn:active {
+  transform: scale(0.95);
+}
+
+/* Compact Responsive Design */
+@media (max-width: 768px) {
+  .word-recognition-container {
+    padding: 12px;
+    margin: 8px;
+  }
+
+  .word-recognition-info-banner {
+    padding: 12px;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .word-recognition-question-card {
+    padding: 12px;
+  }
+
+  .word-recognition-options-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .word-recognition-sentence-tokens {
+    gap: 4px;
+    padding: 6px;
+  }
+
+  .word-token {
+    padding: 3px 6px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .word-recognition-container {
+    padding: 8px;
+    margin: 4px;
+  }
+
+  .word-recognition-question-card {
+    padding: 8px;
+  }
+
+  .word-recognition-form-group input,
+  .word-recognition-form-group select {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  .word-recognition-option-item {
+    padding: 8px;
+  }
+}
+
+/* ===== WORD RECOGNITION REVIEW STYLES ===== */
+
+.word-recognition-review-summary {
+  background: #f8fafc;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.word-recognition-sentence-completion-review,
+.word-recognition-sound-matching-review {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.word-recognition-review-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.word-recognition-sentence-display,
+.word-recognition-display-word,
+.word-recognition-answer-options,
+.word-recognition-activity-description,
+.word-recognition-image-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.word-recognition-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.word-recognition-sentence-text,
+.word-recognition-word-value {
+  background: #f3f4f6;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: #1f2937;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.word-recognition-options-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.word-recognition-option {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 15px;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.word-recognition-option.correct-option {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #15803d;
+  font-weight: 500;
+}
+
+.word-recognition-description-text {
+  color: #6b7280;
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.word-recognition-image-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #059669;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Responsive adjustments for review */
+@media (max-width: 768px) {
+  .word-recognition-review-summary {
+    padding: 16px;
+  }
+  
+  .word-recognition-sentence-completion-review,
+  .word-recognition-sound-matching-review {
+    padding: 12px;
+  }
+  
+  .word-recognition-review-details {
+    gap: 12px;
+  }
+  
+  .word-recognition-sentence-display,
+  .word-recognition-display-word,
+  .word-recognition-answer-options,
+  .word-recognition-activity-description,
+  .word-recognition-image-info {
+    gap: 6px;
+  }
+  
+  .word-recognition-label {
+    font-size: 14px;
+  }
+  
+  .word-recognition-sentence-text,
+  .word-recognition-word-value {
+    font-size: 15px;
+    padding: 10px 12px;
+  }
+  
+  .word-recognition-options-list {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .word-recognition-option {
+    width: 100%;
+    justify-content: center;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  
+  .word-recognition-description-text {
+    font-size: 14px;
+  }
+  
+  .word-recognition-image-status {
+    font-size: 14px;
+  }
+}

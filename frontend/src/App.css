@@ -9,6 +9,7 @@
   html, body, #root {
     height: 100%;
     width: 100%;
+    background: transparent; 
     font-family: 'Atkinson Hyperlegible', sans-serif;
   }
   
@@ -16,17 +17,13 @@
     display: flex;
   }
   
-  .sidebar {
-    width: 260px;
-    height: 100vh;
-    background-color: #465E98;
-    flex-shrink: 0;
-  }
-  
+ 
   .main-content-area {
     flex-grow: 1;
     overflow-y: auto;
-    background-color: #f5f7fb; 
+    background-color: transparent; 
     padding: 0;
+    margin-left: 10px;
   }
+
   
