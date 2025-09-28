@@ -8,31 +8,16 @@ frontend:
         - pwd
         - echo "Listing root directory:"
         - ls -la
-        - echo "Changing to frontend directory..."
-        - cd frontend
-        - echo "Current directory after cd:"
-        - pwd
-        - echo "Listing frontend directory:"
-        - ls -la
-        - echo "Node.js version:"
-        - node --version
-        - echo "NPM version:"
-        - npm --version
-        - echo "Installing dependencies..."
-        - npm ci
+        - echo "Installing dependencies in frontend directory..."
+        - cd frontend && npm ci
     build:
       commands:
         - echo "Starting build phase..."
-        - cd frontend
-        - echo "Current directory:"
-        - pwd
-        - echo "Running npm run build..."
-        - npm run build
+        - echo "Building from frontend directory..."
+        - cd frontend && npm run build
         - echo "Build completed!"
         - echo "Listing dist directory:"
-        - ls -la dist/
-        - echo "Listing dist contents:"
-        - find dist -type f | head -20
+        - ls -la frontend/dist/
   artifacts:
     baseDirectory: frontend/dist
     files:
