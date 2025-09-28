@@ -30,15 +30,28 @@ class ReadingLevelProgressionService {
         return { success: false, error: 'Student not found' };
       }
 
-      const readingLevel = currentReadingLevel || student.readingLevel;
-      console.log(`[PROGRESSION] 📚 Current reading level: ${readingLevel}`);
+      // ✅ FIXED: Check category_results reading level, not user reading level
+      // We need to see what level the student just completed, not their current level
+      const categoryResults = await CategoryResult.findOne({
+        studentId: studentId
+      }).sort({ updatedAt: -1 });
 
-      // Get required categories for current level
-      const requiredCategories = this.getCategoriesForReadingLevel(readingLevel);
-      console.log(`[PROGRESSION] 📋 Required categories for ${readingLevel}: [${requiredCategories.join(', ')}]`);
+      if (!categoryResults) {
+        console.log(`[PROGRESSION] ⚠️ No category results found for student ${studentId}`);
+        return { success: false, error: 'No category results found' };
+      }
 
-      // Check if all categories are completed and passed
-      const progressionResult = await this.evaluateProgressionEligibility(studentId, readingLevel, requiredCategories);
+      // Use the reading level from category_results (the level they just completed)
+      const completedReadingLevel = categoryResults.readingLevel;
+      console.log(`[PROGRESSION] 📚 Completed reading level: ${completedReadingLevel}`);
+      console.log(`[PROGRESSION] 📚 User's current level: ${student.readingLevel}`);
+
+      // Get required categories for the level they completed
+      const requiredCategories = this.getCategoriesForReadingLevel(completedReadingLevel);
+      console.log(`[PROGRESSION] 📋 Required categories for ${completedReadingLevel}: [${requiredCategories.join(', ')}]`);
+
+      // Check if all categories are completed and passed for the completed level
+      const progressionResult = await this.evaluateProgressionEligibility(studentId, completedReadingLevel, requiredCategories);
 
       if (!progressionResult.eligible) {
         console.log(`[PROGRESSION] ⏸️ Student ${studentId} not eligible for progression: ${progressionResult.reason}`);
@@ -51,7 +64,7 @@ class ReadingLevelProgressionService {
       }
 
       // Special handling for students already at maximum level
-      if (readingLevel === 'At Grade Level') {
+      if (completedReadingLevel === 'At Grade Level') {
         console.log(`[PROGRESSION] 🏔️ Student ${studentId} at maximum level but all categories completed - marking as updated`);
 
         // Mark the category results as reading level updated (assessment complete)
