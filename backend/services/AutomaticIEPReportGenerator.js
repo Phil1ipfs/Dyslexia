@@ -15,13 +15,22 @@ class AutomaticIEPReportGenerator {
    */
   static async generateOrUpdateIEPReport(categoryResult, triggerEvent = 'assessment_completed') {
     try {
-      console.log(`[IEP AUTO GEN] 📋 Generating IEP report for student ${categoryResult.studentId} - Event: ${triggerEvent}`);
+      console.log(`[IEP AUTO GEN] 📋 Generating IEP report for categoryResult:`, JSON.stringify(categoryResult, null, 2));
+      console.log(`[IEP AUTO GEN] 📋 categoryResult keys:`, Object.keys(categoryResult || {}));
+      console.log(`[IEP AUTO GEN] 📋 categoryResult.studentId:`, categoryResult?.studentId);
+      console.log(`[IEP AUTO GEN] 📋 Generating IEP report for student ${categoryResult?.studentId} - Event: ${triggerEvent}`);
+
+      // Validate categoryResult input
+      if (!categoryResult) {
+        console.error(`[IEP AUTO GEN] ❌ categoryResult is null or undefined`);
+        return { success: false, error: 'categoryResult is required' };
+      }
 
       // Get student information
       const student = await User.findOne({ idNumber: categoryResult.studentId });
       if (!student) {
         console.error(`[IEP AUTO GEN] ❌ Student not found: ${categoryResult.studentId}`);
-        return null;
+        return { success: false, error: `Student not found: ${categoryResult.studentId}` };
       }
 
       // Check if IEP report already exists
@@ -41,11 +50,11 @@ class AutomaticIEPReportGenerator {
       }
 
       console.log(`[IEP AUTO GEN] ✅ IEP report generated successfully for student ${categoryResult.studentId}`);
-      return iepReport;
+      return { success: true, iepReport: iepReport, message: 'IEP report generated successfully' };
 
     } catch (error) {
       console.error(`[IEP AUTO GEN] ❌ Error generating IEP report:`, error);
-      return null;
+      return { success: false, error: error.message };
     }
   }
 

@@ -14,30 +14,93 @@ router.get('/student/:studentId', async (req, res) => {
 
     console.log(`[IEP GET] Fetching IEP report for student ${studentId}`);
 
-    // Try to find by ObjectId first (frontend format)
-    let iepReport = null;
+    // Step 1: Find student by ID (try both ObjectId and numeric formats)
+    let user = null;
+    let userObjectId = null;
+
     try {
-      iepReport = await IEPReport.findOne({ studentId: studentId });
+      // Try to find user by ObjectId first
+      user = await User.findById(studentId);
+      userObjectId = studentId;
     } catch (error) {
-      // If ObjectId fails, try by studentNumber (numeric format)
-      const user = await User.findOne({ idNumber: parseInt(studentId) });
-      if (user) {
-        iepReport = await IEPReport.findOne({ studentId: user._id });
+      // If ObjectId fails, try by idNumber (numeric format)
+      try {
+        user = await User.findOne({ idNumber: parseInt(studentId) });
+        userObjectId = user ? user._id : null;
+      } catch (parseError) {
+        console.log(`[IEP GET] Could not parse studentId as number: ${studentId}`);
       }
     }
 
-    if (!iepReport) {
-      console.log(`[IEP GET] No IEP report found for student ${studentId}`);
+    if (!user || !userObjectId) {
+      console.log(`[IEP GET] ❌ Student not found: ${studentId}`);
       return res.status(404).json({
         success: false,
-        error: 'IEP report not found for this student'
+        error: 'Student not found'
       });
     }
 
-    console.log(`[IEP GET] ✅ Found IEP report for student ${studentId}`);
+    console.log(`[IEP GET] ✅ Found student: ${user.firstName} ${user.lastName} (ID: ${user.idNumber})`);
+
+    // Step 2: Find or create IEP report
+    let iepReport = await IEPReport.findOne({ studentId: userObjectId });
+
+    if (!iepReport) {
+      console.log(`[IEP GET] 📋 No IEP report found - creating new one using AutomaticIEPReportGenerator`);
+
+      // Get category results for the student
+      const categoryResults = await CategoryResult.find({ studentId: user.idNumber }).sort({ updatedAt: -1 });
+
+      if (categoryResults.length === 0) {
+        console.log(`[IEP GET] ⚠️ No category results found for student ${user.idNumber} - cannot create IEP report`);
+        return res.status(404).json({
+          success: false,
+          error: 'No assessment data found for this student'
+        });
+      }
+
+      // Find the most recent COMPLETED assessment (not placeholder)
+      // Priority: readingLevelUpdated=true (progression completed) > allCategoriesPassed=true > latest
+      const completedCategoryResult = categoryResults.find(result =>
+        result.readingLevelUpdated === true || result.allCategoriesPassed === true
+      ) || categoryResults[0];
+
+      console.log(`[IEP GET] 📊 Using category result: ${completedCategoryResult.readingLevel} (readingLevelUpdated: ${completedCategoryResult.readingLevelUpdated}, allCategoriesPassed: ${completedCategoryResult.allCategoriesPassed})`);
+      console.log(`[IEP GET] 🐛 DEBUG categoryResult.studentId: ${completedCategoryResult.studentId}`);
+      console.log(`[IEP GET] 🐛 DEBUG categoryResult keys:`, Object.keys(completedCategoryResult));
+
+      // Convert Mongoose object to plain object to ensure studentId is accessible
+      const categoryResultPlain = completedCategoryResult.toObject ? completedCategoryResult.toObject() : completedCategoryResult;
+      console.log(`[IEP GET] 🐛 DEBUG plain object studentId: ${categoryResultPlain.studentId}`);
+
+      // Use the automatic IEP generator service
+      const AutomaticIEPReportGenerator = require('../../services/AutomaticIEPReportGenerator');
+      const generationResult = await AutomaticIEPReportGenerator.generateOrUpdateIEPReport(categoryResultPlain, 'api_request');
+
+      console.log(`[IEP GET] 🐛 DEBUG generationResult:`, JSON.stringify(generationResult, null, 2));
+
+      if (generationResult && generationResult.success) {
+        iepReport = generationResult.iepReport;
+        console.log(`[IEP GET] ✅ Created new IEP report for student ${user.idNumber}`);
+      } else {
+        const errorMessage = generationResult?.error || 'Unknown error - generationResult was null or undefined';
+        console.log(`[IEP GET] ❌ Failed to create IEP report: ${errorMessage}`);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to create IEP report: ${errorMessage}`
+        });
+      }
+    }
+
+    console.log(`[IEP GET] ✅ Found IEP report for student ${user.idNumber}`);
     res.json({
       success: true,
-      data: iepReport
+      data: iepReport,
+      studentInfo: {
+        idNumber: user.idNumber,
+        name: `${user.firstName} ${user.lastName}`,
+        readingLevel: user.readingLevel
+      }
     });
 
   } catch (error) {
@@ -56,35 +119,134 @@ router.post('/student/:studentId/refresh-interventions', async (req, res) => {
 
     console.log(`[IEP REFRESH] Refreshing intervention data for student ${studentId}`);
 
-    // Try to find by ObjectId first (frontend format)
-    let iepReport = null;
+    // Step 1: Find student by ID (try both ObjectId and numeric formats)
+    let user = null;
+    let userObjectId = null;
+
     try {
-      iepReport = await IEPReport.findOne({ studentId: studentId });
+      // Try to find user by ObjectId first
+      user = await User.findById(studentId);
+      userObjectId = studentId;
     } catch (error) {
-      // If ObjectId fails, try by studentNumber (numeric format)
-      const user = await User.findOne({ idNumber: parseInt(studentId) });
-      if (user) {
-        iepReport = await IEPReport.findOne({ studentId: user._id });
+      // If ObjectId fails, try by idNumber (numeric format)
+      try {
+        user = await User.findOne({ idNumber: parseInt(studentId) });
+        userObjectId = user ? user._id : null;
+      } catch (parseError) {
+        console.log(`[IEP REFRESH] Could not parse studentId as number: ${studentId}`);
       }
     }
 
-    if (!iepReport) {
-      console.log(`[IEP REFRESH] No IEP report found for student ${studentId}`);
+    if (!user || !userObjectId) {
+      console.log(`[IEP REFRESH] ❌ Student not found: ${studentId}`);
       return res.status(404).json({
         success: false,
-        error: 'IEP report not found for this student'
+        error: 'Student not found'
       });
     }
 
-    // Update the updatedAt timestamp to indicate refresh
-    iepReport.updatedAt = new Date();
-    await iepReport.save();
+    console.log(`[IEP REFRESH] ✅ Found student: ${user.firstName} ${user.lastName} (ID: ${user.idNumber})`);
 
-    console.log(`[IEP REFRESH] ✅ Refreshed intervention data for student ${studentId}`);
+    // Step 2: Find or create IEP report
+    let iepReport = await IEPReport.findOne({ studentId: userObjectId });
+
+    if (!iepReport) {
+      console.log(`[IEP REFRESH] 📋 No IEP report found - creating new one using AutomaticIEPReportGenerator`);
+
+      // Get category results for the student
+      const categoryResults = await CategoryResult.find({ studentId: user.idNumber }).sort({ updatedAt: -1 });
+
+      if (categoryResults.length === 0) {
+        console.log(`[IEP REFRESH] ⚠️ No category results found for student ${user.idNumber} - cannot create IEP report`);
+        return res.status(404).json({
+          success: false,
+          error: 'No assessment data found for this student'
+        });
+      }
+
+      // Find the most recent COMPLETED assessment (not placeholder)
+      // Priority: readingLevelUpdated=true (progression completed) > allCategoriesPassed=true > latest
+      const completedCategoryResult = categoryResults.find(result =>
+        result.readingLevelUpdated === true || result.allCategoriesPassed === true
+      ) || categoryResults[0];
+
+      console.log(`[IEP REFRESH] 📊 Using category result: ${completedCategoryResult.readingLevel} (readingLevelUpdated: ${completedCategoryResult.readingLevelUpdated}, allCategoriesPassed: ${completedCategoryResult.allCategoriesPassed})`);
+      console.log(`[IEP REFRESH] 🐛 DEBUG categoryResult.studentId: ${completedCategoryResult.studentId}`);
+      console.log(`[IEP REFRESH] 🐛 DEBUG categoryResult type:`, typeof completedCategoryResult.studentId);
+
+      // Convert Mongoose object to plain object to ensure studentId is accessible
+      const categoryResultPlain = completedCategoryResult.toObject ? completedCategoryResult.toObject() : completedCategoryResult;
+      console.log(`[IEP REFRESH] 🐛 DEBUG plain object studentId: ${categoryResultPlain.studentId}`);
+
+      // Use the automatic IEP generator service
+      const AutomaticIEPReportGenerator = require('../../services/AutomaticIEPReportGenerator');
+      const generatedReport = await AutomaticIEPReportGenerator.generateOrUpdateIEPReport(categoryResultPlain, 'api_request');
+
+      console.log(`[IEP REFRESH] 🐛 DEBUG generatedReport:`, JSON.stringify(generatedReport, null, 2));
+
+      if (generatedReport && generatedReport.success) {
+        iepReport = generatedReport.iepReport;
+        console.log(`[IEP REFRESH] ✅ Created new IEP report for student ${user.idNumber}`);
+      } else {
+        const errorMessage = generatedReport?.error || 'Unknown error - generatedReport was null or undefined';
+        console.log(`[IEP REFRESH] ❌ Failed to create IEP report: ${errorMessage}`);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to create IEP report: ${errorMessage}`
+        });
+      }
+    } else {
+      console.log(`[IEP REFRESH] 📋 Found existing IEP report - updating with latest data`);
+
+      // Get latest category results for update
+      const categoryResults = await CategoryResult.find({ studentId: user.idNumber }).sort({ updatedAt: -1 });
+
+      if (categoryResults.length > 0) {
+        // Find the most recent COMPLETED assessment (not placeholder)
+        // Priority: readingLevelUpdated=true (progression completed) > allCategoriesPassed=true > latest
+        const completedCategoryResult = categoryResults.find(result =>
+          result.readingLevelUpdated === true || result.allCategoriesPassed === true
+        ) || categoryResults[0];
+
+        console.log(`[IEP REFRESH] 📊 Updating with category result: ${completedCategoryResult.readingLevel} (readingLevelUpdated: ${completedCategoryResult.readingLevelUpdated}, allCategoriesPassed: ${completedCategoryResult.allCategoriesPassed})`);
+
+        // Convert Mongoose object to plain object to ensure studentId is accessible
+        const categoryResultPlain = completedCategoryResult.toObject ? completedCategoryResult.toObject() : completedCategoryResult;
+
+        // Update existing IEP report with latest data
+        const AutomaticIEPReportGenerator = require('../../services/AutomaticIEPReportGenerator');
+        const updatedReport = await AutomaticIEPReportGenerator.generateOrUpdateIEPReport(categoryResultPlain, 'api_update');
+
+        console.log(`[IEP REFRESH] 🐛 DEBUG updatedReport:`, JSON.stringify(updatedReport, null, 2));
+
+        if (updatedReport && updatedReport.success) {
+          iepReport = updatedReport.iepReport;
+          console.log(`[IEP REFRESH] ✅ Updated existing IEP report for student ${user.idNumber}`);
+        } else {
+          const errorMessage = updatedReport?.error || 'Unknown error - updatedReport was null or undefined';
+          console.log(`[IEP REFRESH] ⚠️ Update failed (${errorMessage}), using existing report`);
+          // Continue with existing report if update fails
+          iepReport.updatedAt = new Date();
+          await iepReport.save();
+        }
+      } else {
+        // No category results found, just update timestamp
+        iepReport.updatedAt = new Date();
+        await iepReport.save();
+        console.log(`[IEP REFRESH] ⚠️ No category results found, updated timestamp only`);
+      }
+    }
+
+    console.log(`[IEP REFRESH] ✅ Refreshed intervention data for student ${user.idNumber}`);
     res.json({
       success: true,
       message: 'Intervention data refreshed successfully',
-      data: iepReport
+      data: iepReport,
+      studentInfo: {
+        idNumber: user.idNumber,
+        name: `${user.firstName} ${user.lastName}`,
+        readingLevel: user.readingLevel
+      }
     });
 
   } catch (error) {

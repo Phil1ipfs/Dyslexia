@@ -90,16 +90,16 @@ class ReadingLevelProgressionService {
       }
 
       // Execute progression to next level
-      const nextLevel = this.getNextReadingLevel(readingLevel);
+      const nextLevel = this.getNextReadingLevel(completedReadingLevel);
 
       // Check if there is a next level (prevent null progression)
       if (!nextLevel) {
-        console.log(`[PROGRESSION] 🏔️ Student ${studentId} is already at maximum level (${readingLevel}) - cannot progress further`);
+        console.log(`[PROGRESSION] 🏔️ Student ${studentId} is already at maximum level (${completedReadingLevel}) - cannot progress further`);
 
         // Mark the category results as completed for maximum level
         const CategoryResult = require('../models/Teachers/ManageProgress/categoryResultModel');
         await CategoryResult.updateOne(
-          { studentId: studentId, readingLevel: readingLevel },
+          { studentId: studentId, readingLevel: completedReadingLevel },
           {
             $set: {
               readingLevelUpdated: true,
@@ -108,21 +108,21 @@ class ReadingLevelProgressionService {
           }
         );
 
-        console.log(`[PROGRESSION] ✅ Marked readingLevelUpdated=true for student ${studentId} at maximum level ${readingLevel}`);
+        console.log(`[PROGRESSION] ✅ Marked readingLevelUpdated=true for student ${studentId} at maximum level ${completedReadingLevel}`);
         return {
           success: true,
           progressionNeeded: false,
-          reason: `Already at maximum level (${readingLevel}) - marked as completed`,
+          reason: `Already at maximum level (${completedReadingLevel}) - marked as completed`,
           readingLevelUpdated: true,
           categoryStatus: progressionResult.categoryStatus
         };
       }
 
-      console.log(`[PROGRESSION] ⬆️ Progressing student ${studentId} from ${readingLevel} to ${nextLevel}`);
+      console.log(`[PROGRESSION] ⬆️ Progressing student ${studentId} from ${completedReadingLevel} to ${nextLevel}`);
 
       const progressionExecutionResult = await this.executeReadingLevelProgression(
         studentId,
-        readingLevel,
+        completedReadingLevel,
         nextLevel
       );
 
@@ -173,9 +173,10 @@ class ReadingLevelProgressionService {
    */
   static async evaluateProgressionEligibility(studentId, readingLevel, requiredCategories) {
     try {
-      // Get latest category results for student
+      // Get latest category results for student at the specific reading level being evaluated
       const categoryResults = await CategoryResult.findOne({
-        studentId: studentId
+        studentId: studentId,
+        readingLevel: readingLevel  // Use the specific reading level we're evaluating
       }).sort({ updatedAt: -1 });
 
       if (!categoryResults) {
