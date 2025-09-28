@@ -41,6 +41,8 @@ import {
 import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
 import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
 import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
+import AuthService from '../../../services/authService';
+import { API_BASE_URL } from '../../../services/config';
 import { pdf } from '@react-pdf/renderer';
 import IEPReportPDFRenderer from './IEPReportPDFRenderer';
 import { toast } from '../../../utils/toastHelper';
@@ -1319,10 +1321,12 @@ const IEPReport = ({
       setShowProgressionDialog(false);
       toast.loading('Progressing student to next reading level...');
 
-      const response = await fetch(`/api/iep/progress-reading-level/${student.idNumber}`, {
+      const token = AuthService.getToken();
+      const response = await fetch(`${API_BASE_URL}/api/iep/student/${student.idNumber}/reading-level-progression`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
       });
 

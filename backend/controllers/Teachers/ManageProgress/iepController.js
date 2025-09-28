@@ -1453,6 +1453,88 @@ class IEPController {
     }
   }
 
+  // ✅ NEW HTTP ENDPOINT: Handle reading level progression request
+  static async handleReadingLevelProgressionRequest(req, res) {
+    try {
+      const { studentId } = req.params;
+
+      console.log(`🚀 HTTP ENDPOINT: Reading level progression request for student ${studentId}`);
+
+      // Validate studentId
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid student ID format'
+        });
+      }
+
+      // Get student information to check current reading level
+      const testDb = mongoose.connection.useDb('test');
+      const usersCollection = testDb.collection('users');
+      const student = await usersCollection.findOne({
+        _id: new mongoose.Types.ObjectId(studentId)
+      });
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          error: 'Student not found'
+        });
+      }
+
+      // For now, we'll implement a simple progression to the next level
+      // TODO: Add logic to validate student is ready for progression
+      const currentLevel = student.readingLevel;
+      const levelProgression = {
+        'Low Emerging': 'High Emerging',
+        'High Emerging': 'Developing',
+        'Developing': 'Transitioning',
+        'Transitioning': 'At Grade Level'
+      };
+
+      const newLevel = levelProgression[currentLevel];
+
+      if (!newLevel) {
+        return res.status(400).json({
+          success: false,
+          error: `Student is already at the highest level (${currentLevel})`
+        });
+      }
+
+      // Update student's reading level
+      await usersCollection.updateOne(
+        { _id: new mongoose.Types.ObjectId(studentId) },
+        {
+          $set: {
+            readingLevel: newLevel,
+            updatedAt: new Date()
+          }
+        }
+      );
+
+      console.log(`✅ Student ${studentId} progressed from ${currentLevel} to ${newLevel}`);
+
+      res.json({
+        success: true,
+        data: {
+          studentId: studentId,
+          previousLevel: currentLevel,
+          newReadingLevel: newLevel,
+          progressedAt: new Date()
+        },
+        message: `Student successfully progressed from ${currentLevel} to ${newLevel}`
+      });
+
+    } catch (error) {
+      console.error('Error in reading level progression endpoint:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to progress reading level',
+        message: error.message
+      });
+    }
+  }
+
   // ✅ NEW METHOD: Get IEP history for a student (all reading levels)
   static async getIEPHistory(req, res) {
     try {

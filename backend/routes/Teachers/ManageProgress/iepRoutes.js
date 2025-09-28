@@ -43,6 +43,6 @@ router.get('/student/:studentId/reports', IEPController.getPreviousPdfReports);
 router.get('/student/:studentId/history', IEPController.getIEPHistory);
 
 // ✅ NEW: Handle reading level progression with proper IEP record preservation
-router.post('/student/:studentId/reading-level-progression', IEPController.handleReadingLevelProgression);
+router.post('/student/:studentId/reading-level-progression', IEPController.handleReadingLevelProgressionRequest);
 
 module.exports = router; 
