@@ -250,6 +250,70 @@ router.post('/fix-student-intervention-scores/:studentId', async (req, res) => {
 });
 
 /**
+ * Route to clean up cross-level contamination for specific student
+ * ✅ NEW: Removes intervention attempts that were incorrectly saved to wrong reading level records
+ */
+router.post('/cleanup-contamination/:studentId', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    console.log(`[CONTAMINATION CLEANUP API] Manual contamination cleanup triggered for student ${studentId}`);
+    const result = await CategoryResultsService.cleanupCrossLevelContamination(parseInt(studentId));
+    res.json(result);
+  } catch (error) {
+    console.error('[CONTAMINATION CLEANUP API] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Route to clean up cross-level contamination for ALL students
+ * ✅ NEW: Removes intervention attempts that were incorrectly saved to wrong reading level records
+ */
+router.post('/cleanup-contamination-all', async (req, res) => {
+  try {
+    console.log(`[CONTAMINATION CLEANUP API] Manual contamination cleanup triggered for ALL students`);
+
+    const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
+    const User = require('../../models/userModel');
+
+    // Get all students with valid reading levels
+    const allStudents = await User.find({
+      readingLevel: { $in: ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'] }
+    });
+
+    let totalCleanupActions = 0;
+    let cleanedStudents = 0;
+    let results = [];
+
+    for (const student of allStudents) {
+      const cleanupResult = await CategoryResultsService.cleanupCrossLevelContamination(student.idNumber);
+
+      if (cleanupResult.success && cleanupResult.cleanupActions.length > 0) {
+        cleanedStudents++;
+        totalCleanupActions += cleanupResult.cleanupActions.length;
+        results.push({
+          studentId: student.idNumber,
+          cleanupActions: cleanupResult.cleanupActions.length,
+          details: cleanupResult.cleanupActions
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Contamination cleanup completed for all students`,
+      studentsChecked: allStudents.length,
+      studentsWithContamination: cleanedStudents,
+      totalCleanupActions: totalCleanupActions,
+      cleanupResults: results
+    });
+  } catch (error) {
+    console.error('[CONTAMINATION CLEANUP API] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * Route to get fix status
  */
 router.get('/status', async (req, res) => {

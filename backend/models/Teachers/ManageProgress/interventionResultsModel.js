@@ -359,6 +359,22 @@ interventionResultsSchema.post('save', async function(doc) {
 
       if (updateResult.success) {
         console.log(`[INTERVENTION RESULTS] ✅ Successfully updated category_results for ${doc.category}`);
+
+        // 🧹 AUTOMATIC CLEANUP: Remove any cross-level contamination after successful intervention update
+        try {
+          console.log(`[INTERVENTION RESULTS] 🧹 Running automatic contamination cleanup for student ${doc.studentId}`);
+          const CategoryResultsService = require('../../../services/Teachers/CategoryResultsService');
+          const cleanupResult = await CategoryResultsService.cleanupCrossLevelContamination(doc.studentId);
+
+          if (cleanupResult.success && cleanupResult.cleanupActions.length > 0) {
+            console.log(`[INTERVENTION RESULTS] ✅ Automatic cleanup completed: ${cleanupResult.cleanupActions.length} contaminated attempts removed`);
+          } else {
+            console.log(`[INTERVENTION RESULTS] ✅ Automatic cleanup completed: No contamination found`);
+          }
+        } catch (cleanupError) {
+          console.error(`[INTERVENTION RESULTS] ⚠️ Automatic cleanup failed (non-critical):`, cleanupError.message);
+          // Don't fail the intervention processing if cleanup fails
+        }
       } else {
         console.error(`[INTERVENTION RESULTS] ❌ Failed to update category_results:`, updateResult.error);
       }

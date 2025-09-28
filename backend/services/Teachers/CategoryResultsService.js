@@ -2563,6 +2563,139 @@ class CategoryResultsService {
   }
 
   /**
+   * Clean up cross-level contamination in intervention history
+   * Removes intervention attempts that were incorrectly saved to wrong reading level records
+   */
+  static async cleanupCrossLevelContamination(studentId) {
+    try {
+      console.log(`[CONTAMINATION CLEANUP] 🧹 Starting cleanup for student ${studentId}`);
+
+      // Get all category_results for this student
+      const allCategoryResults = await CategoryResult.find({
+        studentId: parseInt(studentId)
+      }).sort({ createdAt: 1 });
+
+      console.log(`[CONTAMINATION CLEANUP] Found ${allCategoryResults.length} category result records`);
+
+      let cleanupActions = [];
+
+      // Check each record for contaminated intervention attempts
+      for (let recordIndex = 0; recordIndex < allCategoryResults.length; recordIndex++) {
+        const currentRecord = allCategoryResults[recordIndex];
+
+        console.log(`[CONTAMINATION CLEANUP] 🔍 Checking ${currentRecord.readingLevel} record`);
+
+        for (let categoryIndex = 0; categoryIndex < currentRecord.categories.length; categoryIndex++) {
+          const category = currentRecord.categories[categoryIndex];
+
+          if (category.interventionHistory && category.interventionHistory.length > 0) {
+            console.log(`[CONTAMINATION CLEANUP] Found ${category.interventionHistory.length} attempts in ${currentRecord.readingLevel} - ${category.categoryName}`);
+
+            // Check each intervention attempt
+            for (let attemptIndex = category.interventionHistory.length - 1; attemptIndex >= 0; attemptIndex--) {
+              const attempt = category.interventionHistory[attemptIndex];
+
+              console.log(`[CONTAMINATION CLEANUP] 🔍 Checking attempt ${attempt.attemptNumber} in ${currentRecord.readingLevel} - ${category.categoryName}`);
+              console.log(`[CONTAMINATION CLEANUP] Attempt details: interventionResultId=${attempt.interventionResultId}`);
+
+              // Check if this intervention result belongs to the correct reading level
+              const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+              const interventionResult = await InterventionResults.findById(attempt.interventionResultId);
+
+              if (interventionResult) {
+                const correctReadingLevel = interventionResult.readingLevel;
+                console.log(`[CONTAMINATION CLEANUP] Intervention result found: reading level ${correctReadingLevel}, current record: ${currentRecord.readingLevel}`);
+
+                if (currentRecord.readingLevel !== correctReadingLevel) {
+                  console.log(`[CONTAMINATION CLEANUP] 🚨 CONTAMINATION DETECTED: Attempt belongs to ${correctReadingLevel} but is in ${currentRecord.readingLevel} record`);
+
+                  // Check if the correct reading level record exists
+                  const correctRecord = allCategoryResults.find(record => record.readingLevel === correctReadingLevel);
+                  if (correctRecord) {
+                    const correctCategory = correctRecord.categories.find(cat => cat.categoryName === category.categoryName);
+
+                    // Check if this attempt should be moved or removed
+                    const hasAttemptInCorrectRecord = correctCategory && correctCategory.interventionHistory.some(correctAttempt =>
+                      correctAttempt.interventionResultId.toString() === attempt.interventionResultId.toString()
+                    );
+
+                    if (hasAttemptInCorrectRecord) {
+                      console.log(`[CONTAMINATION CLEANUP] 🗑️ REMOVING duplicate contaminated attempt from ${currentRecord.readingLevel} record (already exists in correct ${correctReadingLevel} record)`);
+                    } else {
+                      console.log(`[CONTAMINATION CLEANUP] 🔄 MOVING contaminated attempt from ${currentRecord.readingLevel} to ${correctReadingLevel} record`);
+
+                      // Add attempt to correct record
+                      if (correctCategory) {
+                        const newAttemptNumber = correctCategory.interventionHistory.length + 1;
+                        const movedAttempt = {
+                          ...attempt,
+                          attemptNumber: newAttemptNumber
+                        };
+                        correctCategory.interventionHistory.push(movedAttempt);
+                        correctCategory.interventionAttempts = correctCategory.interventionHistory.length;
+
+                        // Mark correct record for saving
+                        cleanupActions.push({
+                          action: 'moved_contaminated_attempt',
+                          fromRecord: currentRecord.readingLevel,
+                          toRecord: correctReadingLevel,
+                          category: category.categoryName,
+                          interventionResultId: attempt.interventionResultId
+                        });
+                      }
+                    }
+
+                    // Remove this attempt from current (wrong) record
+                    currentRecord.categories[categoryIndex].interventionHistory.splice(attemptIndex, 1);
+
+                    // Recalculate attempt numbers in current record
+                    currentRecord.categories[categoryIndex].interventionHistory.forEach((remainingAttempt, index) => {
+                      remainingAttempt.attemptNumber = index + 1;
+                    });
+
+                    // Update intervention attempts count
+                    currentRecord.categories[categoryIndex].interventionAttempts = currentRecord.categories[categoryIndex].interventionHistory.length;
+
+                    console.log(`[CONTAMINATION CLEANUP] ✅ Removed contaminated attempt from ${currentRecord.readingLevel}, remaining attempts: ${currentRecord.categories[categoryIndex].interventionHistory.length}`);
+                  } else {
+                    console.log(`[CONTAMINATION CLEANUP] ⚠️ Correct reading level record (${correctReadingLevel}) not found - keeping attempt in current record`);
+                  }
+                } else {
+                  console.log(`[CONTAMINATION CLEANUP] ✅ Attempt is in correct reading level record`);
+                }
+              } else {
+                console.log(`[CONTAMINATION CLEANUP] ⚠️ Intervention result ${attempt.interventionResultId} not found in database`);
+              }
+            }
+          }
+        }
+
+        // Save the cleaned record
+        if (cleanupActions.some(action => action.fromRecord === currentRecord.readingLevel)) {
+          await currentRecord.save();
+          console.log(`[CONTAMINATION CLEANUP] 💾 Saved cleaned ${currentRecord.readingLevel} record`);
+        }
+      }
+
+      console.log(`[CONTAMINATION CLEANUP] 🎉 Cleanup complete. Actions taken:`, cleanupActions.length);
+      return {
+        success: true,
+        studentId: studentId,
+        cleanupActions: cleanupActions,
+        message: `Cleaned up ${cleanupActions.length} contaminated intervention attempts`
+      };
+
+    } catch (error) {
+      console.error('[CONTAMINATION CLEANUP] ❌ Error during cleanup:', error);
+      return {
+        success: false,
+        error: error.message,
+        studentId: studentId
+      };
+    }
+  }
+
+  /**
    * Helper method to perform the actual category update logic
    * Extracted for reuse in both normal and fallback scenarios
    */
