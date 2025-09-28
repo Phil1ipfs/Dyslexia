@@ -2672,41 +2672,68 @@ const IEPReport = ({
                 <div className="iep-pdf-performance-summary">
                   <div className="iep-pdf-summary-content">
                     <p className="iep-pdf-summary-text">
-                      <strong>Reading Level Achievement:</strong> {getStudentName()} is currently at the <strong>{currentIepData?.readingLevel || 'Not Assessed'}</strong> reading level
+                      <strong>Reading Level Achievement:</strong> {getStudentName()} is currently functioning at the <strong>{currentIepData?.readingLevel || 'Not Assessed'}</strong> reading level
                       {(() => {
-                        if (!currentIepData?.objectives) return ', with assessment data pending.';
+                        if (!currentIepData?.objectives) return ', with comprehensive assessment data pending to establish baseline performance and intervention needs.';
 
                         const availableCategories = currentIepData.objectives.map(obj => obj.categoryName);
                         const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
                         const allPassed = passedCategories.length === availableCategories.length && availableCategories.length > 0;
 
+                        // Calculate performance metrics for more detailed analysis
+                        const averageScore = currentIepData.objectives.reduce((sum, obj) => sum + (obj.assessmentScore || obj.score || 0), 0) / currentIepData.objectives.length;
+                        const performanceRange = Math.round(averageScore);
+
                         if (allPassed) {
-                          return `, demonstrating mastery across all ${availableCategories.length} required literacy domain${availableCategories.length > 1 ? 's' : ''}: ${availableCategories.join(', ')}. This achievement reflects complete mastery of the current reading level requirements and positions the student for advancement to the next reading level.`;
+                          return `, demonstrating complete mastery across all ${availableCategories.length} assessed literacy domain${availableCategories.length > 1 ? 's' : ''}: ${availableCategories.join(', ')}. With an average performance of ${performanceRange}%, this achievement reflects strong foundational reading skills and readiness for advancement to the next developmental reading level. The student's consistent performance above the 75% mastery threshold indicates solid understanding of current grade-level expectations.`;
                         } else {
-                          const pendingCategories = currentIepData.objectives.filter(obj => !obj.isPassed).map(obj => obj.categoryName);
-                          return `, with ongoing development needed in ${pendingCategories.length} domain${pendingCategories.length > 1 ? 's' : ''}: ${pendingCategories.join(', ')}. Continued intervention and support are recommended to achieve mastery at this reading level.`;
+                          const pendingCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+                          const pendingCategoryNames = pendingCategories.map(obj => obj.categoryName);
+                          const pendingScores = pendingCategories.map(obj => `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`);
+
+                          return `, requiring targeted development in ${pendingCategoryNames.length} critical literacy domain${pendingCategoryNames.length > 1 ? 's' : ''}: ${pendingScores.join(', ')}. Current performance indicates specific skill gaps that benefit from systematic intervention approaches. The average assessment performance of ${performanceRange}% suggests ${performanceRange >= 50 ? 'emerging competencies that can be strengthened' : 'foundational skills requiring intensive support'} through evidence-based instructional strategies.`;
                         }
                       })()}
                     </p>
 
                     <p className="iep-pdf-summary-text">
-                      <strong>Initial Assessment Performance:</strong> The student's initial assessment revealed the following performance levels across reading domains:
+                      <strong>Initial Assessment Performance:</strong> The comprehensive initial assessment administered across multiple literacy domains revealed the following detailed performance profile:
                       {(() => {
                         if (!currentIepData?.objectives || currentIepData.objectives.length === 0) {
-                          return 'Assessment data not available.';
+                          return ' Assessment data is not yet available and requires completion to establish baseline performance metrics.';
                         }
 
-                        const performanceList = currentIepData.objectives.map(obj =>
-                          `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`
-                        ).join(', ');
+                        const performanceDetails = currentIepData.objectives.map(obj => {
+                          const score = obj.assessmentScore || obj.score || 0;
+                          const questionData = obj.totalQuestions ? ` (${obj.correctAnswers || 0}/${obj.totalQuestions} questions correct)` : '';
+                          return `${obj.categoryName}: ${score}%${questionData}`;
+                        });
 
                         const failedCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+                        const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
+
+                        // Calculate score distribution
+                        const scores = currentIepData.objectives.map(obj => obj.assessmentScore || obj.score || 0);
+                        const highScores = scores.filter(s => s >= 75).length;
+                        const mediumScores = scores.filter(s => s >= 50 && s < 75).length;
+                        const lowScores = scores.filter(s => s < 50).length;
+
+                        let performanceAnalysis = ` ${performanceDetails.join('; ')}.`;
 
                         if (failedCategories.length > 0) {
-                          return `${performanceList}. These scores identified specific skill gaps requiring targeted intervention support in ${failedCategories.length} area${failedCategories.length > 1 ? 's' : ''}.`;
+                          const interventionCategoriesDetails = failedCategories.map(obj => {
+                            const score = obj.assessmentScore || obj.score || 0;
+                            if (score < 25) return `${obj.categoryName} (significant challenge at ${score}%)`;
+                            else if (score < 50) return `${obj.categoryName} (moderate difficulty at ${score}%)`;
+                            else return `${obj.categoryName} (approaching proficiency at ${score}%)`;
+                          });
+
+                          performanceAnalysis += ` Assessment results indicate ${failedCategories.length} domain${failedCategories.length > 1 ? 's' : ''} requiring intervention: ${interventionCategoriesDetails.join(', ')}. Performance distribution shows ${highScores} area${highScores !== 1 ? 's' : ''} at mastery level, ${mediumScores} area${mediumScores !== 1 ? 's' : ''} showing emerging skills, and ${lowScores} area${lowScores !== 1 ? 's' : ''} needing intensive support.`;
                         } else {
-                          return `${performanceList}. All assessed areas met or exceeded the proficiency threshold, indicating strong foundational literacy skills.`;
+                          performanceAnalysis += ` All ${currentIepData.objectives.length} assessed literacy domain${currentIepData.objectives.length > 1 ? 's' : ''} exceeded the 75% proficiency threshold, demonstrating strong foundational reading competencies and indicating readiness for grade-level academic challenges.`;
                         }
+
+                        return performanceAnalysis;
                       })()}
                     </p>
 
