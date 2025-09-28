@@ -602,9 +602,11 @@ prescriptiveAnalysisSchema.pre('save', function(next) {
 
 // Indexes for efficient querying
 prescriptiveAnalysisSchema.index({ studentId: 1, assessmentType: 1 });
-// 🛡️ FIXED: Allow multiple prescriptive analysis records per student for progress tracking
-// Replace unique constraint with a compound index that includes timestamp for uniqueness
-prescriptiveAnalysisSchema.index({ studentId: 1, categoryId: 1, createdAt: 1 }, { sparse: true });
+
+// ✅ FIXED FOR MULTIPLE READING LEVELS: Include readingLevel in all indexes
+// This allows students to have prescriptive analysis for same category at different reading levels
+prescriptiveAnalysisSchema.index({ studentId: 1, readingLevel: 1, assessmentType: 1 });
+prescriptiveAnalysisSchema.index({ studentId: 1, categoryId: 1, readingLevel: 1, createdAt: 1 }, { sparse: true });
 prescriptiveAnalysisSchema.index({ categoryResultId: 1 }, { sparse: true });
 
 // 🛡️ SAFETY: Index to prevent ACTUAL duplicates (same categoryResultId)

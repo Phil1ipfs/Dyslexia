@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const CategoryResult = require('../models/Teachers/ManageProgress/categoryResultModel');
 const User = require('../models/userModel');
 const MainAssessment = require('../models/Teachers/mainAssessmentModel');
+// IntegrationTriggerService removed - prescriptive analysis triggered in CategoryResultsService after responses
 
 /**
  * ✅ AUTOMATIC READING LEVEL PROGRESSION SYSTEM
@@ -546,6 +547,9 @@ class ReadingLevelProgressionService {
       console.log(`[PROGRESSION] 📊 Completion status: ${completedCategories}/${requiredCategories.length} categories completed, overall score: ${overallScore}%`);
       console.log(`[PROGRESSION] 📋 Categories: [${categories.map(c => `${c.categoryName}(${c.score}%${c.isCompleted ? ' ✅' : ' ⏳'})`).join(', ')}]`);
       console.log(`[PROGRESSION] 📋 All categories start fresh with empty intervention history - no data copied from previous level`);
+
+      // Note: Prescriptive analysis will be triggered when student completes the assessment
+      // and CategoryResultsService processes their responses - NOT on blank progression records
 
     } catch (error) {
       console.error(`[PROGRESSION] ❌ Error creating category placeholder:`, error);

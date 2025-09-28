@@ -11,20 +11,20 @@ class IntegrationTriggerService {
   /**
    * Main trigger function to be called after category_results are saved
    * This ensures prescriptive analysis is generated automatically
-   * 
+   *
    * @param {Object} categoryResult - The newly created category_result document
    * @returns {Object} Generated prescriptive analysis or null if error
    */
   static async triggerPrescriptiveAnalysis(categoryResult) {
     try {
-      console.log(`[INTEGRATION TRIGGER] Triggering prescriptive analysis for student ${categoryResult.studentId}`);
-      
+      console.log(`[INTEGRATION TRIGGER] Triggering prescriptive analysis for student ${categoryResult.studentId}, reading level: ${categoryResult.readingLevel}`);
+
       // Validate category result
       if (!categoryResult || !categoryResult._id || !categoryResult.studentId) {
         console.error('[INTEGRATION TRIGGER] Invalid category result provided');
         return null;
       }
-      
+
       // ✅ ENHANCED CHECK: Verify if prescriptive analysis is COMPLETE for all categories
       const existingAnalysis = await this.checkExistingAnalysis(categoryResult._id);
       if (existingAnalysis) {
@@ -42,24 +42,77 @@ class IntegrationTriggerService {
           console.log(`[INTEGRATION TRIGGER] Deleted incomplete analysis ${existingAnalysis._id} for regeneration`);
         }
       }
-      
+
       // NEW: Generate prescription-only analysis (Doctor-Teacher-Student Model)
       // This provides DIAGNOSIS + PRESCRIPTION only, NO question generation
       console.log(`[DOCTOR-TEACHER-STUDENT] Using prescription-only model for category result ${categoryResult._id}`);
       const analysis = await prescriptiveAnalyticsService.generatePrescriptionOnly(categoryResult._id);
-      
+
       console.log(`[INTEGRATION TRIGGER] Successfully generated prescriptive analysis ${analysis._id} for student ${categoryResult.studentId}`);
-      
+
       // Optional: Trigger additional processes if needed
       await this.postAnalysisProcessing(analysis);
-      
+
       return analysis;
     } catch (error) {
+      // ✅ AUTOMATIC DUPLICATE KEY ERROR HANDLING FOR MULTIPLE READING LEVELS
+      if (error.code === 11000 && error.message.includes('studentId_1_categoryId_1')) {
+        console.log(`[INTEGRATION TRIGGER] 🔧 AUTOMATIC FIX: Duplicate key error for student ${categoryResult.studentId} - this means student has multiple reading levels`);
+
+        try {
+          // Find existing prescriptive analysis for this student/category combination
+          const existingForDifferentLevel = await PrescriptiveAnalysis.findOne({
+            studentId: categoryResult.studentId,
+            $or: [
+              { categoryId: { $exists: true } }, // Legacy field
+              { 'insights.overallScore': { $exists: true } } // Modern field
+            ]
+          }).sort({ createdAt: -1 });
+
+          if (existingForDifferentLevel) {
+            console.log(`[INTEGRATION TRIGGER] ✅ Found existing analysis for different reading level: ${existingForDifferentLevel.readingLevel}`);
+            console.log(`[INTEGRATION TRIGGER] 🎯 Current request is for reading level: ${categoryResult.readingLevel}`);
+
+            // Check if we already have analysis for THIS specific reading level
+            const existingForThisLevel = await PrescriptiveAnalysis.findOne({
+              studentId: categoryResult.studentId,
+              readingLevel: categoryResult.readingLevel
+            });
+
+            if (existingForThisLevel) {
+              console.log(`[INTEGRATION TRIGGER] ✅ Analysis already exists for reading level ${categoryResult.readingLevel}: ${existingForThisLevel._id}`);
+              return existingForThisLevel;
+            }
+
+            // Try a different approach - use categoryResultId as unique identifier
+            console.log(`[INTEGRATION TRIGGER] 🔄 Creating analysis using categoryResultId as unique identifier`);
+            const analysisWithCategoryResultId = await prescriptiveAnalyticsService.generatePrescriptionOnly(categoryResult._id);
+
+            if (analysisWithCategoryResultId) {
+              console.log(`[INTEGRATION TRIGGER] ✅ SUCCESS: Created prescriptive analysis for ${categoryResult.readingLevel} level using categoryResultId`);
+              return analysisWithCategoryResultId;
+            }
+          }
+
+          // If all else fails, log the issue but don't break the flow
+          console.log(`[INTEGRATION TRIGGER] ⚠️ Could not resolve duplicate key error automatically`);
+          console.log(`[INTEGRATION TRIGGER] 💡 This indicates database index needs to be updated to include readingLevel`);
+
+          await this.logError(categoryResult, error);
+          return null;
+
+        } catch (retryError) {
+          console.error('[INTEGRATION TRIGGER] Error in automatic duplicate key fix:', retryError);
+          await this.logError(categoryResult, retryError);
+          return null;
+        }
+      }
+
       console.error('[INTEGRATION TRIGGER] Error generating prescriptive analysis:', error);
-      
+
       // Log the error but don't throw - we don't want to break the main assessment flow
       await this.logError(categoryResult, error);
-      
+
       return null;
     }
   }
