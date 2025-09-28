@@ -1,7 +1,8 @@
 // controllers/authController.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const AuditLogger = require('../middleware/auditLogger');
 
 /**
  * Login controller with proper security validation
@@ -15,7 +16,7 @@ exports.login = async (req, res) => {
   }
 
   try {
-    console.log('🔑 Login attempt:', email);
+    console.log('🔑 Login attempt for email hash:', email ? email.substring(0, 3) + '***' : 'unknown');
     
     // Get User model from users_web database
     const usersDb = mongoose.connection.useDb('users_web');
@@ -28,11 +29,15 @@ exports.login = async (req, res) => {
 
     if (!user) {
       // Use consistent messaging to prevent email enumeration
-      console.log('❌ User not found:', email);
+      console.log('❌ User not found for login attempt');
+
+      // Audit log failed login attempt
+      await AuditLogger.logAuth('unknown_user', 'LOGIN_FAILED', req, false, 'User not found');
+
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log('✅ User found:', user.email);
+    console.log('✅ User found with ID:', user._id.toString());
     
     /* ── 3. Check password ───────────────────────────────── */
     // Determine which field has the password hash
@@ -67,22 +72,25 @@ exports.login = async (req, res) => {
       }
     } else {
       // If password isn't hashed with bcrypt, it's invalid
-      console.error('Invalid password hash format for user:', email);
+      console.error('Invalid password hash format for user ID:', user._id.toString());
       return res.status(500).json({ message: 'Account configuration error' });
     }
     
     if (!passwordIsValid) {
-      console.log('❌ Invalid password for user:', email);
-      
+      console.log('❌ Invalid password for user ID:', user._id.toString());
+
       // Log failed attempt but use consistent messaging
       await usersCollection.updateOne(
         { _id: user._id },
-        { 
+        {
           $inc: { failedLoginAttempts: 1 },
           $set: { lastFailedLogin: new Date() }
         }
       );
-      
+
+      // Audit log failed login attempt
+      await AuditLogger.logAuth(user._id.toString(), 'LOGIN_FAILED', req, false, 'Invalid password');
+
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -120,7 +128,12 @@ exports.login = async (req, res) => {
     console.log('User roles:', userRoles);
 
     /* ── 6. Sign JWT with appropriate options ───────────── */
-    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
+    const secretKey = process.env.JWT_SECRET;
+
+    if (!secretKey) {
+      console.error('JWT_SECRET environment variable is required');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
     
     const token = jwt.sign(
       {
@@ -136,16 +149,19 @@ exports.login = async (req, res) => {
       }
     );
 
-    console.log('✅ Login success for:', email);
+    console.log('✅ Login success for user ID:', user._id.toString());
     console.log('User roles for redirection:', userRoles);
+
+    // Audit log successful login
+    await AuditLogger.logAuth(user._id.toString(), 'LOGIN_SUCCESS', req, true);
 
     /* ── 7. Success response ───────────────────────────── */
     return res.json({
       token,
-      user: { 
-        id: user._id.toString(), 
-        email: user.email, 
-        roles: userRoles 
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        roles: userRoles
       }
     });
 
@@ -240,9 +256,14 @@ exports.changePassword = async (req, res) => {
     );
     
     if (updateResult.modifiedCount === 0) {
+      // Audit log failed password change
+      await AuditLogger.logAuth(req.user.id, 'PASSWORD_CHANGE', req, false, 'Database update failed');
       return res.status(500).json({ message: 'Failed to update password' });
     }
-    
+
+    // Audit log successful password change
+    await AuditLogger.logAuth(req.user.id, 'PASSWORD_CHANGE', req, true);
+
     return res.json({ message: 'Password updated successfully' });
   } catch (error) {
     console.error('Error updating password:', error);

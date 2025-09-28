@@ -18,7 +18,34 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 1, // Only allow 1 file per request
+    fields: 10, // Limit number of fields
+    fieldNameSize: 100, // Limit field name size
+    fieldSize: 1024 * 1024 // 1MB limit for field values
+  },
+  fileFilter: (req, file, cb) => {
+    // Allowed file types for security
+    const allowedMimeTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf', 'text/plain', 'text/csv',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+
+    // Check MIME type
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      return cb(new Error(`File type ${file.mimetype} not allowed. Allowed types: ${allowedMimeTypes.join(', ')}`), false);
+    }
+
+    // Check file extension
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.txt', '.csv', '.xls', '.xlsx'];
+    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+
+    if (!allowedExtensions.includes(fileExtension)) {
+      return cb(new Error(`File extension ${fileExtension} not allowed. Allowed extensions: ${allowedExtensions.join(', ')}`), false);
+    }
+
+    cb(null, true);
   }
 }).single('file');
 
@@ -148,5 +175,57 @@ router.post('/pdf', uploadAuthMiddleware, UploadController.uploadPdfToS3);
 // Routes for getting PDFs - no auth required
 router.get('/pdf/:id', UploadController.getPdf);
 router.get('/pdf/local/:id', UploadController.getPdf);
+
+// Multer error handling middleware
+router.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    console.log('Multer error:', error.message);
+
+    switch (error.code) {
+      case 'LIMIT_FILE_SIZE':
+        return res.status(400).json({
+          success: false,
+          message: 'File too large. Maximum size allowed is 5MB.',
+          error: 'FILE_TOO_LARGE'
+        });
+      case 'LIMIT_FILE_COUNT':
+        return res.status(400).json({
+          success: false,
+          message: 'Too many files. Only 1 file allowed per request.',
+          error: 'TOO_MANY_FILES'
+        });
+      case 'LIMIT_FIELD_COUNT':
+        return res.status(400).json({
+          success: false,
+          message: 'Too many fields in request.',
+          error: 'TOO_MANY_FIELDS'
+        });
+      case 'LIMIT_UNEXPECTED_FILE':
+        return res.status(400).json({
+          success: false,
+          message: 'Unexpected file field.',
+          error: 'UNEXPECTED_FILE'
+        });
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'File upload error: ' + error.message,
+          error: 'UPLOAD_ERROR'
+        });
+    }
+  }
+
+  // Handle file filter errors (from our custom fileFilter)
+  if (error.message && error.message.includes('not allowed')) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+      error: 'INVALID_FILE_TYPE'
+    });
+  }
+
+  // Pass other errors to default error handler
+  next(error);
+});
 
 module.exports = router; 

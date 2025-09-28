@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const AuditLogger = require('./auditLogger');
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -12,8 +13,13 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    // Use the original secret key
-    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
+    // Require JWT_SECRET environment variable - no fallback for security
+    const secretKey = process.env.JWT_SECRET;
+
+    if (!secretKey) {
+      console.error('JWT_SECRET environment variable is required');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
     
     const decoded = jwt.verify(token, secretKey);
     
@@ -37,7 +43,7 @@ const authenticateToken = (req, res, next) => {
       }
     }
 
-    console.log('Authentication successful for user:', req.user.email || req.user.id);
+    console.log('Authentication successful for user ID:', req.user.id || 'unknown');
     next();
   } catch (error) {
     console.error('Token verification failed:', error.message);
@@ -168,6 +174,15 @@ const authorize = (...allowedRoles) => {
         userRoles,
         allowedRoles: normalizedAllowedRoles
       });
+
+      // Audit log permission violation
+      AuditLogger.logPermissionViolation(
+        req.user.id,
+        `Access to ${req.originalUrl} with roles: ${allowedRoles.join(', ')}`,
+        req,
+        `User has roles: ${userRoles.join(', ')}, required: ${normalizedAllowedRoles.join(', ')}`
+      );
+
       return res.status(403).json({
         message: 'Not authorized for this resource',
         userRoles,

@@ -1,12 +1,15 @@
 // server.js - Main Express application
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 require('dotenv').config();
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const s3Client = require('./config/s3');
+const { generalLimiter, authLimiter, uploadLimiter, passwordChangeLimiter } = require('./middleware/rateLimiter');
+const { sessionMiddleware } = require('./middleware/sessionManager');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
@@ -50,6 +53,66 @@ const requestLogger = (req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} (original: ${req.originalUrl})`);
   next();
 };
+
+// Apply security headers first
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: [
+        "'self'",
+        "'sha256-HASH'", // Only allow specific inline styles with known hashes
+        "https://fonts.googleapis.com",
+        "https://cdnjs.cloudflare.com"
+      ],
+      styleSrcElem: [
+        "'self'",
+        "https://fonts.googleapis.com",
+        "https://cdnjs.cloudflare.com"
+      ],
+      styleSrcAttr: "'none'", // Block all inline style attributes to prevent CSS injection
+      scriptSrc: [
+        "'self'",
+        "'unsafe-eval'", // Required for development and React
+        "https://cdnjs.cloudflare.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "https://fonts.gstatic.com",
+        "https://cdnjs.cloudflare.com"
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com",
+        "https://*.amazonaws.com"
+      ],
+      connectSrc: [
+        "'self'",
+        "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com",
+        "https://*.amazonaws.com"
+      ],
+      mediaSrc: [
+        "'self'",
+        "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com",
+        "https://*.amazonaws.com"
+      ],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: { action: 'deny' }, // Prevent clickjacking
+  noSniff: true, // Prevent MIME type sniffing
+  xssFilter: true, // Enable XSS filtering
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
 
 // Apply middlewares
 app.use(cors({
@@ -95,9 +158,29 @@ app.options('*', cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With']
 }));
 
+// Apply general rate limiting to all routes
+app.use(generalLimiter);
+
+// Apply session management middleware
+app.use(sessionMiddleware);
+
 // Increase body parser limits for larger file uploads
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' })); // Reduced from 50mb for security
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Reduced from 50mb for security
+
+// Add global request sanitization middleware
+const { sanitizeRequest } = require('./middleware/validationMiddleware');
+app.use(sanitizeRequest);
+
+// Add security monitoring middleware
+const { securityMonitoringMiddleware, securityErrorHandler } = require('./middleware/securityMonitoring');
+app.use(securityMonitoringMiddleware);
+
+// Add CSS injection protection middleware
+const { cssInjectionProtectionMiddleware, sanitizeCSSInRequest } = require('./middleware/cssInjectionProtection');
+app.use(cssInjectionProtectionMiddleware);
+app.use(sanitizeCSSInRequest);
+
 app.use(requestLogger);
 
 // Test route to verify server is running
@@ -114,8 +197,15 @@ const connectDB = async () => {
   try {
     console.log('Attempting to connect to MongoDB...');
     
-    // FIRST connect to the database
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017', {
+    // FIRST connect to the database - require MONGO_URI for security
+    const mongoUri = process.env.MONGO_URI;
+
+    if (!mongoUri) {
+      console.error('MONGO_URI environment variable is required');
+      throw new Error('Database configuration missing');
+    }
+
+    await mongoose.connect(mongoUri, {
       dbName: 'test',
       connectTimeoutMS: 30000,
       socketTimeoutMS: 45000,
@@ -247,10 +337,16 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
+    const secretKey = process.env.JWT_SECRET;
+
+    if (!secretKey) {
+      console.error('JWT_SECRET environment variable is required');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+
     const decoded = jwt.verify(token, secretKey);
     req.user = decoded;
-    console.log('Authenticated user:', req.user.email, 'User roles:', req.user.roles);
+    console.log('Authenticated user ID:', req.user.id, 'User roles:', req.user.roles);
     next();
   } catch (error) {
     console.error('Token verification failed:', error.message);
@@ -324,6 +420,11 @@ connectDB().then(async (connected) => {
     const authRouter = require('./routes/auth/authRoutes');
     app.use('/api/auth', authRouter);
     console.log('✅ Auth routes registered at /api/auth/*');
+
+    // Register security monitoring routes
+    const securityRoutes = require('./routes/securityRoutes');
+    app.use('/api/security', securityRoutes);
+    console.log('✅ Security monitoring routes registered at /api/security/*');
 
     // Register admin routes
     const teacherRoutes = require('./routes/Admin/teacherRoutes');
@@ -1087,7 +1188,7 @@ connectDB().then(async (connected) => {
     // Load upload routes
     try {
       const uploadRoutes = require('./routes/uploadRoutes');
-      app.use('/api/uploads', uploadRoutes);
+      app.use('/api/uploads', uploadLimiter, uploadRoutes);
       console.log('✅ Loaded upload routes at /api/uploads/*');
 
     } catch (error) {
@@ -1131,6 +1232,36 @@ connectDB().then(async (connected) => {
     console.error('Error registering routes:', error);
     console.error('Error details:', error.stack);
     process.exit(1);
+  }
+});
+
+// Add security error handler (must be after routes)
+app.use(securityErrorHandler);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  // Track security event if not already handled
+  if (req.trackSecurityEvent && err.status >= 400) {
+    const eventType = err.status === 401 ? 'authFailures' :
+                     err.status === 403 ? 'permissionViolations' :
+                     err.status === 429 ? 'rateLimitViolations' :
+                     'suspiciousActivities';
+
+    req.trackSecurityEvent(eventType, {
+      error: err.message,
+      statusCode: err.status,
+      stack: err.stack?.substring(0, 500) // First 500 chars only
+    });
+  }
+
+  console.error('Global error handler:', err);
+
+  if (!res.headersSent) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || 'Internal server error',
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+    });
   }
 });
 

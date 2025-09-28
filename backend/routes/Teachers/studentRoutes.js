@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { auth, authorize } = require('../../middleware/auth');
+const { studentValidation, paginationValidation } = require('../../middleware/validationMiddleware');
 const studentController = require('../../controllers/Teachers/studentController');
 
 // Create the pre-assessment controller

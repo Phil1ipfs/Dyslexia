@@ -1,9 +1,16 @@
 // routes/auth/authRoutes.js
 const express = require('express');
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { authenticateToken } = require('../../middleware/auth');
+const { authLimiter, passwordChangeLimiter } = require('../../middleware/rateLimiter');
+const { refreshTokenHandler } = require('../../middleware/sessionManager');
+const {
+  authValidation,
+  sanitizeRequest,
+  validateRateLimit
+} = require('../../middleware/validationMiddleware');
 const router = express.Router();
 
 /**
@@ -46,13 +53,10 @@ const normalizeRole = (role) => {
  * @desc    Authenticate user & get token
  * @access  Public
  */
-router.post('/login', async (req, res) => {
+router.post('/login', sanitizeRequest, authValidation.login, authLimiter, async (req, res) => {
   const { email, password, expectedRole } = req.body;
 
-  // Basic validation
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email & password required' });
-  }
+  // Validation is now handled by middleware
 
   try {
     console.log('=== LOGIN ATTEMPT ===');
@@ -227,28 +231,11 @@ router.post('/login', async (req, res) => {
  * @desc    Update user password
  * @access  Private
  */
-router.post('/update-password', authenticateToken, async (req, res) => {
+router.post('/update-password', sanitizeRequest, authValidation.changePassword, passwordChangeLimiter, authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: 'Current password and new password are required' });
-    }
-    
-    // Validate password complexity
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
-    if (!passwordRegex.test(newPassword)) {
-      return res.status(400).json({ 
-        message: 'Password does not meet complexity requirements',
-        requirements: [
-          'Minimum 8 characters',
-          'At least one uppercase letter',
-          'At least one lowercase letter',
-          'At least one number',
-          'At least one special character (!@#$%^&*)'
-        ]
-      });
-    }
+    // Validation is now handled by middleware
     
     // Get User model from users_web database
     const usersDb = mongoose.connection.useDb('users_web');
@@ -343,6 +330,37 @@ router.get('/check-role/:roleId', async (req, res) => {
   } catch (error) {
     console.error('Error checking role:', error);
     return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/refresh
+ * @desc    Refresh access token using refresh token
+ * @access  Public
+ */
+router.post('/refresh', sanitizeRequest, authValidation.refresh, authLimiter, refreshTokenHandler);
+
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Logout user and invalidate session
+ * @access  Private
+ */
+router.post('/logout', authenticateToken, (req, res) => {
+  try {
+    // In a production app, you might want to blacklist the token
+    // or remove it from a session store
+    console.log(`User logged out: ${req.user.id}`);
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Logout failed'
+    });
   }
 });
 

@@ -8,7 +8,8 @@
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  background-color: #3B4F81 !important;
+  background-color: #1C2E56 !important;
+  height: 120px;
   z-index: 1000 !important;
   color: white !important;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
@@ -101,7 +102,7 @@
   color: #333 !important;
   border: none !important;
   padding: 0.8rem 1.8rem !important;
-  border-radius: 50px !important;
+  border-radius: 10px !important;
   font-weight: 700 !important;
   font-size: 1.05rem !important;
   cursor: pointer !important;

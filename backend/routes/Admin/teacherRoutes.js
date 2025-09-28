@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const teacherProfileController = require('../../controllers/Teachers/teacherProfileController');
 const studentAdminController = require('../../controllers/studentAdminController');
+const { studentValidation, sanitizeRequest } = require('../../middleware/validationMiddleware');
 const multer = require('multer');
 const upload = multer();
 
@@ -157,10 +158,10 @@ router.put('/teachers/:id', upload.single('profileImage'), teacherProfileControl
 router.delete('/teachers/:id', teacherProfileController.deleteTeacher);
 
 // Add new student (Create)
-router.post('/students', upload.single('profileImage'), studentAdminController.createStudent);
+router.post('/students', sanitizeRequest, studentValidation.createStudent, upload.single('profileImage'), studentAdminController.createStudent);
 
 // Update student (PUT)
-router.put('/students/:id', upload.single('profileImage'), studentAdminController.updateStudent);
+router.put('/students/:id', sanitizeRequest, studentValidation.studentId, upload.single('profileImage'), studentAdminController.updateStudent);
 
 // Delete student (DELETE)
 router.delete('/students/:id', studentAdminController.deleteStudent);
