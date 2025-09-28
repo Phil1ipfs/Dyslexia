@@ -669,8 +669,10 @@ class CategoryResultsService {
         // Don't fail the category result creation if analytics fails
       }
 
-      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK
+      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK - DISABLED (Teacher-triggered only)
       // Check if student is now eligible for reading level progression after category completion
+      // DISABLED: Progression now requires manual teacher approval via IEP dashboard button
+      /*
       try {
         console.log(`[CATEGORY RESULTS] 🔍 Checking reading level progression eligibility after category completion`);
 
@@ -696,6 +698,8 @@ class CategoryResultsService {
         console.error('[CATEGORY RESULTS] ❌ Error in automatic reading level progression check:', progressionError);
         // Don't fail the category result creation if progression check fails
       }
+      */
+      console.log(`[CATEGORY RESULTS] ℹ️ Automatic progression disabled - teacher must trigger via IEP dashboard`);
 
       return savedResult.toObject();
 
@@ -746,8 +750,10 @@ class CategoryResultsService {
         updateData.totalCategories = updateData.categories.length;
         updateData.allCategoriesPassed = overallStats.passedCategories === updateData.categories.length;
 
-        // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK
+        // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK - DISABLED (Teacher-triggered only)
         // Check for reading level progression using the comprehensive ReadingLevelProgressionService
+        // DISABLED: Progression now requires manual teacher approval via IEP dashboard button
+        /*
         if (updateData.allCategoriesPassed && !existingResult.allCategoriesPassed) {
           console.log(`[CATEGORY RESULTS] ✅ Student ${existingResult.studentId} passed all categories for ${existingResult.readingLevel} - triggering progression check`);
 
@@ -772,6 +778,10 @@ class CategoryResultsService {
           }
         } else if (updateData.allCategoriesPassed) {
           console.log(`[CATEGORY RESULTS] ℹ️ All categories already passed - skipping duplicate progression check`);
+        }
+        */
+        if (updateData.allCategoriesPassed && !existingResult.allCategoriesPassed) {
+          console.log(`[CATEGORY RESULTS] ℹ️ Student ${existingResult.studentId} completed all categories for ${existingResult.readingLevel} - teacher can trigger progression via IEP dashboard`);
         }
       }
 

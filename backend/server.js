@@ -1077,7 +1077,7 @@ connectDB().then(async (connected) => {
     }
     // Load IEP routes
     try {
-      const iepRoutes = require('./routes/Teachers/iepRoutes');
+      const iepRoutes = require('./routes/Teachers/ManageProgress/iepRoutes');
       app.use('/api/iep', iepRoutes);
       console.log('✅ Loaded IEP routes at /api/iep/*');
     } catch (error) {
