@@ -2724,7 +2724,7 @@ class CategoryResultsService {
       categoryResult.categories[categoryIndex].interventionHistory = [];
     }
 
-    // 🔍 FETCH INTERVENTION ASSESSMENT ID FROM INTERVENTION RESULTS
+    // 🔍 CLEAN INTERVENTION ASSESSMENT ID LOOKUP - ROOT CAUSE FIXED
     let interventionAssessmentId = null;
     try {
       const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
@@ -2733,16 +2733,18 @@ class CategoryResultsService {
         interventionAssessmentId = interventionResult.interventionAssessmentId;
         console.log(`[INTERVENTION UPDATE] ✅ Found interventionAssessmentId: ${interventionAssessmentId}`);
       } else {
-        console.warn(`[INTERVENTION UPDATE] ⚠️ No interventionAssessmentId found for interventionResultId: ${interventionResultId}`);
+        console.error(`[INTERVENTION UPDATE] 🚨 CRITICAL: No interventionAssessmentId found for interventionResultId: ${interventionResultId}`);
+        throw new Error(`Invalid intervention_results record missing required interventionAssessmentId: ${interventionResultId}`);
       }
     } catch (fetchError) {
-      console.error(`[INTERVENTION UPDATE] ❌ Error fetching interventionAssessmentId:`, fetchError.message);
+      console.error(`[INTERVENTION UPDATE] 🚨 CRITICAL ERROR: Failed to fetch interventionAssessmentId:`, fetchError.message);
+      throw fetchError; // Let it fail properly instead of using fallbacks
     }
 
     const attemptNumber = categoryResult.categories[categoryIndex].interventionHistory.length + 1;
     const interventionEntry = {
       attemptNumber: attemptNumber,
-      interventionId: interventionAssessmentId, // ✅ Now properly set from intervention_results
+      interventionId: interventionAssessmentId, // 🛡️ GUARANTEED non-null interventionId
       interventionResultId: interventionResultId,
       score: interventionScore,
       isPassed: interventionScore >= 75,

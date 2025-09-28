@@ -531,19 +531,9 @@ class ProgressController {
                 createdBy: req.user ? req.user.id : null
             });
 
-            // Initialize results tracking
-            await InterventionResults.create({
-                studentId: new mongoose.Types.ObjectId(studentId),
-                interventionPlanId: newPlan._id,
-                revisionNumber: 1, // Default for InterventionPlan-based results
-                completedActivities: 0,
-                totalActivities: interventionQuestions.length,
-                percentComplete: 0,
-                correctAnswers: 0,
-                incorrectAnswers: 0,
-                percentCorrect: 0,
-                passedThreshold: false
-            });
+            // ✅ FIXED: InterventionResults will be created properly by InterventionGeneratorService
+            // when student completes intervention - includes required interventionAssessmentId
+            console.log(`[PROGRESS CONTROLLER] ✅ Intervention plan created - results will be generated on completion`);
 
             return res.status(201).json({
                 success: true,
