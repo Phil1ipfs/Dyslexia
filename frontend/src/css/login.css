@@ -13,10 +13,10 @@
   background: #1F315D;
   backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 3rem 2.5rem;
+  padding: 3rem 3.5rem;
   width: 100%;
   height: 500px;
-  max-width: 380px;
+  max-width: 480px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -49,8 +49,8 @@
 }
 
 .icon-input input {
-  padding-left: 3rem;
-  padding-right: 3rem;
+  padding-left: 3.5rem;
+  padding-right: 3.5rem;
 }
 
 .input-icon {
@@ -61,39 +61,32 @@
   font-size: 1.1rem;
   color: #888;
   pointer-events: none;
+  z-index: 5;
 }
 
 .input-icon.clickable {
-  left: auto;
-  right: 1rem;
-  cursor: pointer;
-  pointer-events: auto;
+  display: none;
 }
 
-/* Special handling for password field with two icons */
+/* Special handling for password field - no show/hide icon needed */
 .icon-input:has(input[type="password"]) input,
 .icon-input:has(input[type="text"][name="password"]) input {
-  padding-right: 3rem;
-}
-
-.icon-input:has(input[type="password"]) .input-icon.clickable,
-.icon-input:has(input[type="text"][name="password"]) .input-icon.clickable {
-  right: 1rem;
+  padding-right: 1.5rem;
 }
 
 .form-input {
   width: 100% !important;
-  padding: 0.9rem 1rem !important;
-  padding-left: 3rem !important;
+  padding: 1.2rem 1.5rem !important;
+  padding-left: 3.5rem !important;
   border: none !important;
-  border-radius: 6px !important;
-  font-size: 14px !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
   background-color: rgba(255, 255, 255, 0.95) !important;
   color: #333 !important;
   transition: all 0.3s ease !important;
   text-align: left !important;
   box-sizing: border-box !important;
-  height: 48px !important;
+  height: 56px !important;
 }
 
 .form-input::placeholder {
@@ -108,12 +101,12 @@
 
 .signin-button {
   width: 100%;
-  height: 48px;
+  height: 56px;
   background-color: #FFCC00 !important;
   color: #000 !important;
   border: none;
-  border-radius: 6px;
-  font-size: 0.95rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
