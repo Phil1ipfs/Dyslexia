@@ -300,14 +300,55 @@ router.post('/progress-reading-level/:studentId', async (req, res) => {
     }
 
     // Check if all categories are completed and passed
+    // CRITICAL: Must check both main assessment AND intervention success
     const allCategoriesPassed = currentCategoryResults.every(result =>
-      result.categories.every(cat => cat.isCompleted && cat.isPassed)
+      result.categories.every(cat => {
+        // Category passes if either:
+        // 1. Main assessment passed (≥75%)
+        // 2. OR intervention completed successfully (intervention passed)
+        const mainAssessmentPassed = cat.isCompleted && cat.isPassed && cat.score >= 75;
+        const interventionPassed = cat.interventionCompleted &&
+          cat.interventionHistory &&
+          cat.interventionHistory.length > 0 &&
+          cat.interventionHistory.some(attempt => attempt.isPassed === true);
+
+        const categoryComplete = mainAssessmentPassed || interventionPassed;
+
+        console.log(`[PROGRESSION CHECK] ${cat.categoryName}: Main=${mainAssessmentPassed ? 'PASS' : 'FAIL'} (${cat.score}%), Intervention=${interventionPassed ? 'PASS' : 'FAIL'} → ${categoryComplete ? 'READY' : 'NOT READY'}`);
+
+        return categoryComplete;
+      })
     );
 
     if (!allCategoriesPassed) {
+      // Provide detailed information about what's blocking progression
+      const blockingCategories = [];
+      currentCategoryResults.forEach(result =>
+        result.categories.forEach(cat => {
+          const mainAssessmentPassed = cat.isCompleted && cat.isPassed && cat.score >= 75;
+          const interventionPassed = cat.interventionCompleted &&
+            cat.interventionHistory &&
+            cat.interventionHistory.length > 0 &&
+            cat.interventionHistory.some(attempt => attempt.isPassed === true);
+
+          if (!mainAssessmentPassed && !interventionPassed) {
+            blockingCategories.push({
+              category: cat.categoryName,
+              mainScore: cat.score || 0,
+              mainPassed: mainAssessmentPassed,
+              interventionAttempts: cat.interventionHistory?.length || 0,
+              interventionPassed: interventionPassed,
+              status: cat.interventionCompleted ? 'intervention_failed' : 'needs_intervention'
+            });
+          }
+        })
+      );
+
       return res.status(400).json({
         success: false,
-        error: 'Student must complete and pass all categories before progressing to the next reading level'
+        error: 'Student must complete and pass all categories before progressing to the next reading level',
+        blockingCategories: blockingCategories,
+        details: `${blockingCategories.length} categor${blockingCategories.length > 1 ? 'ies' : 'y'} not ready: ${blockingCategories.map(b => b.category).join(', ')}`
       });
     }
 
@@ -362,17 +403,48 @@ router.post('/progress-reading-level/:studentId', async (req, res) => {
     await freshCategoryResult.save();
     console.log(`[IEP PROGRESSION] ✅ Created fresh category_results for ${nextLevel} level with ${requiredCategories.length} categories`);
 
+    // Step 7: Update/Create fresh IEP report for new reading level
+    try {
+      const IEPReport = require('../../models/Teachers/ManageProgress/iepReportModel');
+
+      // Find existing IEP report and mark as inactive
+      await IEPReport.updateMany(
+        { studentId: new require('mongoose').Types.ObjectId(user._id), isActive: true },
+        { isActive: false, inactiveReason: `Progressed to ${nextLevel} level`, inactiveDate: new Date() }
+      );
+
+      // Create new IEP report for the new reading level using the fresh category result
+      const AutomaticIEPReportGenerator = require('../../services/AutomaticIEPReportGenerator');
+      const newIepResult = await AutomaticIEPReportGenerator.generateOrUpdateIEPReport(
+        freshCategoryResult.toObject(),
+        'reading_level_progression'
+      );
+
+      if (newIepResult && newIepResult.success) {
+        console.log(`[IEP PROGRESSION] ✅ Created new IEP report for ${nextLevel} level: ${newIepResult.iepReport._id}`);
+      } else {
+        console.warn(`[IEP PROGRESSION] ⚠️ Failed to create IEP report for new level: ${newIepResult?.error || 'Unknown error'}`);
+      }
+    } catch (iepError) {
+      console.error('[IEP PROGRESSION] Error updating IEP report:', iepError);
+      // Don't fail the progression if IEP update fails
+    }
+
     res.json({
       success: true,
       message: `Student successfully progressed from ${currentLevel} to ${nextLevel}`,
       previousLevel: currentLevel,
       newReadingLevel: nextLevel,
       categoriesCreated: requiredCategories,
+      newCategoryResult: freshCategoryResult._id,
       preservedData: [
-        'intervention_results',
-        'intervention_assessment',
-        'prescriptive_analysis',
-        'user reading level progression history'
+        'intervention_results - All intervention history preserved',
+        'intervention_assessment - All teacher-created interventions preserved',
+        'prescriptive_analysis - All diagnostic insights preserved',
+        'users - Reading level progression history preserved'
+      ],
+      deletedData: [
+        'category_results - Old records deleted and replaced with fresh ones for new level'
       ]
     });
 

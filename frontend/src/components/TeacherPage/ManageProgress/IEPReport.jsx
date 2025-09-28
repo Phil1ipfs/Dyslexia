@@ -2637,47 +2637,122 @@ const IEPReport = ({
                 <div className="iep-pdf-performance-summary">
                   <div className="iep-pdf-summary-content">
                     <p className="iep-pdf-summary-text">
-                      <strong>Reading Level Achievement:</strong> {getStudentName()} has successfully achieved the <strong>{currentIepData?.readingLevel || 'Not Assessed'}</strong> 
-                      reading level, demonstrating mastery across all five critical literacy domains: Alphabet Knowledge, Phonological Awareness, Decoding, 
-                      Word Recognition, and Reading Comprehension. This achievement reflects complete mastery of the reading development continuum and 
-                      positions the student for continued academic success.
-                    </p>
-                    
-                    <p className="iep-pdf-summary-text">
-                      <strong>Initial Assessment Performance:</strong> The student's initial assessment revealed varying proficiency levels across reading domains: 
-                      Alphabet Knowledge (33%), Phonological Awareness (7%), Decoding (40%), Word Recognition (33%), and Reading Comprehension (20%). 
-                      These scores identified specific skill gaps requiring targeted intervention support across all foundational literacy areas.
-                    </p>
-                    
-                    <p className="iep-pdf-summary-text">
-                      <strong>Intervention Progress:</strong> {getStudentName()} demonstrated exceptional persistence throughout the intervention process, 
-                      completing {currentIepData?.objectives ? currentIepData.objectives.reduce((total, obj) => total + (obj.interventionAttempts || 0), 0) : 0} 
-                      total intervention attempts across all categories. The intervention sequence included: Alphabet Knowledge (3 attempts), Phonological Awareness (2 attempts), 
-                      Decoding (3 attempts), Word Recognition (5 attempts), and Reading Comprehension (9 attempts).
-                    </p>
-                    
-                    <p className="iep-pdf-summary-text">
-                      <strong>Mastery Achievement:</strong> Through systematic intervention implementation, {getStudentName()} achieved complete mastery (100%) 
-                      across all five reading categories, representing an average improvement of 
+                      <strong>Reading Level Achievement:</strong> {getStudentName()} is currently at the <strong>{currentIepData?.readingLevel || 'Not Assessed'}</strong> reading level
                       {(() => {
-                        if (currentIepData?.objectives) {
-                          const improvements = currentIepData.objectives
-                            .filter(obj => obj.hasIntervention && obj.interventionImprovement)
-                            .map(obj => obj.interventionImprovement);
-                          const avgImprovement = improvements.length > 0 ? 
-                            Math.round(improvements.reduce((a, b) => a + b, 0) / improvements.length) : 0;
-                          return avgImprovement;
+                        if (!currentIepData?.objectives) return ', with assessment data pending.';
+
+                        const availableCategories = currentIepData.objectives.map(obj => obj.categoryName);
+                        const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
+                        const allPassed = passedCategories.length === availableCategories.length && availableCategories.length > 0;
+
+                        if (allPassed) {
+                          return `, demonstrating mastery across all ${availableCategories.length} required literacy domain${availableCategories.length > 1 ? 's' : ''}: ${availableCategories.join(', ')}. This achievement reflects complete mastery of the current reading level requirements and positions the student for advancement to the next reading level.`;
+                        } else {
+                          const pendingCategories = currentIepData.objectives.filter(obj => !obj.isPassed).map(obj => obj.categoryName);
+                          return `, with ongoing development needed in ${pendingCategories.length} domain${pendingCategories.length > 1 ? 's' : ''}: ${pendingCategories.join(', ')}. Continued intervention and support are recommended to achieve mastery at this reading level.`;
                         }
-                        return 0;
-                      })()}% across all intervention categories. The student's learning trajectory demonstrates consistent engagement, 
-                      effective problem-solving strategies, and the ability to apply learned skills in various contexts.
+                      })()}
+                    </p>
+
+                    <p className="iep-pdf-summary-text">
+                      <strong>Initial Assessment Performance:</strong> The student's initial assessment revealed the following performance levels across reading domains:
+                      {(() => {
+                        if (!currentIepData?.objectives || currentIepData.objectives.length === 0) {
+                          return 'Assessment data not available.';
+                        }
+
+                        const performanceList = currentIepData.objectives.map(obj =>
+                          `${obj.categoryName} (${obj.assessmentScore || obj.score || 0}%)`
+                        ).join(', ');
+
+                        const failedCategories = currentIepData.objectives.filter(obj => !obj.isPassed);
+
+                        if (failedCategories.length > 0) {
+                          return `${performanceList}. These scores identified specific skill gaps requiring targeted intervention support in ${failedCategories.length} area${failedCategories.length > 1 ? 's' : ''}.`;
+                        } else {
+                          return `${performanceList}. All assessed areas met or exceeded the proficiency threshold, indicating strong foundational literacy skills.`;
+                        }
+                      })()}
+                    </p>
+
+                    <p className="iep-pdf-summary-text">
+                      <strong>Intervention Progress:</strong> {getStudentName()}
+                      {(() => {
+                        if (!currentIepData?.objectives) return 'has not yet begun intervention activities.';
+
+                        const totalAttempts = currentIepData.objectives.reduce((total, obj) => total + (obj.interventionAttempts || 0), 0);
+                        const categoriesWithInterventions = currentIepData.objectives.filter(obj => obj.hasIntervention && obj.interventionAttempts > 0);
+
+                        if (totalAttempts === 0) {
+                          return 'has not yet attempted any interventions. Initial assessment results indicate intervention support is needed.';
+                        }
+
+                        const interventionDetails = categoriesWithInterventions.map(obj =>
+                          `${obj.categoryName} (${obj.interventionAttempts} attempt${obj.interventionAttempts > 1 ? 's' : ''})`
+                        ).join(', ');
+
+                        const successfulInterventions = categoriesWithInterventions.filter(obj => obj.latestInterventionPassed);
+
+                        if (successfulInterventions.length > 0) {
+                          return `demonstrated persistence throughout the intervention process, completing ${totalAttempts} total intervention attempt${totalAttempts > 1 ? 's' : ''} across ${categoriesWithInterventions.length} categor${categoriesWithInterventions.length > 1 ? 'ies' : 'y'}. The intervention sequence included: ${interventionDetails}. Successfully passed ${successfulInterventions.length} intervention${successfulInterventions.length > 1 ? 's' : ''}.`;
+                        } else {
+                          return `has completed ${totalAttempts} intervention attempt${totalAttempts > 1 ? 's' : ''} across ${categoriesWithInterventions.length} categor${categoriesWithInterventions.length > 1 ? 'ies' : 'y'}. The intervention sequence included: ${interventionDetails}. Additional support and revision of intervention strategies are recommended.`;
+                        }
+                      })()}
                     </p>
                     
                     <p className="iep-pdf-summary-text">
-                      <strong>Current Status:</strong> {getStudentName()} has successfully completed all required reading interventions and demonstrates 
-                      mastery of fundamental literacy skills. The student's achievement indicates strong readiness for grade-level reading materials, 
-                      independent reading, and continued academic advancement. Continued monitoring and enrichment activities are recommended to 
-                      maintain skill proficiency and support ongoing development.
+                      <strong>Mastery Achievement:</strong>
+                      {(() => {
+                        if (!currentIepData?.objectives || currentIepData.objectives.length === 0) {
+                          return `${getStudentName()} has not yet completed assessment activities. Initial evaluation is needed to establish baseline performance levels.`;
+                        }
+
+                        const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
+                        const totalCategories = currentIepData.objectives.length;
+                        const masteryPercentage = Math.round((passedCategories.length / totalCategories) * 100);
+
+                        const improvementData = currentIepData.objectives
+                          .filter(obj => obj.hasIntervention && obj.interventionImprovement !== undefined)
+                          .map(obj => obj.interventionImprovement);
+
+                        const avgImprovement = improvementData.length > 0 ?
+                          Math.round(improvementData.reduce((a, b) => a + b, 0) / improvementData.length) : 0;
+
+                        if (masteryPercentage === 100) {
+                          return `Through systematic intervention implementation, ${getStudentName()} achieved complete mastery (100%) across all ${totalCategories} reading categor${totalCategories > 1 ? 'ies' : 'y'}, representing an average improvement of ${avgImprovement}% across intervention categories. The student's learning trajectory demonstrates consistent engagement, effective problem-solving strategies, and successful skill acquisition.`;
+                        } else if (masteryPercentage >= 75) {
+                          return `${getStudentName()} has achieved substantial progress with ${masteryPercentage}% mastery across assessed reading categories (${passedCategories.length} of ${totalCategories} categories passed). The average improvement of ${avgImprovement}% demonstrates positive response to intervention strategies. Continued support in remaining areas will help achieve complete mastery.`;
+                        } else if (masteryPercentage > 0) {
+                          return `${getStudentName()} has achieved partial mastery with ${masteryPercentage}% completion across assessed reading categories (${passedCategories.length} of ${totalCategories} categories passed). The intervention results show ${avgImprovement >= 0 ? 'some positive response' : 'continued challenges'}, indicating the need for revised intervention strategies and additional support.`;
+                        } else {
+                          return `${getStudentName()} has not yet achieved mastery in the assessed reading categories. The intervention results indicate significant challenges that require comprehensive support, revised teaching strategies, and potentially individualized approaches to address the student's learning needs.`;
+                        }
+                      })()}
+                    </p>
+
+                    <p className="iep-pdf-summary-text">
+                      <strong>Current Status:</strong>
+                      {(() => {
+                        if (!currentIepData?.objectives || currentIepData.objectives.length === 0) {
+                          return `${getStudentName()} requires initial assessment to determine current reading abilities and develop appropriate intervention strategies.`;
+                        }
+
+                        const passedCategories = currentIepData.objectives.filter(obj => obj.isPassed);
+                        const totalCategories = currentIepData.objectives.length;
+                        const allPassed = passedCategories.length === totalCategories;
+                        const hasActiveInterventions = currentIepData.objectives.some(obj => obj.hasIntervention && !obj.latestInterventionPassed);
+
+                        if (allPassed) {
+                          return `${getStudentName()} has successfully completed all required reading interventions for the ${currentIepData.readingLevel} level and demonstrates mastery of the assessed literacy skills. The student shows strong readiness for advancement to the next reading level. Continued monitoring and enrichment activities are recommended to maintain skill proficiency and support continued development.`;
+                        } else if (hasActiveInterventions) {
+                          const pendingCategories = currentIepData.objectives.filter(obj => !obj.isPassed).map(obj => obj.categoryName);
+                          return `${getStudentName()} is currently receiving intervention support in ${pendingCategories.length} area${pendingCategories.length > 1 ? 's' : ''}: ${pendingCategories.join(', ')}. The student requires continued intervention, possible revision of teaching strategies, and additional support to achieve mastery at the ${currentIepData.readingLevel} reading level. Regular progress monitoring and adjustment of intervention approaches are recommended.`;
+                        } else {
+                          const failedCategories = currentIepData.objectives.filter(obj => !obj.isPassed).map(obj => obj.categoryName);
+                          return `${getStudentName()} requires intervention support in ${failedCategories.length} area${failedCategories.length > 1 ? 's' : ''}: ${failedCategories.join(', ')}. Initial intervention development and implementation are needed to address identified learning gaps and support the student's progress toward mastery at the ${currentIepData.readingLevel} reading level.`;
+                        }
+                      })()}
                     </p>
                   </div>
                 </div>
