@@ -3094,6 +3094,226 @@
   padding: 1rem;
 }
 
+/* Reading Level Progression Modal */
+.literexia-progression-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #3B4F81;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.literexia-progression-modal .literexia-modal-header {
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
+  border-bottom: none;
+}
+
+.literexia-progression-modal .literexia-modal-icon.warning {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.literexia-progression-warning {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+}
+
+.literexia-warning-icon {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);
+}
+
+.literexia-warning-content h4 {
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.literexia-warning-content p {
+  margin: 0 0 0.75rem 0;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.literexia-progression-list {
+  margin: 0 0 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.literexia-progression-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.literexia-list-icon {
+  color: #10b981;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.literexia-warning-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  color: #1d4ed8;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.literexia-warning-footer-icon {
+  color: #1d4ed8;
+  font-size: 1rem;
+}
+
+/* Modal Button Base Styles */
+.literexia-modal-btn-primary,
+.literexia-modal-btn-secondary {
+  padding: 0.875rem 2rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 140px;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+  text-decoration: none;
+}
+
+.literexia-modal-btn-primary {
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
+  color: white;
+}
+
+.literexia-modal-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2a3d6b 0%, #1e2a4a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(59, 79, 129, 0.3);
+}
+
+.literexia-modal-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.literexia-modal-btn-secondary {
+  background: white;
+  color: #3B4F81;
+  border: 1px solid #3B4F81;
+}
+
+.literexia-modal-btn-secondary:hover:not(:disabled) {
+  background: #f0f4ff;
+  border-color: #2a3d6b;
+  color: #2a3d6b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(59, 79, 129, 0.2);
+}
+
+.literexia-modal-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.literexia-modal-btn-primary.progression {
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
+  border: 2px solid #3B4F81;
+  color: white;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.literexia-modal-btn-primary.progression:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2a3d6b 0%, #1e2a4a 100%);
+  border-color: #2a3d6b;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(59, 79, 129, 0.4);
+}
+
+.literexia-modal-btn-primary.progression:disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Modal Actions Container */
+.literexia-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1.5rem;
+  background: #fafbfc;
+  border-top: 1px solid rgba(59, 79, 129, 0.1);
+  margin-top: auto;
+}
+
+/* Responsive button layout */
+@media (max-width: 480px) {
+  .literexia-modal-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .literexia-modal-btn-primary,
+  .literexia-modal-btn-secondary {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
 .literexia-modal {
   background: white;
   border-radius: 12px;

@@ -3,37 +3,60 @@ const mongoose = require('mongoose');
 
 class IEPController {
   
-  // Get IEP report for a student
+  // Get IEP report for a student - Enhanced for reading level progression
   static async getIEPReport(req, res) {
     try {
       const { studentId } = req.params;
-      const { academicYear } = req.query;
-      
+      const { academicYear, readingLevel } = req.query;
+
       console.log(`Getting IEP report for student: ${studentId}`);
-      
+
       // Validate studentId
       if (!mongoose.Types.ObjectId.isValid(studentId)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          error: 'Invalid student ID format' 
+          error: 'Invalid student ID format'
         });
       }
-      
-      // Build query
+
+      // Get student's current reading level first
+      const testDb = mongoose.connection.useDb('test');
+      const usersCollection = testDb.collection('users');
+      const student = await usersCollection.findOne({
+        _id: new mongoose.Types.ObjectId(studentId)
+      });
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          error: 'Student not found'
+        });
+      }
+
+      // ✅ ENHANCED: Build query for reading level specific IEP
       const query = {
-        studentId: new mongoose.Types.ObjectId(studentId),
-        isActive: true
+        studentId: new mongoose.Types.ObjectId(studentId)
       };
-      
+
       if (academicYear) {
         query.academicYear = academicYear;
       }
-      
-      // Find the most recent IEP report
+
+      // ✅ CRITICAL FIX: Find IEP for specific reading level OR current reading level
+      const targetReadingLevel = readingLevel || student.readingLevel;
+      if (targetReadingLevel) {
+        query.readingLevel = targetReadingLevel;
+      }
+
+      console.log(`🔍 Searching for IEP: studentId=${studentId}, readingLevel=${targetReadingLevel}, academicYear=${academicYear || 'current'}`);
+
+      // Find IEP report for the specific reading level (NOT just isActive=true)
       let iepReport = await IEPReport.findOne(query)
         .sort({ createdAt: -1 })
         .populate('studentId', 'idNumber firstName lastName readingLevel')
         .populate('lastModifiedBy', 'firstName lastName');
+
+      console.log(`📋 IEP query result: ${iepReport ? 'Found' : 'Not found'} for reading level: ${targetReadingLevel}`);
       
       // If no IEP report exists, try to create one from category results
       if (!iepReport) {
@@ -294,7 +317,8 @@ class IEPController {
                 isPassed: attempt.isPassed || false,
                 attemptedAt: attempt.attemptedAt || attempt.completedAt || new Date(),
                 reason: attempt.attemptReason || attempt.reason || 'intervention_attempt',
-                revisionNumber: attempt.revisionNumber || 1
+                revisionNumber: attempt.revisionNumber || 1,
+                teacherRemarks: attempt.teacherRemarks || '' // ✅ Include teacherRemarks field
               };
 
               console.log(`    Attempt ${mappedAttempt.attemptNumber}: ${mappedAttempt.score}% - ${mappedAttempt.isPassed ? 'PASSED' : 'FAILED'}`);
@@ -678,14 +702,44 @@ class IEPController {
             objective.interventionCompleted = categoryData.interventionCompleted || false;
             objective.interventionId = categoryData.currentInterventionId || null;
 
-            // Map fresh intervention history - ✅ FIX: Match by attemptNumber instead of array index
+            // ✅ ENHANCED FIX: Preserve ALL teacher remarks during intervention history update
+            const originalHistory = originalTeacherData[objective.categoryName]?.interventionHistory || [];
+            console.log(`  🔍 DEBUG: Preserving intervention history for ${objective.categoryName}`);
+            console.log(`    📋 Original history count: ${originalHistory.length}`);
+            console.log(`    📋 New category data count: ${categoryData.interventionHistory.length}`);
+
+            // Map fresh intervention history with enhanced teacher remarks preservation
             objective.interventionHistory = categoryData.interventionHistory.map((attempt, index) => {
               const attemptNumber = attempt.attemptNumber || (index + 1);
 
-              // ✅ FIX: Find matching teacher remarks by attemptNumber, not array index
-              const originalAttempt = originalTeacherData[objective.categoryName]?.interventionHistory?.find(
-                original => original.attemptNumber === attemptNumber
-              );
+              // ✅ ENHANCED: Try multiple matching strategies for teacher remarks preservation
+              let teacherRemarks = '';
+
+              // Strategy 1: Match by attemptNumber
+              let originalAttempt = originalHistory.find(original => original.attemptNumber === attemptNumber);
+
+              // Strategy 2: If no match by attemptNumber, try matching by index for backwards compatibility
+              if (!originalAttempt && originalHistory[index]) {
+                originalAttempt = originalHistory[index];
+                console.log(`    ⚠️  Fallback: Using index ${index} for attemptNumber ${attemptNumber}`);
+              }
+
+              // Strategy 3: If still no match, try matching by score and date proximity
+              if (!originalAttempt) {
+                originalAttempt = originalHistory.find(original =>
+                  Math.abs((original.score || 0) - (attempt.score || 0)) <= 5 // Similar score (within 5%)
+                );
+              }
+
+              // Extract teacher remarks if found
+              if (originalAttempt) {
+                teacherRemarks = originalAttempt.teacherRemarks || '';
+                if (teacherRemarks) {
+                  console.log(`    ✅ Preserved teacher remarks for attempt ${attemptNumber}: "${teacherRemarks}"`);
+                }
+              } else {
+                console.log(`    ⚠️  No original attempt found for attemptNumber ${attemptNumber}`);
+              }
 
               return {
                 attemptNumber: attemptNumber,
@@ -694,10 +748,33 @@ class IEPController {
                 attemptedAt: attempt.attemptedAt || attempt.completedAt || new Date(),
                 reason: attempt.attemptReason || attempt.reason || 'intervention_attempt',
                 revisionNumber: attempt.revisionNumber || 1,
-                // ✅ FIX: Preserve teacher remarks by matching attemptNumber
-                teacherRemarks: originalAttempt?.teacherRemarks || attempt.teacherRemarks || ''
+                // ✅ ENHANCED: Preserve teacher remarks with fallback to original attempt data
+                teacherRemarks: teacherRemarks || attempt.teacherRemarks || ''
               };
             });
+
+            // ✅ CRITICAL FIX: If original history has MORE attempts with teacher remarks, preserve them
+            const maxAttempts = Math.max(categoryData.interventionHistory.length, originalHistory.length);
+            if (originalHistory.length > categoryData.interventionHistory.length) {
+              console.log(`    🔄 Original history has more attempts (${originalHistory.length} vs ${categoryData.interventionHistory.length}), preserving extra attempts with teacher remarks`);
+
+              // Add missing attempts from original history that have teacher remarks
+              for (let i = categoryData.interventionHistory.length; i < originalHistory.length; i++) {
+                const originalAttempt = originalHistory[i];
+                if (originalAttempt && originalAttempt.teacherRemarks) {
+                  console.log(`    ➕ Adding extra attempt ${originalAttempt.attemptNumber} with teacher remarks: "${originalAttempt.teacherRemarks}"`);
+                  objective.interventionHistory.push({
+                    attemptNumber: originalAttempt.attemptNumber || (i + 1),
+                    score: originalAttempt.score || 0,
+                    isPassed: originalAttempt.isPassed || false,
+                    attemptedAt: originalAttempt.attemptedAt || new Date(),
+                    reason: originalAttempt.reason || 'intervention_attempt',
+                    revisionNumber: originalAttempt.revisionNumber || 1,
+                    teacherRemarks: originalAttempt.teacherRemarks || ''
+                  });
+                }
+              }
+            }
 
             // Set latest intervention data
             const latestAttempt = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
@@ -1276,6 +1353,144 @@ class IEPController {
       return res.status(500).json({
         success: false,
         error: 'Failed to refresh IEP report',
+        message: error.message
+      });
+    }
+  }
+
+  // ✅ NEW METHOD: Handle reading level progression with proper IEP record preservation
+  static async handleReadingLevelProgression(studentId, newReadingLevel, categoryResults, teacherId) {
+    try {
+      console.log(`🚀 READING LEVEL PROGRESSION: Student ${studentId} → ${newReadingLevel}`);
+
+      // Get student information
+      const testDb = mongoose.connection.useDb('test');
+      const usersCollection = testDb.collection('users');
+      const student = await usersCollection.findOne({
+        _id: new mongoose.Types.ObjectId(studentId)
+      });
+
+      if (!student) {
+        throw new Error('Student not found');
+      }
+
+      const previousReadingLevel = student.readingLevel;
+      console.log(`📚 Progression: ${previousReadingLevel} → ${newReadingLevel}`);
+
+      // ✅ STEP 1: Mark previous IEP as completed (NOT deleted - preserve history)
+      if (previousReadingLevel && previousReadingLevel !== newReadingLevel) {
+        const previousIEPs = await IEPReport.find({
+          studentId: new mongoose.Types.ObjectId(studentId),
+          readingLevel: previousReadingLevel,
+          isActive: true
+        });
+
+        for (const previousIEP of previousIEPs) {
+          previousIEP.isActive = false; // Mark as historical, not deleted
+          previousIEP.completedAt = new Date();
+          previousIEP.completionReason = `Reading level progression to ${newReadingLevel}`;
+          await previousIEP.save();
+          console.log(`✅ Preserved historical IEP: ${previousIEP._id} (${previousReadingLevel})`);
+        }
+      }
+
+      // ✅ STEP 2: Create NEW IEP for the new reading level
+      const newIEPData = {
+        studentId: new mongoose.Types.ObjectId(studentId),
+        studentNumber: student.idNumber.toString(),
+        readingLevel: newReadingLevel,
+        overallScore: categoryResults.overallScore || 0,
+        basedOnAssessmentId: categoryResults._id,
+        lastModifiedBy: teacherId,
+        isActive: true, // New IEP is now active
+        academicYear: new Date().getFullYear().toString(),
+        progressionFrom: previousReadingLevel, // Track where student came from
+        progressionDate: new Date()
+      };
+
+      const newIEPReport = new IEPReport(newIEPData);
+      newIEPReport.generateObjectivesFromCategoryResults(categoryResults);
+      await newIEPReport.save();
+
+      console.log(`✅ Created new IEP for ${newReadingLevel}: ${newIEPReport._id}`);
+
+      return {
+        success: true,
+        previousIEP: {
+          readingLevel: previousReadingLevel,
+          preserved: true,
+          status: 'historical'
+        },
+        newIEP: {
+          id: newIEPReport._id,
+          readingLevel: newReadingLevel,
+          status: 'active'
+        },
+        message: `Successfully progressed from ${previousReadingLevel} to ${newReadingLevel} with historical IEP preservation`
+      };
+
+    } catch (error) {
+      console.error('Error handling reading level progression:', error);
+      throw error;
+    }
+  }
+
+  // ✅ NEW METHOD: Get IEP history for a student (all reading levels)
+  static async getIEPHistory(req, res) {
+    try {
+      const { studentId } = req.params;
+      const { academicYear } = req.query;
+
+      console.log(`Getting IEP history for student: ${studentId}`);
+
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid student ID format'
+        });
+      }
+
+      // Build query for ALL IEP records (not just active)
+      const query = {
+        studentId: new mongoose.Types.ObjectId(studentId)
+      };
+
+      if (academicYear) {
+        query.academicYear = academicYear;
+      }
+
+      // Get ALL IEP records for this student, sorted by creation date
+      const iepHistory = await IEPReport.find(query)
+        .sort({ createdAt: -1 })
+        .populate('studentId', 'idNumber firstName lastName readingLevel')
+        .populate('lastModifiedBy', 'firstName lastName');
+
+      console.log(`📚 Found ${iepHistory.length} IEP records for student ${studentId}`);
+
+      // ✅ Group by reading level for better organization
+      const groupedHistory = {};
+      iepHistory.forEach(iep => {
+        if (!groupedHistory[iep.readingLevel]) {
+          groupedHistory[iep.readingLevel] = [];
+        }
+        groupedHistory[iep.readingLevel].push(iep);
+      });
+
+      res.json({
+        success: true,
+        data: {
+          totalRecords: iepHistory.length,
+          byReadingLevel: groupedHistory,
+          chronological: iepHistory
+        },
+        message: `Found ${iepHistory.length} IEP records across ${Object.keys(groupedHistory).length} reading levels`
+      });
+
+    } catch (error) {
+      console.error('Error getting IEP history:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve IEP history',
         message: error.message
       });
     }

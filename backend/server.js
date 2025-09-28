@@ -1150,7 +1150,9 @@ app.listen(PORT, async () => {
     console.warn('⚠️ Could not run automatic data fix:', error.message);
   }
 
-  // Run complete automatic progression validation
+  // ❌ DISABLED: Run complete automatic progression validation
+  // DISABLED: This was causing automatic progression without teacher approval
+  /*
   try {
     const AutomaticProgressionValidationService = require('./services/AutomaticProgressionValidationService');
     console.log('🔄 Starting automatic progression validation...');
@@ -1159,6 +1161,8 @@ app.listen(PORT, async () => {
   } catch (error) {
     console.warn('⚠️ Could not run automatic progression validation:', error.message);
   }
+  */
+  console.log('⚠️ AUTOMATIC PROGRESSION DISABLED - Teacher-triggered only via IEP dashboard');
 
   // Start automatic processing of complete assessments
   try {

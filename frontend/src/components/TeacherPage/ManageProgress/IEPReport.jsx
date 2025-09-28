@@ -94,6 +94,9 @@ const IEPReport = ({
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 2;
   
+  // Reading level progression confirmation dialog state
+  const [showProgressionDialog, setShowProgressionDialog] = useState(false);
+  
   // Teacher profile state
   const [teacherProfile, setTeacherProfile] = useState(null);
 
@@ -1293,19 +1296,15 @@ const IEPReport = ({
       return;
     }
 
-    const confirmMessage = `Are you sure you want to progress ${getStudentName()} to the next reading level? This will:\n\n` +
-      '• Update their reading level\n' +
-      '• Delete old category_results records\n' +
-      '• Create fresh category_results for the new level\n' +
-      '• Preserve all intervention history and progress\n\n' +
-      'This action cannot be undone.';
+    // Show custom confirmation dialog
+    setShowProgressionDialog(true);
+  };
 
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
+  // Confirm reading level progression
+  const confirmReadingLevelProgression = async () => {
     try {
       setSaving(true);
+      setShowProgressionDialog(false);
       toast.loading('Progressing student to next reading level...');
 
       const response = await fetch(`/api/iep/progress-reading-level/${student.idNumber}`, {
@@ -1335,6 +1334,25 @@ const IEPReport = ({
     }
   };
 
+  // Cancel reading level progression
+  const cancelReadingLevelProgression = () => {
+    setShowProgressionDialog(false);
+  };
+
+
+  // Get the next reading level
+  const getNextReadingLevel = () => {
+    if (!currentIepData?.readingLevel) return null;
+    
+    const levels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+    const currentIndex = levels.indexOf(currentIepData.readingLevel);
+    
+    if (currentIndex >= 0 && currentIndex < levels.length - 1) {
+      return levels[currentIndex + 1];
+    }
+    
+    return null;
+  };
 
   // Check if student can progress to next reading level
   const canProgressToNextLevel = () => {
@@ -1346,11 +1364,8 @@ const IEPReport = ({
       obj.isCompleted && (obj.isPassed || obj.latestInterventionPassed)
     );
 
-    // Get current reading level and check if there's a next level
-    const currentLevel = currentIepData.readingLevel;
-    const levels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
-    const currentIndex = levels.indexOf(currentLevel);
-    const hasNextLevel = currentIndex >= 0 && currentIndex < levels.length - 1;
+    // Check if there's a next level available
+    const hasNextLevel = getNextReadingLevel() !== null;
 
     return completedAndPassed && hasNextLevel;
   };
@@ -3011,6 +3026,67 @@ const IEPReport = ({
         message={successDialogData.message}
         submessage={successDialogData.submessage}
       />
+
+      {/* Reading Level Progression Confirmation Dialog */}
+      {showProgressionDialog && (
+        <div className="literexia-modal-overlay" onClick={cancelReadingLevelProgression}>
+          <div className="literexia-progression-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="literexia-modal-header">
+              <div className="literexia-modal-title">
+                <FaArrowUp className="literexia-modal-icon warning" />
+                <div>
+                  <h3>Confirm Reading Level Progression</h3>
+                  <p>This action will permanently change the student's reading level</p>
+                </div>
+              </div>
+              <button className="literexia-modal-close" onClick={cancelReadingLevelProgression}>
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="literexia-modal-content">
+              <div className="literexia-progression-warning">
+                <div className="literexia-warning-icon">
+                  <FaInfoCircle />
+                </div>
+                <div className="literexia-warning-content">
+                  <h4>Are you sure you want to progress {getStudentName()} to the next reading level?</h4>
+                  <p>This action will:</p>
+                  <ul className="literexia-progression-list">
+                    <li><FaCheckCircle className="literexia-list-icon" />Update their reading level</li>
+                    <li><FaCheckCircle className="literexia-list-icon" />Delete old category_results records</li>
+                    <li><FaCheckCircle className="literexia-list-icon" />Create fresh category_results for the new level</li>
+                    <li><FaCheckCircle className="literexia-list-icon" />Preserve all intervention history and progress</li>
+                  </ul>
+                  <div className="literexia-warning-footer">
+                    <FaInfoCircle className="literexia-warning-footer-icon" />
+                    <strong>This action cannot be undone.</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="literexia-modal-actions">
+                <button 
+                  className="literexia-modal-btn-secondary"
+                  onClick={cancelReadingLevelProgression}
+                  disabled={saving}
+                >
+                  <FaTimes />
+                  Cancel
+                </button>
+                <button 
+                  className="literexia-modal-btn-primary progression"
+                  onClick={confirmReadingLevelProgression}
+                  disabled={saving}
+                >
+                  {saving ? <FaSpinner className="spinning" /> : <FaArrowUp />}
+                  {saving ? 'Progressing...' : 'Progress to Next Level'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

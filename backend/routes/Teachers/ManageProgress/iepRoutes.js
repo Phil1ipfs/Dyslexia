@@ -39,4 +39,10 @@ router.post('/student/:studentId/send-report', IEPController.sendReportToParent)
 // Get previous PDF reports for a student
 router.get('/student/:studentId/reports', IEPController.getPreviousPdfReports);
 
+// ✅ NEW: Get complete IEP history for a student (all reading levels)
+router.get('/student/:studentId/history', IEPController.getIEPHistory);
+
+// ✅ NEW: Handle reading level progression with proper IEP record preservation
+router.post('/student/:studentId/reading-level-progression', IEPController.handleReadingLevelProgression);
+
 module.exports = router; 
