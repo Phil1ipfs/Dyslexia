@@ -533,11 +533,11 @@ const IEPReportPDFRenderer = ({ iepData }) => {
                 }
               }
 
-              // Add current status
+              // Add current status (considering both initial assessment AND intervention success)
               if (allPassed) {
                 summary += ` Current Status: Complete mastery achieved - ready for reading level advancement.`;
               } else {
-                const needingWork = currentIepData.objectives.filter(obj => !obj.isPassed);
+                const needingWork = currentIepData.objectives.filter(obj => !obj.isPassed && !obj.latestInterventionPassed);
                 summary += ` Current Status: ${needingWork.length} domain${needingWork.length > 1 ? 's' : ''} requiring continued intervention support.`;
               }
 
