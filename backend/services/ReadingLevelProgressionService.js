@@ -362,6 +362,7 @@ class ReadingLevelProgressionService {
 
   /**
    * Create category results placeholder for the next reading level
+   * ✅ ENHANCED: Now checks for existing student_responses and populates scores when assessments are complete
    */
   static async createNextLevelCategoryPlaceholder(studentId, newLevel, session) {
     try {
@@ -371,6 +372,9 @@ class ReadingLevelProgressionService {
       const questionCounts = await this.getQuestionCountsFromMainAssessment(newLevel);
 
       console.log(`[PROGRESSION] 📊 Question counts for ${newLevel}:`, questionCounts);
+
+      // ✅ ENHANCED: Import StudentResponse model to check for existing responses
+      const StudentResponse = require('../models/Teachers/ManageProgress/studentResponseModel');
 
       // ✅ CLAUDE.md COMPLIANCE: Always create fresh category_results for new level
       // Check if placeholder already exists for this level and remove it
@@ -392,17 +396,34 @@ class ReadingLevelProgressionService {
       // Each reading level should start with fresh, empty intervention history
       console.log(`[PROGRESSION] 📋 Starting fresh - no intervention history copying between reading levels`);
 
+      // ✅ ENHANCED: Check for existing student_responses for the new reading level
+      console.log(`[PROGRESSION] 🔍 Checking for existing student_responses for ${newLevel} level (data sanitization)`);
+
       // Create categories array with proper question counts and FRESH intervention status
-      const categories = requiredCategories.map(categoryName => {
+      const categories = [];
+
+      for (const categoryName of requiredCategories) {
         const questionCount = questionCounts[categoryName] || 15; // Default to 15 if not found
 
-        console.log(`[PROGRESSION]   📝 ${categoryName}: ${questionCount} questions - FRESH START (no intervention history)`);
+        console.log(`[PROGRESSION]   📝 Processing ${categoryName}: ${questionCount} questions required`);
 
-        return {
+        // ✅ DATA SANITIZATION: Check for existing student_responses for this category in the new reading level
+        const existingResponses = await StudentResponse.find({
+          studentId: studentId,
+          category: categoryName,
+          readingLevel: newLevel
+        }).session(session);
+
+        console.log(`[PROGRESSION]   📊 Found ${existingResponses.length} existing responses for ${categoryName} in ${newLevel}`);
+
+        // ✅ DATA SANITIZATION: Only populate scores when assessment is COMPLETELY finished
+        const isAssessmentComplete = existingResponses.length >= questionCount;
+
+        let categoryData = {
           categoryName: categoryName,
           totalQuestions: questionCount,
           correctAnswers: 0,
-          totalPossibleMatches: 0, // ✅ FIX: Will be calculated from actual student_responses when assessment is taken
+          totalPossibleMatches: 0,
           correctMatches: 0,
           score: 0,
           isPassed: false,
@@ -411,22 +432,108 @@ class ReadingLevelProgressionService {
           lastQuestionAnswered: '',
           interventionRequired: false,
           // ✅ CRITICAL FIX: Start fresh - no intervention data copied from previous reading level
-          interventionAttempts: 0,              // Fresh start - no attempts
-          interventionCompleted: false,         // Fresh start - not completed
-          currentInterventionId: null,          // Fresh start - no current intervention
-          interventionHistory: []               // ✅ FRESH START - empty intervention history
+          interventionAttempts: 0,
+          interventionCompleted: false,
+          currentInterventionId: null,
+          interventionHistory: []
         };
-      });
+
+        if (isAssessmentComplete) {
+          console.log(`[PROGRESSION]   ✅ ${categoryName} assessment is COMPLETE (${existingResponses.length}/${questionCount}) - calculating actual scores`);
+
+          // ✅ CALCULATE ACTUAL SCORES using same logic as CategoryResultsService
+          if (categoryName === 'Phonological Awareness') {
+            // For PA, count total matches and correct matches
+            let totalMatches = 0;
+            let correctMatches = 0;
+            let correctAnswers = 0;
+
+            existingResponses.forEach(response => {
+              if (response.totalMatches !== undefined && response.correctMatches !== undefined) {
+                totalMatches += response.totalMatches;
+                correctMatches += response.correctMatches;
+              } else {
+                // Fallback for older data structure
+                if (response.isCorrect) correctAnswers++;
+              }
+            });
+
+            if (totalMatches > 0) {
+              const score = Math.round((correctMatches / totalMatches) * 100);
+              categoryData = {
+                ...categoryData,
+                totalPossibleMatches: totalMatches,
+                correctMatches: correctMatches,
+                score: score,
+                isPassed: score >= 75,
+                isCompleted: true,
+                interventionRequired: score < 75,
+                lastQuestionAnswered: existingResponses[existingResponses.length - 1]?.questionId || ''
+              };
+              console.log(`[PROGRESSION]   📊 ${categoryName} PA score: ${correctMatches}/${totalMatches} matches = ${score}%`);
+            } else {
+              // Fallback calculation for PA without match data
+              const score = Math.round((correctAnswers / questionCount) * 100);
+              categoryData = {
+                ...categoryData,
+                correctAnswers: correctAnswers,
+                score: score,
+                isPassed: score >= 75,
+                isCompleted: true,
+                interventionRequired: score < 75,
+                lastQuestionAnswered: existingResponses[existingResponses.length - 1]?.questionId || ''
+              };
+              console.log(`[PROGRESSION]   📊 ${categoryName} fallback score: ${correctAnswers}/${questionCount} = ${score}%`);
+            }
+          } else {
+            // For other categories, count correct answers
+            let correctAnswers = 0;
+            existingResponses.forEach(response => {
+              if (response.isCorrect) {
+                correctAnswers++;
+              }
+            });
+
+            const score = Math.round((correctAnswers / questionCount) * 100);
+            categoryData = {
+              ...categoryData,
+              correctAnswers: correctAnswers,
+              score: score,
+              isPassed: score >= 75,
+              isCompleted: true,
+              interventionRequired: score < 75,
+              lastQuestionAnswered: existingResponses[existingResponses.length - 1]?.questionId || ''
+            };
+            console.log(`[PROGRESSION]   📊 ${categoryName} score: ${correctAnswers}/${questionCount} = ${score}%`);
+          }
+        } else {
+          console.log(`[PROGRESSION]   ⏳ ${categoryName} assessment is INCOMPLETE (${existingResponses.length}/${questionCount}) - keeping empty placeholder`);
+          console.log(`[PROGRESSION]   📋 DATA SANITIZATION: Scores will be populated only when all ${questionCount} questions are answered`);
+        }
+
+        categories.push(categoryData);
+      }
+
+      // Calculate overall completion metrics
+      const completedCategories = categories.filter(cat => cat.isCompleted).length;
+      const allCategoriesPassed = categories.every(cat => cat.isPassed);
+
+      // Calculate weighted overall score (if any categories are completed)
+      let overallScore = 0;
+      const completedCats = categories.filter(cat => cat.isCompleted);
+      if (completedCats.length > 0) {
+        overallScore = Math.round(completedCats.reduce((sum, cat) => sum + cat.score, 0) / completedCats.length);
+      }
 
       // Create new category results record for next level
       const newCategoryResult = new CategoryResult({
         studentId: studentId,
         assessmentDate: new Date(),
         categories: categories,
-        overallScore: 0,
-        completedCategories: 0,
+        overallScore: overallScore,
+        completedCategories: completedCategories,
         totalCategories: requiredCategories.length,
-        allCategoriesPassed: false,
+        allCategoriesPassed: allCategoriesPassed,
         readingLevel: newLevel,
         readingLevelUpdated: false, // Will be set to true when this level is completed
         createdAt: new Date(),
@@ -435,8 +542,9 @@ class ReadingLevelProgressionService {
 
       await newCategoryResult.save({ session });
 
-      console.log(`[PROGRESSION] ✅ Created category results placeholder for ${newLevel} with ${requiredCategories.length} categories`);
-      console.log(`[PROGRESSION] 📋 Categories created: [${requiredCategories.join(', ')}]`);
+      console.log(`[PROGRESSION] ✅ Created category results for ${newLevel} with ${requiredCategories.length} categories`);
+      console.log(`[PROGRESSION] 📊 Completion status: ${completedCategories}/${requiredCategories.length} categories completed, overall score: ${overallScore}%`);
+      console.log(`[PROGRESSION] 📋 Categories: [${categories.map(c => `${c.categoryName}(${c.score}%${c.isCompleted ? ' ✅' : ' ⏳'})`).join(', ')}]`);
       console.log(`[PROGRESSION] 📋 All categories start fresh with empty intervention history - no data copied from previous level`);
 
     } catch (error) {

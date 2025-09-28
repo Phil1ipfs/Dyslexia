@@ -1663,26 +1663,97 @@ class IEPController {
           console.warn(`⚠️ Could not fetch main_assessment for ${categoryName}: ${assessmentError.message}`);
         }
 
-        // ✅ CORRECT: Always create fresh placeholder categories for new reading level (per CLAUDE.md)
-        console.log(`✨ FRESH PLACEHOLDER: ${categoryName} for ${newLevel} level`);
-        return {
-            categoryName: categoryName,
-            totalQuestions: totalQuestions, // ✅ FIXED: Use actual count from main_assessment
-            correctAnswers: 0,
-            totalPossibleMatches: 0,
-            correctMatches: 0,
-            score: 0,
-            isPassed: false,
-            passingThreshold: 75,
-            isCompleted: false,
-            lastQuestionAnswered: '',
-            interventionRequired: false,
-            interventionAttempts: 0,
-            interventionCompleted: false,
-            currentInterventionId: null,
-            interventionHistory: [],
-            _id: new mongoose.Types.ObjectId()
+        // ✅ ENHANCED DATA SANITIZATION: Check for existing student_responses for this category in the new reading level
+        const studentResponsesCollection = testDb.collection('student_responses');
+
+        console.log(`🔍 DATA SANITIZATION: Checking for existing student_responses for ${categoryName} in ${newLevel}`);
+        const existingResponses = await studentResponsesCollection.find({
+          studentId: parseInt(studentId),
+          category: categoryName,
+          readingLevel: newLevel
+        }).toArray();
+
+        console.log(`📊 Found ${existingResponses.length} existing responses for ${categoryName} (expected: ${totalQuestions})`);
+
+        // ✅ DATA SANITIZATION: Only populate scores when assessment is COMPLETELY finished
+        const isAssessmentComplete = existingResponses.length >= totalQuestions && totalQuestions > 0;
+
+        let categoryData = {
+          categoryName: categoryName,
+          totalQuestions: totalQuestions, // ✅ FIXED: Use actual count from main_assessment
+          correctAnswers: 0,
+          totalPossibleMatches: 0,
+          correctMatches: 0,
+          score: 0,
+          isPassed: false,
+          passingThreshold: 75,
+          isCompleted: false,
+          lastQuestionAnswered: '',
+          interventionRequired: false,
+          interventionAttempts: 0,
+          interventionCompleted: false,
+          currentInterventionId: null,
+          interventionHistory: [],
+          _id: new mongoose.Types.ObjectId()
+        };
+
+        if (isAssessmentComplete) {
+          console.log(`✅ DATA SANITIZATION: Assessment complete for ${categoryName}, calculating actual scores...`);
+
+          // Calculate actual scores using same logic as CategoryResultsService
+          let correctAnswers = 0;
+          let totalPossibleMatches = 0;
+          let correctMatches = 0;
+
+          existingResponses.forEach(response => {
+            if (response.isCorrect) {
+              correctAnswers++;
+            }
+
+            // Handle Phonological Awareness matching questions
+            if (categoryName === 'Phonological Awareness' && response.totalMatches) {
+              totalPossibleMatches += response.totalMatches;
+              correctMatches += response.correctMatches || 0;
+            }
+          });
+
+          // Calculate score based on category type
+          let score = 0;
+          if (categoryName === 'Phonological Awareness' && totalPossibleMatches > 0) {
+            score = Math.round((correctMatches / totalPossibleMatches) * 100);
+          } else if (totalQuestions > 0) {
+            score = Math.round((correctAnswers / totalQuestions) * 100);
+          }
+
+          const isPassed = score >= 75;
+
+          // Find last question answered
+          const sortedResponses = existingResponses.sort((a, b) =>
+            new Date(b.answeredAt || b.createdAt) - new Date(a.answeredAt || a.createdAt)
+          );
+          const lastQuestionAnswered = sortedResponses[0]?.questionId || '';
+
+          categoryData = {
+            ...categoryData,
+            correctAnswers: correctAnswers,
+            totalPossibleMatches: totalPossibleMatches,
+            correctMatches: correctMatches,
+            score: score,
+            isPassed: isPassed,
+            isCompleted: true,
+            lastQuestionAnswered: lastQuestionAnswered,
+            interventionRequired: !isPassed
           };
+
+          console.log(`🎯 ${categoryName}: ${correctAnswers}/${totalQuestions} correct, score: ${score}%, passed: ${isPassed}`);
+          if (categoryName === 'Phonological Awareness') {
+            console.log(`  📊 Matching: ${correctMatches}/${totalPossibleMatches} matches correct`);
+          }
+        } else {
+          console.log(`⏳ ${categoryName}: Assessment incomplete (${existingResponses.length}/${totalQuestions}), using placeholder`);
+        }
+
+        return categoryData;
       }));
 
       // ✅ STEP 4: Calculate overall metrics for new record
@@ -1705,7 +1776,7 @@ class IEPController {
         totalCategories: categories.length,
         allCategoriesPassed: allCategoriesPassed,
         readingLevel: newLevel,
-        readingLevelUpdated: true,
+        readingLevelUpdated: false, // ✅ FIX: Set to false so record can be modified by auto-processing
         progressionFrom: previousLevel,
         progressionDate: new Date(),
         createdAt: new Date(),
