@@ -107,15 +107,31 @@ const IEPReport = ({
 
   // Get student name
   const getStudentName = () => {
+    // Debug logging to see what data we have
+    console.log('getStudentName debug:', {
+      currentIepData_studentId: currentIepData?.studentId,
+      student: student,
+      student_firstName: student?.firstName,
+      student_lastName: student?.lastName,
+      student_name: student?.name
+    });
+
     if (currentIepData?.studentId?.firstName && currentIepData?.studentId?.lastName) {
       return `${currentIepData.studentId.firstName} ${currentIepData.studentId.lastName}`;
     } else if (student?.firstName && student?.lastName) {
       return `${student.firstName} ${student.lastName}`;
     } else if (student?.name) {
       return student.name;
-    } else {
-      return 'Student';
+    } else if (student?.idNumber && window.studentsGlobalCache) {
+      // Try to find student in global cache by ID number
+      const cachedStudent = window.studentsGlobalCache.find(s => s.idNumber === student.idNumber);
+      if (cachedStudent?.firstName && cachedStudent?.lastName) {
+        return `${cachedStudent.firstName} ${cachedStudent.lastName}`;
+      }
     }
+
+    console.warn('No student name found, using fallback');
+    return 'Student';
   };
 
   // Get parent name for display
@@ -2387,7 +2403,7 @@ const IEPReport = ({
                 <div className="literexia-intervention-stats-modal">
                   <div className="literexia-stat-item-modal">
                     <span className="literexia-stat-label-modal">Total Attempts</span>
-                    <span className="literexia-stat-value-modal">{interventionModal.objective.interventionAttempts || 0}</span>
+                    <span className="literexia-stat-value-modal">{interventionModal.objective.interventionHistory?.length || interventionModal.objective.interventionAttempts || 0}</span>
                   </div>
                   <div className="literexia-stat-item-modal">
                     <span className="literexia-stat-label-modal">Latest Score</span>

@@ -1460,20 +1460,19 @@ class IEPController {
 
       console.log(`🚀 HTTP ENDPOINT: Reading level progression request for student ${studentId}`);
 
-      // Validate studentId
-      if (!mongoose.Types.ObjectId.isValid(studentId)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid student ID format'
-        });
-      }
-
-      // Get student information to check current reading level
+      // Get student information using student number (like other IEP operations)
       const testDb = mongoose.connection.useDb('test');
       const usersCollection = testDb.collection('users');
-      const student = await usersCollection.findOne({
-        _id: new mongoose.Types.ObjectId(studentId)
-      });
+
+      // First try to find by numeric ID (student number)
+      let student = await usersCollection.findOne({ idNumber: parseInt(studentId) });
+
+      // If not found, try ObjectId format for backward compatibility
+      if (!student && mongoose.Types.ObjectId.isValid(studentId)) {
+        student = await usersCollection.findOne({
+          _id: new mongoose.Types.ObjectId(studentId)
+        });
+      }
 
       if (!student) {
         return res.status(404).json({
@@ -1501,9 +1500,9 @@ class IEPController {
         });
       }
 
-      // Update student's reading level
+      // Update student's reading level using their ObjectId
       await usersCollection.updateOne(
-        { _id: new mongoose.Types.ObjectId(studentId) },
+        { _id: student._id },
         {
           $set: {
             readingLevel: newLevel,
@@ -1512,12 +1511,13 @@ class IEPController {
         }
       );
 
-      console.log(`✅ Student ${studentId} progressed from ${currentLevel} to ${newLevel}`);
+      console.log(`✅ Student ${student.idNumber} (${student._id}) progressed from ${currentLevel} to ${newLevel}`);
 
       res.json({
         success: true,
         data: {
-          studentId: studentId,
+          studentId: student.idNumber,
+          studentObjectId: student._id,
           previousLevel: currentLevel,
           newReadingLevel: newLevel,
           progressedAt: new Date()
