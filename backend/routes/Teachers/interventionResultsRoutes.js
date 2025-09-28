@@ -7,23 +7,37 @@ const { auth, authorize } = require('../../middleware/auth');
 router.get('/student/:studentId/category/:categoryName', auth, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const { studentId, categoryName } = req.params;
-    
-    console.log(`[INTERVENTION RESULTS API] Fetching intervention results for student ${studentId}, category ${categoryName}`);
+    const { readingLevel } = req.query;
+
+    console.log(`[INTERVENTION RESULTS API] Fetching intervention results for student ${studentId}, category ${categoryName}, reading level: ${readingLevel || 'any'}`);
 
     // Connect to the test database
     const db = mongoose.connection.useDb('test');
-    
+
+    // Build query filter for category results
+    let categoryResultsQuery = {
+      studentId: parseInt(studentId)
+    };
+
+    // 🎯 FIX: Add reading level filtering when provided
+    if (readingLevel) {
+      categoryResultsQuery.readingLevel = readingLevel;
+      console.log(`[INTERVENTION RESULTS API] 🎯 Filtering by reading level: ${readingLevel}`);
+    }
+
     // First, get the category results to check intervention history
     const categoryResultsCollection = db.collection('category_results');
-    const categoryResult = await categoryResultsCollection.findOne({
-      studentId: parseInt(studentId)
-    });
+    const categoryResult = await categoryResultsCollection.findOne(categoryResultsQuery);
 
     if (!categoryResult) {
-      console.log(`[INTERVENTION RESULTS API] No category results found for student ${studentId}`);
+      const errorMessage = readingLevel
+        ? `No assessment results found for student ${studentId} at reading level ${readingLevel}`
+        : `No assessment results found for student ${studentId}`;
+      console.log(`[INTERVENTION RESULTS API] ${errorMessage}`);
       return res.status(404).json({
         success: false,
-        message: 'No assessment results found for this student'
+        message: errorMessage,
+        requestedReadingLevel: readingLevel
       });
     }
 
@@ -78,25 +92,31 @@ router.get('/student/:studentId/category/:categoryName', auth, authorize('teache
       completedAt: latestIntervention.completedAt,
       interventionId: latestIntervention.interventionId,
       interventionResultId: latestIntervention.interventionResultId,
-      
+
+      // 🎯 FIX: Add reading level information from category_results
+      readingLevel: categoryResult.readingLevel,
+
       // Original assessment data (preserved)
       originalAssessmentScore: category.score,
       originalAssessmentPassed: category.isPassed,
-      
+
       // Intervention history
       interventionHistory: category.interventionHistory,
       totalAttempts: category.interventionHistory.length,
-      
+
       // Assessment details
       interventionAssessment: interventionAssessment,
       interventionResult: interventionResult,
-      
+
       // Metadata
       metadata: {
         fetchedAt: new Date().toISOString(),
         hasInterventionHistory: true,
         dataSource: 'category_results',
-        apiVersion: '1.0'
+        apiVersion: '1.0',
+        requestedReadingLevel: readingLevel,
+        actualReadingLevel: categoryResult.readingLevel,
+        readingLevelFiltered: !!readingLevel
       }
     };
 
@@ -126,23 +146,37 @@ router.get('/student/:studentId/category/:categoryName', auth, authorize('teache
 router.get('/student/:studentId', auth, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const { studentId } = req.params;
-    
-    console.log(`[INTERVENTION RESULTS API] Fetching all intervention results for student ${studentId}`);
+    const { readingLevel } = req.query;
+
+    console.log(`[INTERVENTION RESULTS API] Fetching all intervention results for student ${studentId}, reading level: ${readingLevel || 'any'}`);
 
     // Connect to the test database
     const db = mongoose.connection.useDb('test');
-    
+
+    // Build query filter for category results
+    let categoryResultsQuery = {
+      studentId: parseInt(studentId)
+    };
+
+    // 🎯 FIX: Add reading level filtering when provided
+    if (readingLevel) {
+      categoryResultsQuery.readingLevel = readingLevel;
+      console.log(`[INTERVENTION RESULTS API] 🎯 Filtering by reading level: ${readingLevel}`);
+    }
+
     // Get the category results
     const categoryResultsCollection = db.collection('category_results');
-    const categoryResult = await categoryResultsCollection.findOne({
-      studentId: parseInt(studentId)
-    });
+    const categoryResult = await categoryResultsCollection.findOne(categoryResultsQuery);
 
     if (!categoryResult) {
-      console.log(`[INTERVENTION RESULTS API] No category results found for student ${studentId}`);
+      const errorMessage = readingLevel
+        ? `No assessment results found for student ${studentId} at reading level ${readingLevel}`
+        : `No assessment results found for student ${studentId}`;
+      console.log(`[INTERVENTION RESULTS API] ${errorMessage}`);
       return res.status(404).json({
         success: false,
-        message: 'No assessment results found for this student'
+        message: errorMessage,
+        requestedReadingLevel: readingLevel
       });
     }
 
@@ -163,21 +197,27 @@ router.get('/student/:studentId', auth, authorize('teacher', 'admin'), async (re
           completedAt: latestIntervention.completedAt,
           interventionId: latestIntervention.interventionId,
           interventionResultId: latestIntervention.interventionResultId,
-          
+
+          // 🎯 FIX: Add reading level information from category_results
+          readingLevel: categoryResult.readingLevel,
+
           // Original assessment data (preserved)
           originalAssessmentScore: category.score,
           originalAssessmentPassed: category.isPassed,
-          
+
           // Intervention history
           interventionHistory: category.interventionHistory,
           totalAttempts: category.interventionHistory.length,
-          
+
           // Metadata
           metadata: {
             fetchedAt: new Date().toISOString(),
             hasInterventionHistory: true,
             dataSource: 'category_results',
-            apiVersion: '1.0'
+            apiVersion: '1.0',
+            requestedReadingLevel: readingLevel,
+            actualReadingLevel: categoryResult.readingLevel,
+            readingLevelFiltered: !!readingLevel
           }
         };
       }
@@ -259,10 +299,10 @@ router.get('/student/:studentId/intervention/:interventionId/all-revisions', aut
 });
 
 // Frontend compatibility route - handles query parameters instead of path parameters
-// GET /api/intervention-results?studentId={studentId}&category={category}
+// GET /api/intervention-results?studentId={studentId}&category={category}&readingLevel={readingLevel}
 router.get('/', async (req, res) => {
   try {
-    const { studentId, category } = req.query;
+    const { studentId, category, readingLevel } = req.query;
 
     if (!studentId) {
       return res.status(400).json({
@@ -271,7 +311,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    console.log(`[INTERVENTION RESULTS API] Frontend compatibility route - fetching intervention results for student ${studentId}, category ${category || 'all'}`);
+    console.log(`[INTERVENTION RESULTS API] Frontend compatibility route - fetching intervention results for student ${studentId}, category ${category || 'all'}, reading level: ${readingLevel || 'any'}`);
 
     if (category) {
       // Single category request - redirect to existing endpoint logic
@@ -280,17 +320,30 @@ router.get('/', async (req, res) => {
       // Connect to the test database
       const db = mongoose.connection.useDb('test');
 
+      // Build query filter for category results
+      let categoryResultsQuery = {
+        studentId: parseInt(studentId)
+      };
+
+      // 🎯 FIX: Add reading level filtering when provided
+      if (readingLevel) {
+        categoryResultsQuery.readingLevel = readingLevel;
+        console.log(`[INTERVENTION RESULTS API] 🎯 Query parameter route filtering by reading level: ${readingLevel}`);
+      }
+
       // First, get the category results to check intervention history
       const categoryResultsCollection = db.collection('category_results');
-      const categoryResult = await categoryResultsCollection.findOne({
-        studentId: parseInt(studentId)
-      });
+      const categoryResult = await categoryResultsCollection.findOne(categoryResultsQuery);
 
       if (!categoryResult) {
-        console.log(`[INTERVENTION RESULTS API] No category results found for student ${studentId}`);
+        const errorMessage = readingLevel
+          ? `No assessment results found for student ${studentId} at reading level ${readingLevel}`
+          : `No assessment results found for student ${studentId}`;
+        console.log(`[INTERVENTION RESULTS API] ${errorMessage}`);
         return res.status(404).json({
           success: false,
-          message: 'No assessment results found for this student'
+          message: errorMessage,
+          requestedReadingLevel: readingLevel
         });
       }
 
@@ -346,6 +399,9 @@ router.get('/', async (req, res) => {
         interventionId: latestIntervention.interventionId,
         interventionResultId: latestIntervention.interventionResultId,
 
+        // 🎯 FIX: Add reading level information from category_results
+        readingLevel: categoryResult.readingLevel,
+
         // Original assessment data (preserved)
         originalAssessmentScore: categoryData.score,
         originalAssessmentPassed: categoryData.isPassed,
@@ -364,7 +420,10 @@ router.get('/', async (req, res) => {
           hasInterventionHistory: true,
           dataSource: 'category_results',
           apiVersion: '1.0',
-          apiRoute: 'query_parameter_compatibility'
+          apiRoute: 'query_parameter_compatibility',
+          requestedReadingLevel: readingLevel,
+          actualReadingLevel: categoryResult.readingLevel,
+          readingLevelFiltered: !!readingLevel
         }
       };
 
@@ -382,22 +441,35 @@ router.get('/', async (req, res) => {
 
     } else {
       // All categories request - redirect to existing logic
-      console.log(`[INTERVENTION RESULTS API] Fetching all intervention results for student ${studentId}`);
+      console.log(`[INTERVENTION RESULTS API] Fetching all intervention results for student ${studentId}, reading level: ${readingLevel || 'any'}`);
 
       // Connect to the test database
       const db = mongoose.connection.useDb('test');
 
+      // Build query filter for category results
+      let categoryResultsQuery = {
+        studentId: parseInt(studentId)
+      };
+
+      // 🎯 FIX: Add reading level filtering when provided
+      if (readingLevel) {
+        categoryResultsQuery.readingLevel = readingLevel;
+        console.log(`[INTERVENTION RESULTS API] 🎯 Query parameter route (all categories) filtering by reading level: ${readingLevel}`);
+      }
+
       // Get the category results
       const categoryResultsCollection = db.collection('category_results');
-      const categoryResult = await categoryResultsCollection.findOne({
-        studentId: parseInt(studentId)
-      });
+      const categoryResult = await categoryResultsCollection.findOne(categoryResultsQuery);
 
       if (!categoryResult) {
-        console.log(`[INTERVENTION RESULTS API] No category results found for student ${studentId}`);
+        const errorMessage = readingLevel
+          ? `No assessment results found for student ${studentId} at reading level ${readingLevel}`
+          : `No assessment results found for student ${studentId}`;
+        console.log(`[INTERVENTION RESULTS API] ${errorMessage}`);
         return res.status(404).json({
           success: false,
-          message: 'No assessment results found for this student'
+          message: errorMessage,
+          requestedReadingLevel: readingLevel
         });
       }
 
@@ -419,6 +491,9 @@ router.get('/', async (req, res) => {
             interventionId: latestIntervention.interventionId,
             interventionResultId: latestIntervention.interventionResultId,
 
+            // 🎯 FIX: Add reading level information from category_results
+            readingLevel: categoryResult.readingLevel,
+
             // Original assessment data (preserved)
             originalAssessmentScore: category.score,
             originalAssessmentPassed: category.isPassed,
@@ -433,7 +508,10 @@ router.get('/', async (req, res) => {
               hasInterventionHistory: true,
               dataSource: 'category_results',
               apiVersion: '1.0',
-              apiRoute: 'query_parameter_compatibility'
+              apiRoute: 'query_parameter_compatibility',
+              requestedReadingLevel: readingLevel,
+              actualReadingLevel: categoryResult.readingLevel,
+              readingLevelFiltered: !!readingLevel
             }
           };
         }

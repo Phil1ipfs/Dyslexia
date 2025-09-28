@@ -40,6 +40,16 @@ router.get('/parent/:parentId', auth, authorize('teacher', 'admin'), (req, res) 
   dashboardController.getParentProfile(req, res);
 });
 
+// Get comprehensive intervention progress data
+router.get('/intervention-progress', auth, authorize('teacher', 'admin'), (req, res) => {
+  dashboardController.getInterventionProgress(req, res);
+});
+
+// Debug endpoint for intervention progress issues
+router.get('/debug-intervention-progress', auth, authorize('teacher', 'admin'), (req, res) => {
+  dashboardController.debugInterventionProgress(req, res);
+});
+
 // NEW ENDPOINTS FOR FILTERS - Using the same controller methods as student routes
 // These endpoints mirror the ones in studentRoutes.js to prevent 404 errors
 router.get('/grade-levels', auth, authorize('teacher', 'admin'), studentController.getGradeLevels);

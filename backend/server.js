@@ -513,8 +513,8 @@ connectDB().then(async (connected) => {
     // Load dashboard routes
     try {
       const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
-      app.use('/api/dashboard', dashboardRoutes);
-      console.log('✅ Loaded dashboard routes');
+      app.use('/api/teachers/dashboard', dashboardRoutes);
+      console.log('✅ Loaded dashboard routes at /api/teachers/dashboard/*');
     } catch (error) {
       console.warn('⚠️ Could not load dashboard routes:', error.message);
     }
@@ -1102,6 +1102,16 @@ connectDB().then(async (connected) => {
 
     } catch (error) {
       console.warn('⚠️ Could not load cleanup routes:', error.message);
+    }
+
+    // Load data migration routes
+    try {
+      const dataMigrationRoutes = require('./routes/dataMigrationRoutes');
+      app.use('/api/data-migration', dataMigrationRoutes);
+      console.log('✅ Loaded data migration routes at /api/data-migration/*');
+
+    } catch (error) {
+      console.warn('⚠️ Could not load data migration routes:', error.message);
     }
 
 

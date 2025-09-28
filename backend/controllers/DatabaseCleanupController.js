@@ -252,6 +252,343 @@ class DatabaseCleanupController {
       });
     }
   }
+
+  /**
+   * Check for duplicate prescriptive analysis records for a specific student
+   */
+  async checkPrescriptiveDuplicates(req, res) {
+    try {
+      const { studentId } = req.params;
+      console.log(`🔍 [CLEANUP CONTROLLER] Checking prescriptive analysis duplicates for student ${studentId}...`);
+
+      const mongoose = require('mongoose');
+      const testDb = mongoose.connection.useDb('test');
+      const prescriptiveCollection = testDb.collection('prescriptive_analysis');
+
+      // Find all records for this student
+      const records = await prescriptiveCollection.find({
+        studentId: parseInt(studentId)
+      }).toArray();
+
+      // Find duplicates (records with same studentId and categoryId = null)
+      const duplicates = records.filter(record => record.categoryId === null);
+      const validRecords = records.filter(record => record.categoryId !== null);
+
+      console.log(`[CLEANUP CONTROLLER] Found ${records.length} total records, ${duplicates.length} duplicates, ${validRecords.length} valid`);
+
+      return res.status(200).json({
+        success: true,
+        message: `Duplicate check completed for student ${studentId}`,
+        data: {
+          studentId: parseInt(studentId),
+          totalRecords: records.length,
+          duplicateRecords: duplicates.length,
+          validRecords: validRecords.length,
+          duplicates: duplicates.map(d => ({
+            _id: d._id,
+            categoryId: d.categoryId,
+            readingLevel: d.readingLevel,
+            createdAt: d.createdAt
+          })),
+          blockingNewAnalysis: duplicates.length > 0
+        },
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ [CLEANUP CONTROLLER] Failed to check prescriptive duplicates:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check prescriptive analysis duplicates',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Remove ONLY problematic duplicate prescriptive analysis records (categoryId: null)
+   * that block new analysis generation - PRESERVES VALID STUDENT PROGRESS RECORDS
+   */
+  async removePrescriptiveDuplicates(req, res) {
+    try {
+      const { studentId, confirm } = req.body;
+      console.log(`🗑️ [CLEANUP CONTROLLER] 🛡️  SAFELY removing ONLY duplicate prescriptive analysis records...`);
+      console.log(`🛡️  [SAFETY] This will ONLY remove records with categoryId: null (invalid duplicates)`);
+      console.log(`🛡️  [SAFETY] Valid student progress records will be PRESERVED`);
+
+      const mongoose = require('mongoose');
+      const testDb = mongoose.connection.useDb('test');
+      const prescriptiveCollection = testDb.collection('prescriptive_analysis');
+
+      // 🛡️ SAFETY CHECK: Count total valid records before cleanup
+      const totalRecords = await prescriptiveCollection.countDocuments({});
+      const validRecords = await prescriptiveCollection.countDocuments({
+        categoryId: { $ne: null }
+      });
+      const duplicateRecords = await prescriptiveCollection.countDocuments({
+        categoryId: null
+      });
+
+      console.log(`🛡️  [SAFETY AUDIT] Total records: ${totalRecords}, Valid records: ${validRecords}, Duplicate records: ${duplicateRecords}`);
+
+      let deletionResults = [];
+
+      if (studentId) {
+        // 🛡️ SAFETY: Remove ONLY problematic duplicates for specific student
+        console.log(`🛡️  [SAFETY] Targeting student ${studentId} for duplicate removal - ONLY categoryId: null records`);
+
+        // Check student's valid records first
+        const validStudentRecords = await prescriptiveCollection.find({
+          studentId: parseInt(studentId),
+          categoryId: { $ne: null }
+        }).toArray();
+
+        const duplicates = await prescriptiveCollection.find({
+          studentId: parseInt(studentId),
+          categoryId: null
+        }).toArray();
+
+        console.log(`🛡️  [SAFETY] Student ${studentId}: ${validStudentRecords.length} valid records, ${duplicates.length} duplicates to remove`);
+
+        if (duplicates.length > 0) {
+          const deleteResult = await prescriptiveCollection.deleteMany({
+            studentId: parseInt(studentId),
+            categoryId: null  // 🛡️ SAFETY: ONLY remove null categoryId records
+          });
+
+          deletionResults.push({
+            studentId: parseInt(studentId),
+            validRecordsPreserved: validStudentRecords.length,
+            duplicatesFound: duplicates.length,
+            duplicatesRemoved: deleteResult.deletedCount,
+            removedIds: duplicates.map(d => d._id),
+            safetyCheck: `Preserved ${validStudentRecords.length} valid records`
+          });
+
+          console.log(`🛡️  [SAFETY] ✅ Student ${studentId}: Removed ${deleteResult.deletedCount} duplicates, PRESERVED ${validStudentRecords.length} valid records`);
+        } else {
+          console.log(`🛡️  [SAFETY] ℹ️ Student ${studentId}: No duplicate records found, ${validStudentRecords.length} valid records preserved`);
+          deletionResults.push({
+            studentId: parseInt(studentId),
+            validRecordsPreserved: validStudentRecords.length,
+            duplicatesFound: 0,
+            duplicatesRemoved: 0,
+            message: 'No duplicates found, all valid records preserved'
+          });
+        }
+
+      } else if (confirm === 'all') {
+        // 🛡️ SAFETY: Remove ALL problematic duplicates while preserving valid records
+        console.log(`🛡️  [SAFETY] Removing ALL duplicate prescriptive analysis records - ONLY categoryId: null`);
+
+        const allDuplicates = await prescriptiveCollection.find({
+          categoryId: null
+        }).toArray();
+
+        // 🛡️ SAFETY CHECK: Verify we're not touching valid records
+        const validRecordsBeforeCleanup = await prescriptiveCollection.countDocuments({
+          categoryId: { $ne: null }
+        });
+
+        if (allDuplicates.length > 0) {
+          const deleteResult = await prescriptiveCollection.deleteMany({
+            categoryId: null  // 🛡️ SAFETY: ONLY remove null categoryId records
+          });
+
+          // 🛡️ SAFETY VERIFICATION: Check valid records are preserved
+          const validRecordsAfterCleanup = await prescriptiveCollection.countDocuments({
+            categoryId: { $ne: null }
+          });
+
+          console.log(`🛡️  [SAFETY VERIFICATION] Valid records before: ${validRecordsBeforeCleanup}, after: ${validRecordsAfterCleanup}`);
+
+          if (validRecordsBeforeCleanup !== validRecordsAfterCleanup) {
+            throw new Error(`🚨 SAFETY VIOLATION: Valid records changed! Before: ${validRecordsBeforeCleanup}, After: ${validRecordsAfterCleanup}`);
+          }
+
+          // Group by student for reporting
+          const byStudent = {};
+          allDuplicates.forEach(duplicate => {
+            if (!byStudent[duplicate.studentId]) {
+              byStudent[duplicate.studentId] = [];
+            }
+            byStudent[duplicate.studentId].push(duplicate._id);
+          });
+
+          Object.keys(byStudent).forEach(studentId => {
+            deletionResults.push({
+              studentId: parseInt(studentId),
+              duplicatesFound: byStudent[studentId].length,
+              duplicatesRemoved: byStudent[studentId].length,
+              removedIds: byStudent[studentId],
+              safetyVerified: true
+            });
+          });
+
+          console.log(`🛡️  [SAFETY] ✅ Removed ${deleteResult.deletedCount} duplicate records, PRESERVED ${validRecordsAfterCleanup} valid records`);
+        } else {
+          console.log(`🛡️  [SAFETY] ℹ️ No duplicate records found, ${validRecordsBeforeCleanup} valid records preserved`);
+          deletionResults.push({
+            message: 'No duplicates found across all students',
+            validRecordsPreserved: validRecordsBeforeCleanup,
+            safetyVerified: true
+          });
+        }
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid request - provide studentId or confirm="all"',
+          examples: [
+            { studentId: 202533333 },
+            { confirm: 'all' }
+          ]
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Prescriptive analysis duplicate cleanup completed',
+        results: deletionResults,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ [CLEANUP CONTROLLER] Failed to remove prescriptive duplicates:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to remove prescriptive analysis duplicates',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Restore accidentally deleted historical prescriptive analysis records
+   */
+  async restoreHistoricalAnalysis(req, res) {
+    try {
+      const { studentId, historicalData } = req.body;
+      console.log(`🔄 [CLEANUP CONTROLLER] Restoring historical prescriptive analysis for student ${studentId}...`);
+
+      if (!studentId || !historicalData) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields: studentId and historicalData',
+          example: {
+            studentId: 202533333,
+            historicalData: { readingLevel: "High Emerging", /* full record */ }
+          }
+        });
+      }
+
+      const mongoose = require('mongoose');
+      const testDb = mongoose.connection.useDb('test');
+      const prescriptiveCollection = testDb.collection('prescriptive_analysis');
+
+      // Check if historical record already exists
+      const existingRecord = await prescriptiveCollection.findOne({
+        studentId: parseInt(studentId),
+        readingLevel: historicalData.readingLevel
+      });
+
+      if (existingRecord) {
+        return res.status(409).json({
+          success: false,
+          message: `Historical record already exists for student ${studentId} at ${historicalData.readingLevel} level`,
+          data: {
+            existingRecordId: existingRecord._id,
+            readingLevel: existingRecord.readingLevel,
+            createdAt: existingRecord.createdAt
+          }
+        });
+      }
+
+      // Prepare the historical record for restoration
+      const historicalRecord = {
+        ...historicalData,
+        studentId: parseInt(studentId),
+        restoredAt: new Date(),
+        restorationReason: 'Accidentally deleted during duplicate cleanup - restored for historical continuity'
+      };
+
+      // Remove the original _id to let MongoDB generate a new one
+      delete historicalRecord._id;
+
+      // ✅ FIX: Set categoryId to a unique historical marker to avoid duplicate key conflicts
+      // This allows both historical and current prescriptive analysis to coexist
+      historicalRecord.categoryId = new mongoose.Types.ObjectId('000000000000000000000001'); // Historical marker
+
+      // Convert nested $oid and $date objects to proper types
+      if (historicalRecord.categoryResultId && historicalRecord.categoryResultId.$oid) {
+        historicalRecord.categoryResultId = new mongoose.Types.ObjectId(historicalRecord.categoryResultId.$oid);
+      }
+
+      if (historicalRecord.assessmentDate && historicalRecord.assessmentDate.$date) {
+        historicalRecord.assessmentDate = new Date(historicalRecord.assessmentDate.$date);
+      }
+
+      if (historicalRecord.createdAt && historicalRecord.createdAt.$date) {
+        historicalRecord.createdAt = new Date(historicalRecord.createdAt.$date);
+      }
+
+      if (historicalRecord.updatedAt && historicalRecord.updatedAt.$date) {
+        historicalRecord.updatedAt = new Date(historicalRecord.updatedAt.$date);
+      }
+
+      // Recursively convert all nested $date objects
+      const convertDates = (obj) => {
+        if (Array.isArray(obj)) {
+          return obj.map(convertDates);
+        } else if (obj && typeof obj === 'object') {
+          const converted = {};
+          for (const [key, value] of Object.entries(obj)) {
+            if (value && typeof value === 'object' && value.$date) {
+              converted[key] = new Date(value.$date);
+            } else if (value && typeof value === 'object' && value.$oid) {
+              converted[key] = new mongoose.Types.ObjectId(value.$oid);
+            } else if (value && typeof value === 'object') {
+              converted[key] = convertDates(value);
+            } else {
+              converted[key] = value;
+            }
+          }
+          return converted;
+        }
+        return obj;
+      };
+
+      const cleanedRecord = convertDates(historicalRecord);
+
+      // Insert the restored record
+      const insertResult = await prescriptiveCollection.insertOne(cleanedRecord);
+
+      console.log(`[CLEANUP CONTROLLER] ✅ Restored historical analysis record for student ${studentId} at ${historicalData.readingLevel} level`);
+
+      return res.status(200).json({
+        success: true,
+        message: `Historical prescriptive analysis restored successfully for student ${studentId}`,
+        data: {
+          studentId: parseInt(studentId),
+          readingLevel: historicalData.readingLevel,
+          restoredRecordId: insertResult.insertedId,
+          originalAssessmentDate: historicalData.assessmentDate,
+          restoredAt: new Date()
+        },
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ [CLEANUP CONTROLLER] Failed to restore historical analysis:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to restore historical prescriptive analysis',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
 }
 
 module.exports = new DatabaseCleanupController();

@@ -5,7 +5,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 // Updated import for Cradle of Learners logo
 import cradleLogo from "../../assets/images/Teachers/cradleLogoTrans.png";
 import dashboardIcon from "../../assets/icons/Teachers/Dashboard.png";
-import viewStudentIcon from "../../assets/icons/Teachers/ViewStudent.png";
 import manageActivityIcon from "../../assets/icons/Teachers/activitymanage.png";
 import manageProgressIcon from "../../assets/icons/Teachers/progress.png";
 import teacherProfileIcon from "../../assets/icons/Teachers/Feedback.png";
@@ -46,13 +45,6 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
     // Dashboard route
     if (path.includes("/teacher/dashboard")) {
       setActive("dashboard");
-    }
-    // Student details and related routes
-    else if (
-      path.includes("/teacher/view-student") ||
-      path.includes("/teacher/student-details")
-    ) {
-      setActive("view-student");
     }
     // Manage categories and related routes
     else if (
@@ -128,9 +120,6 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
         <ul className="sidebar-menu">
           <li className={active === "dashboard" ? "active" : ""} onClick={() => handleClick("dashboard", "/teacher/dashboard")}>
             <img src={dashboardIcon} alt="Dashboard" /><span>Dashboard</span>
-          </li>
-          <li className={active === "view-student" ? "active" : ""} onClick={() => handleClick("view-student", "/teacher/view-student")}>
-            <img src={viewStudentIcon} alt="View Student" /><span>Student Details and Progress Report</span>
           </li>
           <li
             className={active === "manage-categories" ? "active" : ""}

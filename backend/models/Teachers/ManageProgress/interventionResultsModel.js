@@ -322,18 +322,27 @@ interventionResultsSchema.index({ 'interventionEffectiveness.overallEffectivenes
 
 // Automatically trigger category_results update when intervention passes
 interventionResultsSchema.post('save', async function(doc) {
+  console.log(`[INTERVENTION RESULTS] 🔍 POST-SAVE HOOK TRIGGERED for intervention result ${doc._id}`);
+  console.log(`[INTERVENTION RESULTS] 🔍 Student: ${doc.studentId}, Category: ${doc.category}, Reading Level: ${doc.readingLevel}`);
+  console.log(`[INTERVENTION RESULTS] 🔍 Score: ${doc.score}%, Passed: ${doc.isPassed}, Threshold: ${doc.passThreshold}%`);
+  console.log(`[INTERVENTION RESULTS] 🔍 Revision Number: ${doc.revisionNumber}`);
+  console.log(`[INTERVENTION RESULTS] 🔍 Should trigger update? ${doc.isPassed && doc.score >= doc.passThreshold}`);
+
   if (doc.isPassed && doc.score >= doc.passThreshold) {
     try {
       const CategoryResultsService = require('../../../services/Teachers/CategoryResultsService');
 
-      console.log(`[INTERVENTION RESULTS] ✅ Intervention passed - triggering category_results update for student ${doc.studentId}, category ${doc.category}`);
+      console.log(`[INTERVENTION RESULTS] ✅ Intervention passed - triggering category_results update for student ${doc.studentId}, category ${doc.category}, reading level ${doc.readingLevel}`);
 
       const updateResult = await CategoryResultsService.updateCategoryFromIntervention(
         doc.studentId,
         doc.category,
         doc.score,
-        doc._id
+        doc._id,
+        doc.readingLevel  // 🎯 FIX: Pass reading level to prevent cross-level contamination
       );
+
+      console.log(`[INTERVENTION RESULTS] 🔍 Update result:`, JSON.stringify(updateResult, null, 2));
 
       if (updateResult.success) {
         console.log(`[INTERVENTION RESULTS] ✅ Successfully updated category_results for ${doc.category}`);
@@ -342,6 +351,7 @@ interventionResultsSchema.post('save', async function(doc) {
       }
     } catch (error) {
       console.error(`[INTERVENTION RESULTS] ❌ Error triggering category_results update:`, error);
+      console.error(`[INTERVENTION RESULTS] ❌ Error stack:`, error.stack);
     }
   } else {
     console.log(`[INTERVENTION RESULTS] ℹ️ Intervention failed (${doc.score}%) - preparing revision guidance`);

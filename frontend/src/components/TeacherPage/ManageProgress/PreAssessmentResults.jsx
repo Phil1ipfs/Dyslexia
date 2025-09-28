@@ -3,13 +3,12 @@ import {
   FaInfoCircle, FaChartBar, FaExpandArrowsAlt, FaCompressArrowsAlt,
   FaCheckCircle, FaTimesCircle, FaClock, FaUser, FaCalendarAlt,
   FaClipboardList, FaQuestionCircle, FaLightbulb, FaFileAlt, FaImage,
-  FaVolumeUp, FaBook, FaEye, FaExclamationCircle, FaDownload, FaSpinner
+  FaVolumeUp, FaBook, FaEye, FaExclamationCircle
 } from 'react-icons/fa';
 
 import './css/PreAssessmentResults.css';
 import ImagePreviewModal from './ImagePreviewModal';
 import PreAssessmentDataProcessor from '../../../services/Teachers/PreAssessmentDataProcessor';
-import PreAssessmentPDFService from '../../../services/Teachers/PreAssessmentPDFService';
 // Helper function to render question comparison with correct answers
 const renderQuestionComparison = (question, onImageClick) => {
   const getAnswerStatus = (question) => {
@@ -55,9 +54,32 @@ const renderQuestionComparison = (question, onImageClick) => {
         return question.studentAnswerText || `Option ${question.studentAnswer}`;
         
       case 'malapantig':
-        // Phonological Awareness - Use formatted text with actual pairs
+        // Phonological Awareness - Display actual response pairs
+        if (question.studentResponse && Array.isArray(question.studentResponse)) {
+          // New format: Array of objects like [{"T": "Tt"}, {"N": "Hh"}, {"H": "Nn"}]
+          const pairs = question.studentResponse.map(pair => {
+            if (pair && typeof pair === 'object') {
+              const [audio, match] = Object.entries(pair)[0] || ['', ''];
+              return `${audio} → ${match}`;
+            }
+            return 'Invalid pair format';
+          }).join(', ');
+
+          const matchSummary = question.correctMatches !== undefined && question.totalMatches !== undefined
+            ? ` (${question.correctMatches}/${question.totalMatches} correct)`
+            : '';
+
+          return (
+            <div className="pre-assessment-results__phonological-response">
+              <div className="pre-assessment-results__response-pairs">{pairs}</div>
+              <div className="pre-assessment-results__match-summary">{matchSummary}</div>
+            </div>
+          );
+        }
+
+        // Fallback for legacy format or studentAnswerText
         return question.studentAnswerText || (
-          question.correctMatches !== undefined && question.totalMatches !== undefined 
+          question.correctMatches !== undefined && question.totalMatches !== undefined
             ? `${question.correctMatches}/${question.totalMatches} correct matches`
             : 'Matching response'
         );
@@ -130,9 +152,36 @@ const renderQuestionComparison = (question, onImageClick) => {
         return question.correctAnswerText || 'See correct option';
         
       case 'malapantig':
-        // Phonological Awareness - Use formatted text with actual pairs
+        // Phonological Awareness - Display expected correct pairs
+        if (question.correctPairs && Array.isArray(question.correctPairs)) {
+          // Display the correct pairs in a readable format
+          const correctPairsDisplay = question.correctPairs.map(pair => {
+            if (typeof pair === 'object' && pair) {
+              // Handle format like [{"audio": "T", "match": "Tt"}] or [{"T": "Tt"}]
+              if (pair.audio && pair.match) {
+                return `${pair.audio} → ${pair.match}`;
+              } else {
+                const entries = Object.entries(pair);
+                if (entries.length > 0) {
+                  const [audio, match] = entries[0];
+                  return `${audio} → ${match}`;
+                }
+              }
+            }
+            return String(pair); // Fallback for non-object values
+          }).join(', ');
+
+          return (
+            <div className="pre-assessment-results__correct-pairs">
+              <div className="pre-assessment-results__expected-pairs">{correctPairsDisplay}</div>
+              <div className="pre-assessment-results__pairs-note">All pairs must be matched correctly</div>
+            </div>
+          );
+        }
+
+        // Fallback for legacy format
         return question.correctAnswerText || (
-          question.correctPairs 
+          question.correctPairs
             ? `${question.correctPairs.length} correct pairs expected`
             : 'All audio-text pairs matched correctly'
         );
@@ -223,7 +272,6 @@ const renderQuestionComparison = (question, onImageClick) => {
 const PreAssessmentResults = ({ assessmentData, userResponses, student, categoryResults }) => {
   const [expandedSkills, setExpandedSkills] = useState({});
   const [processedData, setProcessedData] = useState(null);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [imagePreview, setImagePreview] = useState({
     isOpen: false,
     imageUrl: '',
@@ -256,27 +304,6 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student, category
     }
   }, [assessmentData, userResponses, student]);
 
-  // Handle PDF generation
-  const handleDownloadPDF = async () => {
-    if (!processedData || !student) {
-      alert('Unable to generate PDF. Student or assessment data is missing.');
-      return;
-    }
-
-    try {
-      setIsGeneratingPDF(true);
-      await PreAssessmentPDFService.generatePreAssessmentPDF(
-        student, 
-        processedData, 
-        userResponses
-      );
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Error generating PDF report. Please try again.');
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
 
   // Handle image preview
   const handleImageClick = (imageUrl, title, questionText) => {
@@ -438,30 +465,6 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student, category
             }
           </h3>
           <div className="pre-assessment-results__overview-actions">
-            <button
-              className="pre-assessment-results__download-btn"
-              onClick={handleDownloadPDF}
-              disabled={isGeneratingPDF || !dataToDisplay.hasCompleted}
-              title={categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? 
-                'Download Assessment Progress Report as PDF' : 
-                'Download Pre-Assessment Report as PDF'
-              }
-            >
-              {isGeneratingPDF ? (
-                <>
-                  <FaSpinner className="pre-assessment-results__spinner" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <FaDownload />
-                  {categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? 
-                    'Download PDF Report' : 
-                    'Download PDF Report'
-                  }
-                </>
-              )}
-            </button>
             <div className={`pre-assessment-results__score-badge ${getReadingLevelClass(student?.readingLevel || dataToDisplay.readingLevel)}`}>
               {student?.readingLevel || dataToDisplay.readingLevel}
             </div>

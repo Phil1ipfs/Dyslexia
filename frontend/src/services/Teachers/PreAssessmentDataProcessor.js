@@ -1088,12 +1088,26 @@ class PreAssessmentDataProcessor {
 
   /**
    * Get matching question answer text
+   * Handles both old and new response formats:
+   * - Old: [{audio: "T", match: "Tt"}]
+   * - New: [{"T": "Tt"}, {"N": "Hh"}, {"H": "Nn"}]
+   * Note: Backend validation should handle case-insensitive matching (e.g., "DAGA" matches "Daga")
    */
   static getMatchingAnswerText(response) {
     if (Array.isArray(response.response) && response.response.length > 0) {
-      // Show actual student pairings with better formatting
-      const pairs = response.response.map(pair => `${pair.audio} → ${pair.match}`).join('\n');
-      const matches = response.correctMatches !== undefined && response.totalMatches !== undefined 
+      // Handle new format: [{"T": "Tt"}, {"N": "Hh"}, {"H": "Nn"}]
+      const pairs = response.response.map(pair => {
+        if (pair.audio && pair.match) {
+          // Old format: {audio: "T", match: "Tt"}
+          return `${pair.audio} → ${pair.match}`;
+        } else {
+          // New format: {"T": "Tt"}
+          const [audio, match] = Object.entries(pair)[0];
+          return `${audio} → ${match}`;
+        }
+      }).join('\n');
+
+      const matches = response.correctMatches !== undefined && response.totalMatches !== undefined
         ? `\n(${response.correctMatches}/${response.totalMatches} correct)`
         : '';
       return pairs + matches;

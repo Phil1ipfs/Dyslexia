@@ -6,7 +6,8 @@ import {
   FaBookReader,
   FaMale,
   FaFemale,
-  FaUsers
+  FaUsers,
+  FaMapMarkerAlt
 } from 'react-icons/fa';
 import '../ManageProgress/css/StudentProfileCard.css';
 import S3Image from '../../S3Image';
@@ -131,6 +132,19 @@ const StudentProfileCard = ({ student }) => {
               <span className="student-profile-detail-label">Section</span>
               <span className="student-profile-detail-value">
                 {student.section || 'Not Assigned'}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="student-profile-detail-row">
+          <div className="student-profile-detail-item student-profile-address-item">
+            <div className="student-profile-detail-icon">
+              <FaMapMarkerAlt />
+            </div>
+            <div className="student-profile-detail-content">
+              <span className="student-profile-detail-label">Address</span>
+              <span className="student-profile-detail-value">
+                {student.address || 'Not provided'}
               </span>
             </div>
           </div>

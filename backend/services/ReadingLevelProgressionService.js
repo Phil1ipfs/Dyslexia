@@ -288,13 +288,14 @@ class ReadingLevelProgressionService {
 
       console.log(`[PROGRESSION] ✅ Updated user reading level: ${fromLevel} → ${toLevel}`);
 
-      // Step 2: Update category results to mark progression as completed
+      // Step 2: Update OLD category results to mark progression as completed
+      // ✅ CLAUDE.md COMPLIANCE: Keep old record's readingLevel, just mark as updated
       const categoryResultsUpdate = await CategoryResult.updateOne(
-        { studentId: studentId },
+        { studentId: studentId, readingLevel: fromLevel }, // Find the old level record
         {
           $set: {
-            readingLevelUpdated: true,
-            readingLevel: toLevel, // Update to new level
+            readingLevelUpdated: true, // Mark as progression completed
+            // ✅ Keep original readingLevel (fromLevel) - don't change it to toLevel
             updatedAt: new Date()
           }
         },
@@ -357,28 +358,37 @@ class ReadingLevelProgressionService {
 
       console.log(`[PROGRESSION] 📊 Question counts for ${newLevel}:`, questionCounts);
 
-      // Check if placeholder already exists for this level
+      // ✅ CLAUDE.md COMPLIANCE: Always create fresh category_results for new level
+      // Check if placeholder already exists for this level and remove it
       const existingPlaceholder = await CategoryResult.findOne({
         studentId: studentId,
         readingLevel: newLevel
       }).session(session);
 
       if (existingPlaceholder) {
-        console.log(`[PROGRESSION] ⚠️ Category results placeholder already exists for ${newLevel} - skipping creation`);
-        return;
+        console.log(`[PROGRESSION] 🔄 Found existing ${newLevel} record - removing to create fresh placeholder with all required categories`);
+        await CategoryResult.deleteOne({
+          studentId: studentId,
+          readingLevel: newLevel
+        }).session(session);
+        console.log(`[PROGRESSION] ✅ Removed existing ${newLevel} record - will create fresh one`);
       }
 
-      // Create categories array with proper question counts
+      // ✅ CRITICAL FIX: DO NOT copy intervention history between reading levels
+      // Each reading level should start with fresh, empty intervention history
+      console.log(`[PROGRESSION] 📋 Starting fresh - no intervention history copying between reading levels`);
+
+      // Create categories array with proper question counts and FRESH intervention status
       const categories = requiredCategories.map(categoryName => {
         const questionCount = questionCounts[categoryName] || 15; // Default to 15 if not found
 
-        console.log(`[PROGRESSION]   📝 ${categoryName}: ${questionCount} questions`);
+        console.log(`[PROGRESSION]   📝 ${categoryName}: ${questionCount} questions - FRESH START (no intervention history)`);
 
         return {
           categoryName: categoryName,
           totalQuestions: questionCount,
           correctAnswers: 0,
-          totalPossibleMatches: categoryName === 'Phonological Awareness' ? questionCount * 3 : 0, // PA has matching questions
+          totalPossibleMatches: 0, // ✅ FIX: Will be calculated from actual student_responses when assessment is taken
           correctMatches: 0,
           score: 0,
           isPassed: false,
@@ -386,10 +396,11 @@ class ReadingLevelProgressionService {
           isCompleted: false,
           lastQuestionAnswered: '',
           interventionRequired: false,
-          interventionAttempts: 0,
-          interventionCompleted: false,
-          currentInterventionId: null,
-          interventionHistory: []
+          // ✅ CRITICAL FIX: Start fresh - no intervention data copied from previous reading level
+          interventionAttempts: 0,              // Fresh start - no attempts
+          interventionCompleted: false,         // Fresh start - not completed
+          currentInterventionId: null,          // Fresh start - no current intervention
+          interventionHistory: []               // ✅ FRESH START - empty intervention history
         };
       });
 
@@ -412,11 +423,93 @@ class ReadingLevelProgressionService {
 
       console.log(`[PROGRESSION] ✅ Created category results placeholder for ${newLevel} with ${requiredCategories.length} categories`);
       console.log(`[PROGRESSION] 📋 Categories created: [${requiredCategories.join(', ')}]`);
+      console.log(`[PROGRESSION] 📋 All categories start fresh with empty intervention history - no data copied from previous level`);
 
     } catch (error) {
       console.error(`[PROGRESSION] ❌ Error creating category placeholder:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get intervention history from previous reading level for shared categories
+   * This preserves intervention data when student progresses to new level
+   */
+  static async getPreviousLevelInterventionHistory(studentId, newLevel, session) {
+    try {
+      console.log(`[PROGRESSION] 🔍 Getting previous level intervention history for ${newLevel}`);
+
+      // Get previous reading level
+      const previousLevel = this.getPreviousReadingLevel(newLevel);
+      if (!previousLevel) {
+        console.log(`[PROGRESSION] 📋 No previous level for ${newLevel} - returning empty history`);
+        return {};
+      }
+
+      console.log(`[PROGRESSION] 📋 Previous level: ${previousLevel} → Current level: ${newLevel}`);
+
+      // Get categories for both levels
+      const previousCategories = this.getCategoriesForReadingLevel(previousLevel);
+      const newCategories = this.getCategoriesForReadingLevel(newLevel);
+      const sharedCategories = previousCategories.filter(cat => newCategories.includes(cat));
+
+      console.log(`[PROGRESSION] 📋 Shared categories between levels:`, sharedCategories);
+
+      if (sharedCategories.length === 0) {
+        console.log(`[PROGRESSION] 📋 No shared categories - returning empty history`);
+        return {};
+      }
+
+      // Get previous level category results
+      const previousCategoryResults = await CategoryResult.findOne({
+        studentId: studentId,
+        readingLevel: previousLevel
+      }).session(session);
+
+      if (!previousCategoryResults) {
+        console.log(`[PROGRESSION] ⚠️ No previous category results found for ${previousLevel}`);
+        return {};
+      }
+
+      // Extract intervention history for shared categories
+      const interventionHistory = {};
+      for (const categoryName of sharedCategories) {
+        const categoryData = previousCategoryResults.categories.find(cat => cat.categoryName === categoryName);
+        if (categoryData && (categoryData.interventionHistory?.length > 0 || categoryData.interventionAttempts > 0)) {
+          interventionHistory[categoryName] = {
+            interventionAttempts: categoryData.interventionAttempts || 0,
+            interventionCompleted: categoryData.interventionCompleted || false,
+            currentInterventionId: categoryData.currentInterventionId || null,
+            interventionHistory: categoryData.interventionHistory || []
+          };
+          console.log(`[PROGRESSION] ✅ Preserving intervention history for ${categoryName}:`, {
+            attempts: categoryData.interventionAttempts,
+            historyCount: categoryData.interventionHistory?.length || 0
+          });
+        }
+      }
+
+      return interventionHistory;
+    } catch (error) {
+      console.error(`[PROGRESSION] ❌ Error getting previous level intervention history:`, error);
+      return {};
+    }
+  }
+
+  /**
+   * Get the previous reading level for progression chain
+   */
+  static getPreviousReadingLevel(currentLevel) {
+    const levelOrder = [
+      'Low Emerging',
+      'High Emerging',
+      'Developing',
+      'Transitioning',
+      'At Grade Level'
+    ];
+
+    const currentIndex = levelOrder.indexOf(currentLevel);
+    return currentIndex > 0 ? levelOrder[currentIndex - 1] : null;
   }
 
   /**

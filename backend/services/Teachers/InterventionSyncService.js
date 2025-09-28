@@ -97,8 +97,12 @@ class InterventionSyncService {
       };
     }
 
-    // Find the student's category_results
-    const categoryResults = await CategoryResults.findOne({ studentId: studentId });
+    // ✅ CRITICAL FIX: Find the student's category_results for the SPECIFIC reading level of the intervention
+    // This prevents intervention assessments from updating the wrong reading level's category_results
+    const categoryResults = await CategoryResults.findOne({
+      studentId: studentId,
+      readingLevel: interventionAssessment.readingLevel  // ✅ Target specific reading level only
+    });
 
     if (!categoryResults) {
       return {

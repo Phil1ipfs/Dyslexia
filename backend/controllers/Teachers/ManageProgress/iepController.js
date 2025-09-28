@@ -640,6 +640,7 @@ class IEPController {
         originalTeacherData[obj.categoryName] = {
           supportLevel: obj.supportLevel,
           remarks: obj.remarks,
+          mainAssessmentRemarks: obj.mainAssessmentRemarks, // ✅ PRESERVE main assessment remarks
           interventionHistory: obj.interventionHistory ? [...obj.interventionHistory] : []
         };
       });
@@ -724,7 +725,8 @@ class IEPController {
           if (teacherData) {
             objective.supportLevel = teacherData.supportLevel;
             objective.remarks = teacherData.remarks;
-            console.log(`  ✅ Preserved teacher data for ${objective.categoryName}: Support=${teacherData.supportLevel || 'none'}, Remarks=${teacherData.remarks ? 'yes' : 'none'}`);
+            objective.mainAssessmentRemarks = teacherData.mainAssessmentRemarks; // ✅ RESTORE main assessment remarks
+            console.log(`  ✅ Preserved teacher data for ${objective.categoryName}: Support=${teacherData.supportLevel || 'none'}, Remarks=${teacherData.remarks ? 'yes' : 'none'}, MainRemarks=${teacherData.mainAssessmentRemarks ? 'yes' : 'none'}`);
           }
 
           objective.lastUpdated = new Date();

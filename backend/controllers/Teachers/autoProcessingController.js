@@ -154,9 +154,11 @@ const fixInterventionSuccess = async (req, res) => {
       const passedCategories = categoryResults.categories.filter(cat => cat.isPassed === true);
       categoryResults.completedCategories = passedCategories.length;
 
+      // ✅ FIX: Use CategoryResultsService.calculateOverallStats for correct calculation
+      const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
+      const correctStats = CategoryResultsService.calculateOverallStats(categoryResults.categories);
       const totalCategories = categoryResults.categories.length;
-      const overallScore = Math.round((passedCategories.length / totalCategories) * 100);
-      categoryResults.overallScore = overallScore;
+      categoryResults.overallScore = correctStats.overallScore;
       categoryResults.allCategoriesPassed = passedCategories.length === totalCategories;
 
       categoryResults.updatedAt = new Date();
