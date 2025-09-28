@@ -33,8 +33,8 @@ function App() {
     !!localStorage.getItem("authToken")
   );
 
-  // Determine user type from localStorage; default to "teacher" if not set
-  const userType = localStorage.getItem("userType") || "teacher";
+  // Determine user type from localStorage; will be set during login
+  const userType = localStorage.getItem("userType");
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
@@ -50,7 +50,7 @@ function App() {
         <Route
           path="/"
           element={
-            isAuthenticated ? (
+            isAuthenticated && userType ? (
               <Navigate to={`/${userType}/dashboard`} />
             ) : (
               <Homepage />
@@ -60,14 +60,13 @@ function App() {
         <Route
           path="/login"
           element={
-            isAuthenticated ? (
+            isAuthenticated && userType ? (
               <Navigate to={`/${userType}/dashboard`} />
             ) : (
               <Login onLogin={() => setIsAuthenticated(true)} />
             )
           }
         />
-        <Route path="/choose-account" element={<ChooseAccountType />} />
 
         {/* Protected Teacher Routes */}
         {isAuthenticated && userType === "teacher" && (

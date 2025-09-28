@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/login.css';
 
-import logo from '../assets/images/Teachers/LITEREXIA.png';
-import wave from '../assets/images/Teachers/wave.png';
 import { FiMail, FiEye, FiEyeOff } from 'react-icons/fi';
 
 function ErrorDialog({ message, onClose }) {
@@ -60,13 +58,11 @@ const Login = ({ onLogin }) => {
       if (response.ok) {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userData', JSON.stringify(data.user));
+        localStorage.setItem('userType', data.user.userType);
         if (onLogin) onLogin();
 
-        // Read the user type from localStorage (set previously via ChooseAccountType)
-        // Default to 'teacher' if not found.
-        const userType = localStorage.getItem('userType') || 'teacher';
-        // Redirect to the appropriate dashboard based on user type.
-        navigate(`/${userType}/dashboard`);
+        // Redirect to the appropriate dashboard based on determined user type
+        navigate(`/${data.user.userType}/dashboard`);
       } else {
         setError(data.message || 'Login failed.');
       }
@@ -77,17 +73,26 @@ const Login = ({ onLogin }) => {
     }
   };
 
+  // Determine user type based on email domain or specific patterns
+  const determineUserType = (email) => {
+    // Example logic - customize based on your requirements
+    if (email.includes('admin')) return 'admin';
+    if (email.includes('parent')) return 'parent';
+    return 'teacher'; // default to teacher
+  };
+
   // Simulated login function.
   const mockLogin = ({ email, password }) => {
     return new Promise(resolve => {
       setTimeout(() => {
         if (email && password) {
+          const userType = determineUserType(email);
           resolve({
             ok: true,
             json: () =>
               Promise.resolve({
                 token: 'mock-token',
-                user: { email }
+                user: { email, userType }
               })
           });
         } else {
@@ -102,18 +107,18 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="login-container">
-      <img src={logo} alt="Literexia Logo" className="top-left-logo" />
-      {/* Exit button to return to Choose Account page */}
-      <button className="exit-button" onClick={() => navigate('/choose-account')}>X</button>
-
       {error && <ErrorDialog message={error} onClose={() => setError('')} />}
 
-      <div className="login-card">
-        <h1 className="welcome-text">Maligayang Pagbalik!</h1>
-        <p className="instruction-text">Punan ang email at password</p>
+      <div className="login-content">
+        {/* Exit button positioned within the modal */}
+        <button className="exit-button" onClick={() => navigate('/')}>X</button>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group icon-input">
+        <h1 className="welcome-text">Maligayang Pag Balik!</h1>
+        <p className="instruction-text">Ilagay ang iyong email at password</p>
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <FiMail className="input-icon" />
             <input
               type="email"
               name="email"
@@ -122,18 +127,9 @@ const Login = ({ onLogin }) => {
               onChange={handleChange}
               className="form-input"
             />
-            <FiMail className="input-icon" />
           </div>
 
-          <div className="form-group icon-input">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              className="form-input"
-            />
+          <div className="form-group">
             {showPassword ? (
               <FiEyeOff
                 className="input-icon clickable"
@@ -145,6 +141,14 @@ const Login = ({ onLogin }) => {
                 onClick={() => setShowPassword(true)}
               />
             )}
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              className="form-input"
+            />
           </div>
 
           <button
@@ -156,8 +160,6 @@ const Login = ({ onLogin }) => {
           </button>
         </form>
       </div>
-
-      <img src={wave} alt="Wave" className="bottom-wave" />
     </div>
   );
 };

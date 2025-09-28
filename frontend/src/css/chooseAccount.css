@@ -4,7 +4,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #3B4F81;
+  background-color: #1C2B4E;
   position: relative;
   overflow: hidden;
 }
@@ -91,15 +91,4 @@
 .account-card span {
   font-weight: 600;
   font-size: 1rem;
-}
-
-/* Wave at bottom */
-.bottom-wave {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  max-height: 160px;
-  object-fit: cover;
-  z-index: 0;
 }

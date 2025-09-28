@@ -31,7 +31,7 @@ function Navbar() {
   }, []);
 
   const handleLoginClick = () => {
-    navigate("/choose-account");
+    navigate("/login");
   };
 
   const scrollToSection = (id) => {
@@ -51,7 +51,6 @@ function Navbar() {
     <nav className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
       <div className="nav-left">
         <img src={logo} alt="Literexia" className="nav-logo-img" />
-        <p className="nav-subtext">Filipino Reading Comprehension Dyslexia</p>
       </div>
       
       <ul className={`nav-links ${mobileMenuOpen ? "active" : ""}`}>
