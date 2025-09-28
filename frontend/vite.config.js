@@ -49,17 +49,34 @@ export default defineConfig(({ command, mode }) => {
       copyPublicDir: true,
       // Generate service worker
       assetsDir: 'assets',
+      // Minification settings
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: isProd, // Remove console logs in production
+          drop_debugger: isProd
+        }
+      },
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html')
         },
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom', 'react-router-dom'],
-            charts: ['recharts']
-          }
+            vendor: ['react', 'react-dom'],
+            router: ['react-router-dom'],
+            ui: ['react-bootstrap', '@fortawesome/react-fontawesome'],
+            charts: ['recharts', 'chart.js', 'react-chartjs-2'],
+            utils: ['axios', 'uuid', 'dompurify']
+          },
+          // Ensure consistent file names for caching
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]'
         }
-      }
+      },
+      // Increase chunk size warning limit
+      chunkSizeWarningLimit: 1000
     },
     optimizeDeps: {
       exclude: []
@@ -69,13 +86,27 @@ export default defineConfig(({ command, mode }) => {
   // Production specific settings
   if (isProd) {
     // Ensure paths to assets work correctly in production
-    config.base = './';
-    
-    // Provide consistent API URLs in production
-    // This ensures all URLs are relative to the deployed domain
+    config.base = '/';
+
+    // Define production environment variables
     config.define = {
       ...config.define,
-      'import.meta.env.VITE_API_URL': JSON.stringify('')
+      // These will be replaced at build time
+      '__DEV__': JSON.stringify(false),
+      '__PROD__': JSON.stringify(true)
+    };
+
+    // Production optimizations
+    config.build.rollupOptions.external = [];
+
+    // Disable dev server proxy in production
+    delete config.server.proxy;
+  } else {
+    // Development specific settings
+    config.define = {
+      ...config.define,
+      '__DEV__': JSON.stringify(true),
+      '__PROD__': JSON.stringify(false)
     };
   }
   

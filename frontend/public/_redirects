@@ -1,0 +1,25 @@
+# Redirects and Rewrites for Single Page Application (SPA)
+# This file ensures all routes are handled by React Router
+
+# SPA fallback - redirect all non-file requests to index.html
+# This is essential for React Router to work correctly
+/*    /index.html   200
+
+# API proxy redirects (if needed for development)
+# These would redirect to your backend API
+# /api/*  https://your-backend-url.com/api/:splat  200
+
+# Force HTTPS redirects (optional)
+# http://your-domain.com/*  https://your-domain.com/:splat  301!
+
+# Handle specific file extensions
+/*.js    /:splat  200
+/*.css   /:splat  200
+/*.png   /:splat  200
+/*.jpg   /:splat  200
+/*.ico   /:splat  200
+/*.svg   /:splat  200
+/*.woff  /:splat  200
+/*.woff2 /:splat  200
+/*.ttf   /:splat  200
+/*.json  /:splat  200
