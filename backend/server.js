@@ -11,6 +11,7 @@ const s3Client = require('./config/s3');
 const { generalLimiter, authLimiter, uploadLimiter, passwordChangeLimiter } = require('./middleware/rateLimiter');
 const { sessionMiddleware } = require('./middleware/sessionManager');
 const { secureErrorHandler } = require('./middleware/secureErrorHandler');
+const { checkAPIKeyExposure, validateEnvironmentSetup } = require('./middleware/apiKeyValidation');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
@@ -181,6 +182,10 @@ app.use(securityMonitoringMiddleware);
 const { cssInjectionProtectionMiddleware, sanitizeCSSInRequest } = require('./middleware/cssInjectionProtection');
 app.use(cssInjectionProtectionMiddleware);
 app.use(sanitizeCSSInRequest);
+
+// Add API key validation and environment setup middleware
+app.use(validateEnvironmentSetup);
+app.use(checkAPIKeyExposure);
 
 app.use(requestLogger);
 
@@ -821,6 +826,17 @@ connectDB().then(async (connected) => {
         message: 'Protected route accessed successfully',
         user: req.user
       });
+    });
+
+    // Security report endpoint (admin only)
+    const { getSecurityReport } = require('./middleware/apiKeyValidation');
+    app.get('/api/security/report', authenticateToken, (req, res) => {
+      // In production, this should be restricted to admin users only
+      if (process.env.NODE_ENV === 'production' && req.user.roles !== 'admin') {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      getSecurityReport(req, res);
     });
 
     // Test password verification route
