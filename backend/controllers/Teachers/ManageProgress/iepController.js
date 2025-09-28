@@ -735,12 +735,15 @@ class IEPController {
           objective.isPassed = categoryData.isPassed || false;
           objective.passingThreshold = categoryData.passingThreshold || 75;
 
-          // ✅ CRITICAL FIX: Check if category has intervention data OR if IEP already has intervention history
+          // ✅ CRITICAL FIX: Check if category has intervention data (but IGNORE existing data for fresh reading levels)
           const hasNewInterventionData = categoryData.interventionHistory && categoryData.interventionHistory.length > 0;
           const hasExistingInterventionData = originalTeacherData[objective.categoryName]?.interventionHistory && originalTeacherData[objective.categoryName].interventionHistory.length > 0;
 
+          // ✅ ANTI-CONTAMINATION FIX: If category_results has no intervention data, clear all intervention data regardless of what IEP contains
+          const shouldClearInterventionData = !hasNewInterventionData;
+
           // Update comprehensive intervention data
-          if (hasNewInterventionData || hasExistingInterventionData) {
+          if (hasNewInterventionData) {
             objective.hasIntervention = true;
             objective.interventionAttempts = categoryData.interventionAttempts || categoryData.interventionHistory?.length || originalTeacherData[objective.categoryName]?.interventionHistory?.length || 0;
             objective.interventionCompleted = categoryData.interventionCompleted || false;
