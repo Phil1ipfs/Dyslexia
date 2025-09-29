@@ -1894,12 +1894,7 @@ const IEPReport = ({
             <span className="literexia-summary-label">Current Reading Level</span>
             <span className="literexia-summary-value">
               {currentIepData.readingLevel || 'Not Assessed'}
-              {currentIepData.readingLevel && (
-                <span className="literexia-current-level-badge">
-                  <FaCheckCircle style={{ marginLeft: '8px', color: '#28a745', fontSize: '14px' }} />
-                  Current
-                </span>
-              )}
+          
             </span>
           </div>
         </div>
