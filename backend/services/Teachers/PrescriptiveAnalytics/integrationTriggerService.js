@@ -29,6 +29,16 @@ class IntegrationTriggerService {
         return null;
       }
 
+      // ✅ CRITICAL FIX: Detect reading level progression and clean up old analysis
+      const progressionDetected = await this.detectReadingLevelProgression(categoryResult);
+      if (progressionDetected.hasProgressed) {
+        console.log(`[READING LEVEL PROGRESSION] 🎓 PROGRESSION DETECTED: Student ${categoryResult.studentId} progressed from ${progressionDetected.fromLevel} to ${progressionDetected.toLevel}`);
+        console.log(`[READING LEVEL PROGRESSION] 🧹 Cleaning up old prescriptive analysis for previous level`);
+
+        // Clean up ALL old prescriptive analysis records to prevent duplicate key errors
+        await this.cleanupOldPrescriptiveAnalysis(categoryResult.studentId);
+      }
+
       // Check if prescriptive analysis already exists for this exact category result
       const existingAnalysis = await this.checkExistingAnalysis(categoryResult._id);
       if (existingAnalysis) {
@@ -79,11 +89,24 @@ class IntegrationTriggerService {
     } catch (error) {
       console.error('[INTEGRATION TRIGGER] ❌ Error generating REAL prescriptive analysis:', error);
 
-      // CRITICAL: Check for duplicate key error due to database index issues
-      if (error.code === 11000 && error.message.includes('studentId_1_categoryId_1')) {
+      // CRITICAL: Check for duplicate key error due to database index issues or reading level progression
+      if (error.code === 11000) {
         console.log(`[INTEGRATION TRIGGER] 🔧 CRITICAL: Duplicate key error detected for student ${categoryResult.studentId}`);
-        console.log(`[INTEGRATION TRIGGER] ⚠️  This indicates the database index 'studentId_1_categoryId_1' prevents multiple reading levels`);
-        console.log(`[INTEGRATION TRIGGER] 💡 Database indexes need to include readingLevel field to support progression`);
+        console.log(`[INTEGRATION TRIGGER] 🧹 Attempting automatic cleanup of conflicting records`);
+
+        // Extract specific categoryId from the error message if available
+        let specificCategoryId = null;
+        if (error.keyValue && error.keyValue.categoryId) {
+          specificCategoryId = error.keyValue.categoryId;
+          console.log(`[INTEGRATION TRIGGER] 🎯 Detected specific category conflict: ${specificCategoryId}`);
+        }
+
+        // First, try comprehensive cleanup for the student (and specific category if known)
+        const cleanupResult = await this.cleanupOldPrescriptiveAnalysis(categoryResult.studentId, specificCategoryId);
+        console.log(`[INTEGRATION TRIGGER] 🧹 Cleanup completed: deleted ${cleanupResult.deletedCount} records`);
+
+        // Wait a moment for cleanup to fully complete
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Check if analysis already exists by categoryResultId (which is unique)
         const existingByCategoryResultId = await PrescriptiveAnalysis.findOne({
@@ -91,14 +114,27 @@ class IntegrationTriggerService {
         });
 
         if (existingByCategoryResultId) {
-          console.log(`[INTEGRATION TRIGGER] ✅ Found existing analysis by categoryResultId: ${existingByCategoryResultId._id}`);
+          console.log(`[INTEGRATION TRIGGER] ✅ Found existing analysis by categoryResultId after cleanup: ${existingByCategoryResultId._id}`);
           return existingByCategoryResultId;
+        }
+
+        // Try to generate again after cleanup
+        console.log(`[INTEGRATION TRIGGER] 🔄 Retrying prescription generation after cleanup`);
+        try {
+          const retryAnalysis = await prescriptiveAnalyticsService.generatePrescriptionOnly(categoryResult._id);
+          if (retryAnalysis) {
+            console.log(`[INTEGRATION TRIGGER] ✅ Successfully generated analysis after cleanup retry: ${retryAnalysis._id}`);
+            return retryAnalysis;
+          }
+        } catch (retryError) {
+          console.error(`[INTEGRATION TRIGGER] ❌ Retry after cleanup also failed:`, retryError);
+          // Continue to original error handling
         }
 
         // Log error for database administrator to fix indexes
         await this.logError(categoryResult, error);
 
-        throw new Error(`Duplicate key error: Database indexes need updating to support multiple reading levels. Student ${categoryResult.studentId} category ${categoryResult.categories?.[0]?.categoryName || 'unknown'}`);
+        throw new Error(`Duplicate key error persists after cleanup. Student ${categoryResult.studentId} may have database index conflicts that require manual resolution.`);
       }
 
       // Log other errors but don't break the main assessment flow
@@ -472,39 +508,102 @@ class IntegrationTriggerService {
   }
 
   /**
+   * Detect if student has progressed to a new reading level since last analysis
+   * This is critical for automatic prescriptive analysis generation after progression
+   *
+   * @param {Object} categoryResult - Current category result document
+   * @returns {Object} Object with progression detection results
+   */
+  static async detectReadingLevelProgression(categoryResult) {
+    try {
+      console.log(`[READING LEVEL PROGRESSION] 🔍 Checking for reading level progression for student ${categoryResult.studentId}`);
+
+      // Get student's current reading level from users collection
+      const mongoose = require('mongoose');
+      const testDb = mongoose.connection.useDb('test');
+      const currentUser = await testDb.collection('users').findOne({ idNumber: categoryResult.studentId });
+
+      if (!currentUser) {
+        console.log(`[READING LEVEL PROGRESSION] ⚠️ Student ${categoryResult.studentId} not found in users collection`);
+        return { hasProgressed: false, reason: 'student_not_found' };
+      }
+
+      const currentReadingLevel = currentUser.readingLevel;
+      const categoryResultLevel = categoryResult.readingLevel;
+
+      console.log(`[READING LEVEL PROGRESSION] 📊 Student ${categoryResult.studentId}: User reading level = ${currentReadingLevel}, Category result level = ${categoryResultLevel}`);
+
+      // Check if there's a mismatch indicating progression
+      if (currentReadingLevel !== categoryResultLevel) {
+        console.log(`[READING LEVEL PROGRESSION] 🎓 PROGRESSION DETECTED: ${categoryResultLevel} → ${currentReadingLevel}`);
+
+        // Check if the new level is actually higher (progression, not regression)
+        const levelOrder = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+        const currentIndex = levelOrder.indexOf(currentReadingLevel);
+        const categoryIndex = levelOrder.indexOf(categoryResultLevel);
+
+        if (currentIndex > categoryIndex) {
+          return {
+            hasProgressed: true,
+            fromLevel: categoryResultLevel,
+            toLevel: currentReadingLevel,
+            reason: 'automatic_reading_level_progression'
+          };
+        } else {
+          console.log(`[READING LEVEL PROGRESSION] ⚠️ Detected level change but not progression: ${categoryResultLevel} → ${currentReadingLevel}`);
+          return { hasProgressed: false, reason: 'level_mismatch_not_progression' };
+        }
+      }
+
+      console.log(`[READING LEVEL PROGRESSION] ✅ No progression detected - levels match`);
+      return { hasProgressed: false, reason: 'levels_match' };
+
+    } catch (error) {
+      console.error(`[READING LEVEL PROGRESSION] ❌ Error detecting progression:`, error);
+      return { hasProgressed: false, reason: 'error_checking_progression', error: error.message };
+    }
+  }
+
+  /**
    * Clean up old prescriptive analysis records for a student to prevent duplicate key errors
    * This is critical when students progress through reading levels
    *
    * @param {number} studentId - Student ID to clean up records for
+   * @param {string} specificCategoryId - Optional specific category to clean up
    */
-  static async cleanupOldPrescriptiveAnalysis(studentId) {
+  static async cleanupOldPrescriptiveAnalysis(studentId, specificCategoryId = null) {
     try {
-      console.log(`[INTEGRATION TRIGGER] 🔍 Checking for existing prescriptive analysis records for student ${studentId}`);
+      console.log(`[INTEGRATION TRIGGER] 🔍 Checking for existing prescriptive analysis records for student ${studentId}${specificCategoryId ? ` category ${specificCategoryId}` : ''}`);
 
-      // Find all existing prescriptive analysis records for this student
-      const existingRecords = await PrescriptiveAnalysis.find({
-        studentId: studentId
-      }).select('_id readingLevel categoryId createdAt');
+      // Build query to find existing records
+      const query = { studentId: studentId };
+      if (specificCategoryId) {
+        query.categoryId = specificCategoryId;
+      }
+
+      // Find all existing prescriptive analysis records for this student (and specific category if provided)
+      const existingRecords = await PrescriptiveAnalysis.find(query).select('_id readingLevel categoryId createdAt');
 
       if (existingRecords.length === 0) {
-        console.log(`[INTEGRATION TRIGGER] ✅ No existing prescriptive analysis records found for student ${studentId}`);
-        return;
+        console.log(`[INTEGRATION TRIGGER] ✅ No existing prescriptive analysis records found for student ${studentId}${specificCategoryId ? ` category ${specificCategoryId}` : ''}`);
+        return { deletedCount: 0 };
       }
 
       console.log(`[INTEGRATION TRIGGER] 🧹 Found ${existingRecords.length} existing prescriptive analysis records for student ${studentId}`);
       console.log(`[INTEGRATION TRIGGER] 📋 Records: ${existingRecords.map(r => `${r.readingLevel}-${r.categoryId || 'unknown'}`).join(', ')}`);
 
-      // Delete all existing prescriptive analysis records for this student
-      const deleteResult = await PrescriptiveAnalysis.deleteMany({
-        studentId: studentId
-      });
+      // Delete the conflicting prescriptive analysis records
+      const deleteResult = await PrescriptiveAnalysis.deleteMany(query);
 
       console.log(`[INTEGRATION TRIGGER] ✅ Successfully deleted ${deleteResult.deletedCount} old prescriptive analysis records for student ${studentId}`);
       console.log(`[INTEGRATION TRIGGER] 💡 This prevents duplicate key errors when generating new analysis for current reading level`);
 
+      return { deletedCount: deleteResult.deletedCount };
+
     } catch (error) {
       console.error(`[INTEGRATION TRIGGER] ❌ Error cleaning up old prescriptive analysis for student ${studentId}:`, error);
       // Don't throw - log error but continue with analysis generation
+      return { deletedCount: 0, error: error.message };
     }
   }
 
