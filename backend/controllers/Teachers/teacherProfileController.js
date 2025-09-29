@@ -25,21 +25,354 @@ const toObjectId = (id) => {
 };
 
 /**
+ * Input validation and sanitization utility functions
+ */
+const validateAndSanitizeInput = {
+  // Sanitize name fields (remove numbers, special chars except spaces, hyphens, apostrophes)
+  sanitizeName: (name) => {
+    if (!name || typeof name !== 'string') return '';
+
+    const original = name.trim();
+
+    // CRITICAL: If name contains numbers, REJECT completely - don't sanitize
+    if (/\d/.test(original)) {
+      console.log(`🚨 [SANITIZATION] REJECTING name with numbers: "${original}" - returning empty string`);
+      return ''; // Return empty string to indicate rejection
+    }
+
+    const sanitized = original
+      .replace(/[^a-zA-Z\s\-']/g, '') // Only letters, spaces, hyphens, apostrophes
+      .replace(/\s+/g, ' ') // Multiple spaces to single space
+      .substring(0, 50); // Max length 50 chars
+
+    // Log if sanitization changed the input (for debugging)
+    if (original !== sanitized) {
+      console.log(`🧹 [SANITIZATION] Name sanitized: "${original}" → "${sanitized}"`);
+    }
+
+    return sanitized;
+  },
+
+  // Validate and sanitize phone numbers (Philippines format)
+  sanitizePhoneNumber: (phone) => {
+    if (!phone || typeof phone !== 'string') return '';
+
+    // Remove all non-digits
+    const digitsOnly = phone.replace(/\D/g, '');
+
+    // Philippines phone number validation
+    // Mobile: 09xxxxxxxxx (11 digits) or +639xxxxxxxxx (13 digits)
+    // Landline: 02xxxxxxxx (10 digits) or area code variations
+
+    if (digitsOnly.length === 11 && digitsOnly.startsWith('09')) {
+      return digitsOnly; // Mobile number
+    } else if (digitsOnly.length === 13 && digitsOnly.startsWith('639')) {
+      return '+' + digitsOnly; // International mobile format
+    } else if (digitsOnly.length >= 10 && digitsOnly.length <= 11) {
+      return digitsOnly; // Landline or other valid format
+    }
+
+    return ''; // Invalid format
+  },
+
+  // Sanitize email
+  sanitizeEmail: (email) => {
+    if (!email || typeof email !== 'string') return '';
+    return email.toLowerCase().trim().substring(0, 100);
+  },
+
+  // Sanitize text fields (remove potentially dangerous characters)
+  sanitizeText: (text, maxLength = 100) => {
+    if (!text || typeof text !== 'string') return '';
+    return text
+      .trim()
+      .replace(/[<>\"'&]/g, '') // Remove potentially dangerous HTML chars
+      .substring(0, maxLength);
+  },
+
+  // Validate date format (YYYY-MM-DD)
+  validateDate: (date) => {
+    if (!date) return '';
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) return '';
+
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) return '';
+
+    // Check if date is reasonable (not in future, not too old)
+    const now = new Date();
+    const minDate = new Date(now.getFullYear() - 100, 0, 1); // 100 years ago
+
+    if (parsedDate > now || parsedDate < minDate) return '';
+
+    return date;
+  },
+
+  // Validate and sanitize emergency contact
+  sanitizeEmergencyContact: (emergencyContact) => {
+    if (!emergencyContact || typeof emergencyContact !== 'object') {
+      return { name: '', number: '' };
+    }
+
+    console.log('🔍 [SANITIZATION] Processing emergency contact:', {
+      originalName: emergencyContact.name,
+      originalNumber: emergencyContact.number
+    });
+
+    const sanitizedName = validateAndSanitizeInput.sanitizeName(emergencyContact.name);
+    const sanitizedNumber = validateAndSanitizeInput.sanitizePhoneNumber(emergencyContact.number);
+
+    console.log('✅ [SANITIZATION] Emergency contact processed:', {
+      sanitizedName: sanitizedName,
+      sanitizedNumber: sanitizedNumber
+    });
+
+    return {
+      name: sanitizedName,
+      number: sanitizedNumber
+    };
+  }
+};
+
+/**
+ * Comprehensive input validation for profile updates with detailed logging
+ */
+const validateProfileInput = (data) => {
+  const errors = [];
+  const validationLog = [];
+
+  console.log('🔍 [VALIDATION] Starting comprehensive input validation...');
+
+  // Helper function to log validation details
+  const logValidation = (field, value, isValid, errorMessage = null) => {
+    const logEntry = {
+      field,
+      value: typeof value === 'string' ? value.substring(0, 50) : value,
+      isValid,
+      errorMessage
+    };
+    validationLog.push(logEntry);
+
+    if (isValid) {
+      console.log(`✅ [VALIDATION] ${field}: VALID - "${logEntry.value}"`);
+    } else {
+      console.log(`❌ [VALIDATION] ${field}: INVALID - "${logEntry.value}" - ${errorMessage}`);
+    }
+  };
+
+  // Required field validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking required fields...');
+
+  if (!data.firstName || data.firstName.trim().length === 0) {
+    const error = 'First name is required and cannot be empty';
+    errors.push(error);
+    logValidation('firstName', data.firstName, false, error);
+  } else {
+    logValidation('firstName', data.firstName, true);
+  }
+
+  if (!data.lastName || data.lastName.trim().length === 0) {
+    const error = 'Last name is required and cannot be empty';
+    errors.push(error);
+    logValidation('lastName', data.lastName, false, error);
+  } else {
+    logValidation('lastName', data.lastName, true);
+  }
+
+  if (!data.email || data.email.trim().length === 0) {
+    const error = 'Email is required and cannot be empty';
+    errors.push(error);
+    logValidation('email', data.email, false, error);
+  } else {
+    logValidation('email', data.email, true);
+  }
+
+  // Email format validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking email format...');
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (data.email && !emailRegex.test(data.email)) {
+    const error = 'Invalid email format. Please use format: example@domain.com';
+    errors.push(error);
+    logValidation('email format', data.email, false, error);
+  } else if (data.email) {
+    logValidation('email format', data.email, true);
+  }
+
+  // Name validation with detailed logging (no numbers or special characters)
+  console.log('🔍 [VALIDATION] Checking name format restrictions...');
+  const nameRegex = /^[a-zA-Z\s\-']+$/;
+
+  // STRICT VALIDATION: Check for numbers first (explicit rejection)
+  if (data.firstName && /\d/.test(data.firstName)) {
+    const error = `First name "${data.firstName}" contains numbers which are not allowed. Please use only letters, spaces, hyphens, and apostrophes.`;
+    errors.push(error);
+    logValidation('firstName format', data.firstName, false, error);
+  } else if (data.firstName && !nameRegex.test(data.firstName)) {
+    const error = 'First name can only contain letters, spaces, hyphens, and apostrophes. Numbers and special characters are not allowed.';
+    errors.push(error);
+    logValidation('firstName format', data.firstName, false, error);
+  } else if (data.firstName) {
+    logValidation('firstName format', data.firstName, true);
+  }
+
+  // STRICT VALIDATION: Check last name for numbers
+  if (data.lastName && /\d/.test(data.lastName)) {
+    const error = `Last name "${data.lastName}" contains numbers which are not allowed. Please use only letters, spaces, hyphens, and apostrophes.`;
+    errors.push(error);
+    logValidation('lastName format', data.lastName, false, error);
+  } else if (data.lastName && !nameRegex.test(data.lastName)) {
+    const error = 'Last name can only contain letters, spaces, hyphens, and apostrophes. Numbers and special characters are not allowed.';
+    errors.push(error);
+    logValidation('lastName format', data.lastName, false, error);
+  } else if (data.lastName) {
+    logValidation('lastName format', data.lastName, true);
+  }
+
+  // STRICT VALIDATION: Check middle name for numbers
+  if (data.middleName && data.middleName.trim() && /\d/.test(data.middleName)) {
+    const error = `Middle name "${data.middleName}" contains numbers which are not allowed. Please use only letters, spaces, hyphens, and apostrophes.`;
+    errors.push(error);
+    logValidation('middleName format', data.middleName, false, error);
+  } else if (data.middleName && data.middleName.trim() && !nameRegex.test(data.middleName)) {
+    const error = 'Middle name can only contain letters, spaces, hyphens, and apostrophes. Numbers and special characters are not allowed.';
+    errors.push(error);
+    logValidation('middleName format', data.middleName, false, error);
+  } else if (data.middleName && data.middleName.trim()) {
+    logValidation('middleName format', data.middleName, true);
+  }
+
+  // Phone number validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking phone number format...');
+  if (data.contact && data.contact.trim()) {
+    const sanitizedPhone = validateAndSanitizeInput.sanitizePhoneNumber(data.contact);
+    if (!sanitizedPhone) {
+      const error = 'Invalid phone number format. Please use valid Philippines phone number format (e.g., 09171234567, +639171234567, or landline format)';
+      errors.push(error);
+      logValidation('contact phone', data.contact, false, error);
+    } else {
+      logValidation('contact phone', data.contact, true, `Sanitized to: ${sanitizedPhone}`);
+    }
+  }
+
+  // Emergency contact validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking emergency contact data...');
+  if (data.emergencyContact) {
+    if (data.emergencyContact.name && data.emergencyContact.name.trim()) {
+      // Check for numbers in emergency contact name
+      const hasNumbers = /\d/.test(data.emergencyContact.name);
+      if (hasNumbers) {
+        const error = `Emergency contact name "${data.emergencyContact.name}" contains numbers which are not allowed. Please use only letters, spaces, hyphens, and apostrophes.`;
+        errors.push(error);
+        logValidation('emergency contact name', data.emergencyContact.name, false, error);
+      } else if (!nameRegex.test(data.emergencyContact.name)) {
+        const error = 'Emergency contact name can only contain letters, spaces, hyphens, and apostrophes. Numbers and special characters are not allowed.';
+        errors.push(error);
+        logValidation('emergency contact name', data.emergencyContact.name, false, error);
+      } else {
+        logValidation('emergency contact name', data.emergencyContact.name, true);
+      }
+    }
+
+    if (data.emergencyContact.number && data.emergencyContact.number.trim()) {
+      const sanitizedEmergencyPhone = validateAndSanitizeInput.sanitizePhoneNumber(data.emergencyContact.number);
+      if (!sanitizedEmergencyPhone) {
+        const error = 'Invalid emergency contact phone number format. Please use valid Philippines phone number format.';
+        errors.push(error);
+        logValidation('emergency contact phone', data.emergencyContact.number, false, error);
+      } else {
+        logValidation('emergency contact phone', data.emergencyContact.number, true, `Sanitized to: ${sanitizedEmergencyPhone}`);
+      }
+    }
+  }
+
+  // Date validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking date format...');
+  if (data.dob && data.dob.trim()) {
+    const validDate = validateAndSanitizeInput.validateDate(data.dob);
+    if (!validDate) {
+      const error = 'Invalid date of birth format. Please use YYYY-MM-DD format and ensure date is realistic (not in future, not more than 100 years ago)';
+      errors.push(error);
+      logValidation('date of birth', data.dob, false, error);
+    } else {
+      logValidation('date of birth', data.dob, true);
+    }
+  }
+
+  // Gender validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking gender selection...');
+  const validGenders = ['Male', 'Female', 'Other', ''];
+  if (data.gender && !validGenders.includes(data.gender)) {
+    const error = `Invalid gender selection. Please choose from: ${validGenders.filter(g => g).join(', ')}`;
+    errors.push(error);
+    logValidation('gender', data.gender, false, error);
+  } else if (data.gender) {
+    logValidation('gender', data.gender, true);
+  }
+
+  // Civil status validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking civil status selection...');
+  const validCivilStatuses = ['Single', 'Married', 'Divorced', 'Widowed', 'Separated', ''];
+  if (data.civilStatus && !validCivilStatuses.includes(data.civilStatus)) {
+    const error = `Invalid civil status selection. Please choose from: ${validCivilStatuses.filter(s => s).join(', ')}`;
+    errors.push(error);
+    logValidation('civil status', data.civilStatus, false, error);
+  } else if (data.civilStatus) {
+    logValidation('civil status', data.civilStatus, true);
+  }
+
+  // Position validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking position field...');
+  if (data.position && data.position.trim()) {
+    const sanitizedPosition = validateAndSanitizeInput.sanitizeText(data.position, 100);
+    if (sanitizedPosition !== data.position.trim()) {
+      logValidation('position', data.position, true, `Sanitized to: ${sanitizedPosition}`);
+    } else {
+      logValidation('position', data.position, true);
+    }
+  }
+
+  // Address validation with detailed logging
+  console.log('🔍 [VALIDATION] Checking address field...');
+  if (data.address && data.address.trim()) {
+    const sanitizedAddress = validateAndSanitizeInput.sanitizeText(data.address, 200);
+    if (sanitizedAddress !== data.address.trim()) {
+      logValidation('address', data.address, true, `Sanitized to: ${sanitizedAddress}`);
+    } else {
+      logValidation('address', data.address, true);
+    }
+  }
+
+  // Final validation summary
+  console.log('📊 [VALIDATION SUMMARY] Total fields checked:', validationLog.length);
+  console.log('📊 [VALIDATION SUMMARY] Valid fields:', validationLog.filter(log => log.isValid).length);
+  console.log('📊 [VALIDATION SUMMARY] Invalid fields:', validationLog.filter(log => !log.isValid).length);
+  console.log('📊 [VALIDATION SUMMARY] Total errors:', errors.length);
+
+  if (errors.length > 0) {
+    console.log('❌ [VALIDATION SUMMARY] Validation failed with errors:', errors);
+  } else {
+    console.log('✅ [VALIDATION SUMMARY] All validation checks passed successfully!');
+  }
+
+  return errors;
+};
+
+/**
  * Helper function to create sanitized response data with defaults
  */
 const createSafeResponse = (profile) => {
   if (!profile) return null;
-  
+
   // Convert to plain object if it's a Mongoose document
   const response = profile.toObject ? profile.toObject() : { ...profile };
-  
+
   console.log('Creating safe response from profile:', {
     _id: response._id,
     firstName: response.firstName || '',
     lastName: response.lastName || '',
     email: response.email || ''
   });
-  
+
   // Add defaults for all fields that might be missing
   const defaults = {
     firstName: '',
@@ -59,10 +392,10 @@ const createSafeResponse = (profile) => {
       number: ''
     }
   };
-  
+
   // Apply defaults for any missing properties
   const result = { ...defaults, ...response };
-  
+
   // Ensure emergencyContact is properly structured
   if (!result.emergencyContact) {
     result.emergencyContact = defaults.emergencyContact;
@@ -72,12 +405,12 @@ const createSafeResponse = (profile) => {
       ...result.emergencyContact
     };
   }
-  
+
   // Ensure profileImageUrl is a real null not a string "null"
   if (result.profileImageUrl === "null") {
     result.profileImageUrl = null;
   }
-  
+
   // Generate a full name if missing
   if (!result.name) {
     const nameParts = [result.firstName, result.middleName, result.lastName]
@@ -86,12 +419,12 @@ const createSafeResponse = (profile) => {
       result.name = nameParts.join(' ');
     }
   }
-  
+
   // Add timestamps for cache busting
   if (result.profileImageUrl) {
     result.profileImageUrl = `${result.profileImageUrl}?t=${Date.now()}`;
   }
-  
+
   return result;
 };
 
@@ -129,43 +462,91 @@ const getProfileCollection = async () => {
 };
 
 /**
- * Create or get the correct profile with the known ID
+ * Find the correct profile for the authenticated user
+ * Handles the case where multiple profiles have the same email address
  */
-const getOrCreateCorrectProfile = async (req) => {
-  // Get the profile collection from mobile_literexia.teachers.profile
-  const profileCollection = await getProfileCollection();
-  
-  // First try to find profile by user ID
-  let profile = null;
-  if (req.user.id) {
-    const userId = toObjectId(req.user.id);
-    if (userId) {
-      profile = await profileCollection.findOne({ userId });
-      if (profile) {
-        console.log('Found profile by user ID:', profile._id);
-        return profile;
-      }
+const findCorrectProfile = async (req) => {
+  try {
+    const profileCollection = await getProfileCollection();
+    const userAccountId = req.user.id;
+    const userEmail = req.user.email;
+
+    console.log('🔍 [PROFILE LOOKUP] Looking for profile for user:', {
+      userAccountId,
+      userEmail
+    });
+
+    // Search by email address (since that's what's used for login)
+    const profilesWithEmail = await profileCollection.find({ email: userEmail }).toArray();
+
+    console.log('🔍 [PROFILE LOOKUP] Found profiles with email:', profilesWithEmail.length);
+
+    if (profilesWithEmail.length === 0) {
+      console.log('❌ [PROFILE LOOKUP] No profiles found with email:', userEmail);
+      return null;
     }
-  }
-  
-  // If not found by user ID, try by email
-  if (req.user.email) {
-    profile = await profileCollection.findOne({ email: req.user.email });
-    if (profile) {
-      console.log('Found profile by email:', profile._id);
-      // Update profile with userId if needed
-      if (req.user.id && !profile.userId) {
-        const userId = toObjectId(req.user.id);
-        await profileCollection.updateOne(
-          { _id: profile._id },
-          { $set: { userId, updatedAt: new Date() } }
-        );
-        profile.userId = userId;
-        profile.updatedAt = new Date();
-      }
+
+    if (profilesWithEmail.length === 1) {
+      const profile = profilesWithEmail[0];
+      console.log('✅ [PROFILE LOOKUP] Single profile found:', {
+        profileId: profile._id.toString(),
+        profileName: `${profile.firstName} ${profile.lastName}`,
+        profileEmail: profile.email
+      });
       return profile;
     }
+
+    // Multiple profiles with same email - need resolution strategy
+    console.log('⚠️ [PROFILE LOOKUP] Multiple profiles found with same email. Profiles:');
+    profilesWithEmail.forEach((profile, index) => {
+      console.log(`  ${index + 1}. ${profile.firstName} ${profile.lastName} (ID: ${profile._id.toString()}, Created: ${profile.createdAt})`);
+    });
+
+    // Resolution strategy: Use the most recently created profile
+    // This assumes the newer profile is the correct/active one
+    const sortedProfiles = profilesWithEmail.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const selectedProfile = sortedProfiles[0];
+
+    console.log('✅ [PROFILE LOOKUP] Selected most recent profile:', {
+      profileId: selectedProfile._id.toString(),
+      profileName: `${selectedProfile.firstName} ${selectedProfile.lastName}`,
+      profileEmail: selectedProfile.email,
+      createdAt: selectedProfile.createdAt
+    });
+
+    return selectedProfile;
+  } catch (error) {
+    console.error('❌ [PROFILE LOOKUP] Error during profile lookup:', error);
+    return null;
   }
+};
+
+/**
+ * Get the correct profile for the authenticated user
+ */
+const getOrCreateCorrectProfile = async (req) => {
+  console.log('🔍 [PROFILE LOOKUP] Starting profile lookup for user:', {
+    id: req.user.id,
+    email: req.user.email
+  });
+
+  // Try to find the correct profile using the corrected logic
+  const profile = await findCorrectProfile(req);
+
+  if (profile) {
+    console.log('✅ [PROFILE LOOKUP] Successfully found profile:', {
+      profileId: profile._id.toString(),
+      profileName: `${profile.firstName} ${profile.lastName}`,
+      profileEmail: profile.email
+    });
+    return profile;
+  }
+
+  console.log('❌ [PROFILE LOOKUP] No profile found for user:', {
+    id: req.user.id,
+    email: req.user.email
+  });
+  return null;
 };
 
 /**
@@ -238,124 +619,221 @@ exports.initializeProfile = async (req, res) => {
 };
 
 /**
- * Update teacher profile
+ * Update teacher profile - FIXED for proper dual-collection synchronization
  */
 exports.updateProfile = async (req, res) => {
   try {
-    // Validate required fields
-    if (!req.body.firstName || !req.body.lastName || !req.body.email) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    console.log('📝 [PROFILE UPDATE] Starting profile update for user:', req.user.id);
+    console.log('📝 [PROFILE UPDATE] Request data:', req.body);
+
+    // STEP 1: COMPREHENSIVE INPUT VALIDATION
+    console.log('🔍 [PROFILE UPDATE] Validating input data...');
+    const validationErrors = validateProfileInput(req.body);
+
+    if (validationErrors.length > 0) {
+      console.error('❌ [PROFILE UPDATE] Validation errors:', validationErrors);
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationErrors
+      });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(req.body.email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
+    // STEP 2: SANITIZE ALL INPUT DATA
+    console.log('🧹 [PROFILE UPDATE] Sanitizing input data...');
+    const sanitizedData = {
+      firstName: validateAndSanitizeInput.sanitizeName(req.body.firstName),
+      middleName: validateAndSanitizeInput.sanitizeName(req.body.middleName),
+      lastName: validateAndSanitizeInput.sanitizeName(req.body.lastName),
+      email: validateAndSanitizeInput.sanitizeEmail(req.body.email),
+      position: validateAndSanitizeInput.sanitizeText(req.body.position, 100),
+      contact: validateAndSanitizeInput.sanitizePhoneNumber(req.body.contact),
+      gender: req.body.gender && ['Male', 'Female', 'Other'].includes(req.body.gender) ? req.body.gender : '',
+      civilStatus: req.body.civilStatus && ['Single', 'Married', 'Divorced', 'Widowed', 'Separated'].includes(req.body.civilStatus) ? req.body.civilStatus : '',
+      dob: validateAndSanitizeInput.validateDate(req.body.dob),
+      address: validateAndSanitizeInput.sanitizeText(req.body.address, 200),
+      emergencyContact: validateAndSanitizeInput.sanitizeEmergencyContact(req.body.emergencyContact)
+    };
+
+    console.log('✅ [PROFILE UPDATE] Sanitized data:', {
+      firstName: sanitizedData.firstName,
+      lastName: sanitizedData.lastName,
+      email: sanitizedData.email,
+      contact: sanitizedData.contact,
+      emergencyContact: sanitizedData.emergencyContact
+    });
+
+    // STEP 2.5: ADDITIONAL CHECK - If names are empty after sanitization, it means they were rejected
+    const sanitizationErrors = [];
+    if (req.body.firstName && sanitizedData.firstName === '') {
+      sanitizationErrors.push(`First name "${req.body.firstName}" contains invalid characters (numbers/special chars) and was rejected.`);
+    }
+    if (req.body.lastName && sanitizedData.lastName === '') {
+      sanitizationErrors.push(`Last name "${req.body.lastName}" contains invalid characters (numbers/special chars) and was rejected.`);
+    }
+    if (req.body.middleName && req.body.middleName.trim() && sanitizedData.middleName === '') {
+      sanitizationErrors.push(`Middle name "${req.body.middleName}" contains invalid characters (numbers/special chars) and was rejected.`);
     }
 
-    // Find the correct profile
+    if (sanitizationErrors.length > 0) {
+      console.error('🚨 [PROFILE UPDATE] Sanitization rejection errors:', sanitizationErrors);
+      return res.status(400).json({
+        error: 'Input rejected due to invalid characters',
+        details: sanitizationErrors
+      });
+    }
+
+    // STEP 3: Find the correct profile using fixed lookup
+    console.log('🔍 [PROFILE UPDATE] Finding teacher profile...');
     const profile = await getOrCreateCorrectProfile(req);
-    
+
     if (!profile) {
-      return res.status(404).json({ 
+      console.error('❌ [PROFILE UPDATE] No teacher profile found');
+      return res.status(404).json({
         error: 'No teacher profile found to update.',
         action: 'initialize'
       });
     }
-    // Check if email is being changed
-    const isEmailChanged = req.body.email !== req.user.email;
-    console.log(`Email change check: ${req.body.email} vs ${req.user.email} = ${isEmailChanged}`);
 
-    // Generate full name from parts
+    console.log('✅ [PROFILE UPDATE] Found profile:', {
+      profileId: profile._id.toString(),
+      currentEmail: profile.email,
+      newEmail: sanitizedData.email
+    });
+
+    // Check if email is being changed
+    const isEmailChanged = sanitizedData.email !== profile.email;
+    console.log('📧 [PROFILE UPDATE] Email change detected:', isEmailChanged);
+
+    // Generate full name from sanitized parts
     const fullName = [
-      req.body.firstName,
-      req.body.middleName,
-      req.body.lastName
+      sanitizedData.firstName,
+      sanitizedData.middleName,
+      sanitizedData.lastName
     ].filter(part => part && part.trim()).join(' ');
 
-    // Create update object
-    const updateData = {
-      firstName: req.body.firstName,
-      middleName: req.body.middleName || '',
-      lastName: req.body.lastName,
+    // STEP 4: Update teachers.profile collection with sanitized data
+    console.log('💾 [PROFILE UPDATE] Updating teachers.profile with sanitized data...');
+
+    const profileUpdateData = {
+      firstName: sanitizedData.firstName,
+      middleName: sanitizedData.middleName,
+      lastName: sanitizedData.lastName,
       name: fullName,
-      position: req.body.position || '',
-      email: req.body.email,
-      contact: req.body.contact || '',
-      gender: req.body.gender || '',
-      civilStatus: req.body.civilStatus || '',
-      dob: req.body.dob || '',
-      address: req.body.address || '',
-      emergencyContact: req.body.emergencyContact || { name: '', number: '' },
+      position: sanitizedData.position,
+      email: sanitizedData.email,
+      contact: sanitizedData.contact,
+      gender: sanitizedData.gender,
+      civilStatus: sanitizedData.civilStatus,
+      dob: sanitizedData.dob,
+      address: sanitizedData.address,
+      emergencyContact: sanitizedData.emergencyContact,
       updatedAt: new Date()
     };
-    
-    // Make sure userId is set correctly
+
+    // Ensure userId is preserved/set correctly
     const userId = toObjectId(req.user.id);
     if (userId) {
-      updateData.userId = userId;
+      profileUpdateData.userId = userId;
     }
 
-    // Get the profile collection
+    // Update teachers.profile
     const profileCollection = await getProfileCollection();
-    
-    // Update the profile
     const profileUpdateResult = await profileCollection.updateOne(
       { _id: profile._id },
-      { $set: updateData }
+      { $set: profileUpdateData }
     );
-    
-    console.log('Profile update result:', profileUpdateResult);
-    
-    // Get the updated profile
-    const updatedProfile = await profileCollection.findOne({ _id: profile._id });
 
-    // Always update the users_web database, regardless of email change
+    console.log('✅ [PROFILE UPDATE] teachers.profile update result:', {
+      acknowledged: profileUpdateResult.acknowledged,
+      modifiedCount: profileUpdateResult.modifiedCount,
+      matchedCount: profileUpdateResult.matchedCount
+    });
+
+    // STEP 5: CRITICAL FIX - Always update users_web.users for email sync
+    console.log('💾 [PROFILE UPDATE] Updating users_web.users...');
+
     try {
-      // Connect directly to users_web database
       const usersDb = mongoose.connection.useDb('users_web');
       const usersCollection = usersDb.collection('users');
-      
-      if (req.user.id) {
-        const userId = toObjectId(req.user.id);
-        
-        console.log(`Updating user in users_web.users with ID: ${userId}`);
-        
-        const userUpdateData = { 
-          email: req.body.email,
-          updatedAt: new Date()
-        };
-        
-        const userUpdateResult = await usersCollection.updateOne(
-          { _id: userId },
-          { $set: userUpdateData }
-        );
-        
-        console.log('User update result in users_web.users:', userUpdateResult);
+
+      if (!userId) {
+        throw new Error('No valid user ID for users_web update');
       }
+
+      const userUpdateData = {
+        email: sanitizedData.email,
+        updatedAt: new Date()
+      };
+
+      console.log('📧 [PROFILE UPDATE] Updating email in users_web.users:', {
+        userId: userId.toString(),
+        oldEmail: req.user.email,
+        newEmail: sanitizedData.email
+      });
+
+      const userUpdateResult = await usersCollection.updateOne(
+        { _id: userId },
+        { $set: userUpdateData }
+      );
+
+      console.log('✅ [PROFILE UPDATE] users_web.users update result:', {
+        acknowledged: userUpdateResult.acknowledged,
+        modifiedCount: userUpdateResult.modifiedCount,
+        matchedCount: userUpdateResult.matchedCount
+      });
+
+      if (userUpdateResult.matchedCount === 0) {
+        console.error('❌ [PROFILE UPDATE] No user found in users_web.users with ID:', userId.toString());
+      }
+
     } catch (userUpdateError) {
-      console.error('Failed to update user in users_web collection:', userUpdateError.message);
-      // Continue anyway, profile was updated
+      console.error('❌ [PROFILE UPDATE] Failed to update users_web.users:', userUpdateError.message);
+      // Don't fail the entire request - profile was updated successfully
+      console.warn('⚠️ [PROFILE UPDATE] Continuing despite users_web sync failure');
     }
 
-    console.log('Profile updated successfully');
+    // STEP 6: Get the updated profile with current data
+    const updatedProfile = await profileCollection.findOne({ _id: profile._id });
 
-    res.json({ 
-      message: 'Profile updated successfully!', 
-      teacher: createSafeResponse(updatedProfile)
+    console.log('🎉 [PROFILE UPDATE] Profile update completed successfully');
+    console.log('🔍 [EMERGENCY CONTACT] Final emergency contact data:', updatedProfile.emergencyContact);
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully with comprehensive validation and sanitization!',
+      teacher: createSafeResponse(updatedProfile),
+      changes: {
+        emailChanged: isEmailChanged,
+        profileUpdated: profileUpdateResult.modifiedCount > 0,
+        emergencyContactUpdated: !!(sanitizedData.emergencyContact.name || sanitizedData.emergencyContact.number),
+        timestamp: new Date().toISOString()
+      },
+      validation: {
+        sanitizedData: {
+          firstName: sanitizedData.firstName,
+          lastName: sanitizedData.lastName,
+          contact: sanitizedData.contact,
+          emergencyContact: sanitizedData.emergencyContact
+        }
+      }
     });
+
   } catch (err) {
-    console.error('Error updating profile:', err);
-    res.status(500).json({ error: 'Update failed', details: err.message });
+    console.error('❌ [PROFILE UPDATE] Error updating profile:', err);
+    res.status(500).json({
+      error: 'Profile update failed',
+      details: err.message
+    });
   }
 };
 
 /**
- * Update teacher password - with proper synchronization to users_web
+ * Update teacher password - FIXED for proper users_web synchronization
  */
-// Update teacher password function
 exports.updatePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
+
+  console.log('🔐 [PASSWORD UPDATE] Starting password update for user:', req.user.id);
 
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Current password and new password are required' });
@@ -368,106 +846,104 @@ exports.updatePassword = async (req, res) => {
   }
 
   try {
-    // Connect directly to users_web database
+    // CRITICAL FIX: Connect to users_web.users collection directly
     const usersDb = mongoose.connection.useDb('users_web');
     const usersCollection = usersDb.collection('users');
-    
-    // Find user in users_web database
+
+    console.log('🔍 [PASSWORD UPDATE] Looking up user in users_web.users...');
+
+    // Find user by ID (most reliable)
     const userId = toObjectId(req.user.id);
-    let user = null;
-    
-    if (userId) {
-      user = await usersCollection.findOne({ _id: userId });
-      console.log('Found user by ID:', user ? 'Yes' : 'No');
+    if (!userId) {
+      console.error('❌ [PASSWORD UPDATE] Invalid user ID:', req.user.id);
+      return res.status(400).json({ error: 'Invalid user ID format.' });
     }
-    
-    if (!user && req.user.email) {
-      user = await usersCollection.findOne({ email: req.user.email });
-      console.log('Found user by email:', user ? 'Yes' : 'No');
-    }
-    
+
+    const user = await usersCollection.findOne({ _id: userId });
     if (!user) {
-      console.error('User not found in users_web collection');
+      console.error('❌ [PASSWORD UPDATE] User not found in users_web.users with ID:', userId.toString());
       return res.status(404).json({ error: 'User account not found.' });
     }
-    
-    console.log('Found user in users_web:', user.email);
 
-    // Check which field contains the password hash
-    let passwordField = null;
-    let passwordValue = null;
-    
-    if (user.passwordHash) {
-      passwordField = 'passwordHash';
-      passwordValue = user.passwordHash;
-    } else if (user.password) {
-      passwordField = 'password';
-      passwordValue = user.password;
-    }
-    
-    if (!passwordField) {
-      console.error('No password field found in user record');
+    console.log('✅ [PASSWORD UPDATE] Found user in users_web.users:', {
+      id: user._id.toString(),
+      email: user.email,
+      hasPasswordHash: !!user.passwordHash
+    });
+
+    // CRITICAL: Always use passwordHash field (standardized)
+    if (!user.passwordHash) {
+      console.error('❌ [PASSWORD UPDATE] No passwordHash field found in user record');
       return res.status(500).json({ error: 'Password field not found in user record.' });
     }
-    
-    console.log(`Using ${passwordField} for verification and update`);
+
+    // Verify current password
+    console.log('🔐 [PASSWORD UPDATE] Verifying current password...');
 
     let passwordIsValid = false;
-
-    // For password field string starting with $2a$, use bcrypt
-    if (passwordValue && (passwordValue.startsWith('$2a$') || passwordValue.startsWith('$2b$'))) {
+    if (user.passwordHash.startsWith('$2a$') || user.passwordHash.startsWith('$2b$')) {
       try {
-        passwordIsValid = await bcrypt.compare(currentPassword, passwordValue);
-        console.log('Password verification result:', passwordIsValid);
+        passwordIsValid = await bcrypt.compare(currentPassword, user.passwordHash);
+        console.log('✅ [PASSWORD UPDATE] Password verification result:', passwordIsValid);
       } catch (bcryptError) {
-        console.error('Bcrypt error:', bcryptError);
-        // Support the test password as fallback
-        if (currentPassword === 'Admin101@') {
-          passwordIsValid = true;
-          console.log('Using test password match');
-        }
+        console.error('❌ [PASSWORD UPDATE] Bcrypt verification error:', bcryptError);
+        return res.status(500).json({ error: 'Password verification failed.' });
       }
     } else {
-      // Support the test password
-      if (currentPassword === 'Admin101@') {
-        passwordIsValid = true;
-        console.log('Using test password match');
-      }
+      console.error('❌ [PASSWORD UPDATE] Invalid password hash format');
+      return res.status(500).json({ error: 'Invalid password hash format.' });
     }
 
     if (!passwordIsValid) {
-      console.log('Failed password change attempt - incorrect current password');
+      console.log('❌ [PASSWORD UPDATE] Incorrect current password provided');
       return res.status(400).json({ error: 'INCORRECT_PASSWORD' });
     }
 
-    // Hash and save new password
+    // Hash new password
+    console.log('🔐 [PASSWORD UPDATE] Generating new password hash...');
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
-    
-    // Update the appropriate password field in users_web.users
-    const updateData = { 
-      [passwordField]: newPasswordHash,
-      updatedAt: new Date()  
+
+    // CRITICAL FIX: Update passwordHash in users_web.users
+    const updateData = {
+      passwordHash: newPasswordHash,  // Always use passwordHash field
+      updatedAt: new Date()
     };
-    
-    // Update the user document
+
+    console.log('💾 [PASSWORD UPDATE] Updating passwordHash in users_web.users...');
     const updateResult = await usersCollection.updateOne(
-      { _id: user._id }, 
+      { _id: userId },
       { $set: updateData }
     );
-    
-    console.log('Password update result:', {
+
+    console.log('✅ [PASSWORD UPDATE] Update result:', {
       acknowledged: updateResult.acknowledged,
-      modifiedCount: updateResult.modifiedCount
+      modifiedCount: updateResult.modifiedCount,
+      matchedCount: updateResult.matchedCount
     });
 
     if (updateResult.modifiedCount === 0) {
-      console.warn('No changes made to the password - may still be considered successful');
+      console.warn('⚠️ [PASSWORD UPDATE] No documents modified - password may be the same');
+      return res.status(400).json({ error: 'Password update failed - no changes made.' });
     }
 
-    return res.json({ success: true, message: 'Password updated successfully.' });
+    // Verify the update worked
+    const updatedUser = await usersCollection.findOne({ _id: userId });
+    console.log('🔍 [PASSWORD UPDATE] Verification - password hash changed:',
+      updatedUser.passwordHash !== user.passwordHash);
+
+    console.log('🎉 [PASSWORD UPDATE] Password updated successfully for user:', userId.toString());
+    return res.json({
+      success: true,
+      message: 'Password updated successfully.',
+      timestamp: new Date().toISOString()
+    });
+
   } catch (err) {
-    console.error('Error updating password:', err);
-    return res.status(500).json({ error: 'Password update failed.', details: err.message });
+    console.error('❌ [PASSWORD UPDATE] Error updating password:', err);
+    return res.status(500).json({
+      error: 'Password update failed.',
+      details: err.message
+    });
   }
 };
 
@@ -751,30 +1227,79 @@ exports.getCurrentProfileImage = async (req, res) => {
 };
 
 /**
- * Create a new teacher (profile + user)
+ * Create a new teacher (profile + user) - FIXED to prevent duplicate assignments
  */
 exports.createTeacher = async (req, res) => {
   try {
+    console.log('👤 [TEACHER CREATION] Starting teacher creation process...');
+
     // 1. Extract teacher details from request body
     const {
       firstName, lastName, middleName, position, contact, address,
       civilStatus, dob, emergencyContact, gender, email
     } = req.body;
 
+    console.log('📝 [TEACHER CREATION] Creating teacher:', {
+      name: `${firstName} ${lastName}`,
+      email: email
+    });
+
+    // Validate required fields
+    if (!firstName || !lastName || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: firstName, lastName, email'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
     // Handle profile image upload if file is present
     let profileImageUrl = '';
     if (req.file) {
+      console.log('📸 [TEACHER CREATION] Processing profile image upload...');
       profileImageUrl = await uploadToS3(req.file, 'teacher-profiles');
+      console.log('✅ [TEACHER CREATION] Profile image uploaded:', profileImageUrl);
     }
 
-    // Check for duplicate email in teachers.profile
+    // STEP 1: Check for duplicate email in BOTH collections
+    console.log('🔍 [TEACHER CREATION] Checking for duplicate emails...');
+
+    // Check teachers.profile
     const profileCollection = await getProfileCollection();
-    const existing = await profileCollection.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ success: false, message: 'This email is already registered.' });
+    const existingProfile = await profileCollection.findOne({ email });
+    if (existingProfile) {
+      console.error('❌ [TEACHER CREATION] Email exists in teachers.profile:', email);
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already registered in teacher profiles.'
+      });
     }
 
-    // 2. Generate a random 8-character password
+    // Check users_web.users
+    const usersDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersDb.collection('users');
+    const existingUser = await usersCollection.findOne({ email });
+    if (existingUser) {
+      console.error('❌ [TEACHER CREATION] Email exists in users_web.users:', email);
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already registered in user accounts.'
+      });
+    }
+
+    console.log('✅ [TEACHER CREATION] Email is unique across all collections');
+
+    // STEP 2: Generate secure credentials
+    console.log('🔐 [TEACHER CREATION] Generating secure credentials...');
+
     const generatePassword = (length = 8) => {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       let password = '';
@@ -784,54 +1309,111 @@ exports.createTeacher = async (req, res) => {
       return password;
     };
     const password = generatePassword(8);
-
-    // 3. Hash the password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // 4. Create user in users_web.users
-    const User = await getUserModel();
-    const userDoc = new User({
-      email,
-      passwordHash,
-      roles: new mongoose.Types.ObjectId('681b690af9fd9071c6ac2f3a'), // Teacher role as ObjectId
-      updatedAt: new Date()
-    });
-    await userDoc.save();
+    console.log('✅ [TEACHER CREATION] Password generated and hashed');
 
-    // 5. Create teacher profile in teachers.profile
+    // STEP 3: Create user in users_web.users
+    console.log('💾 [TEACHER CREATION] Creating user account in users_web.users...');
+
+    // CRITICAL FIX: Create user document directly via collection to avoid Mongoose model issues
+    const newUser = {
+      email: email,
+      passwordHash: passwordHash,
+      roles: new mongoose.Types.ObjectId('681b690af9fd9071c6ac2f3a'), // Teacher role
+      updatedAt: new Date(),
+      createdAt: new Date()
+    };
+
+    const userInsertResult = await usersCollection.insertOne(newUser);
+    const createdUserId = userInsertResult.insertedId;
+
+    console.log('✅ [TEACHER CREATION] User created in users_web.users:', {
+      userId: createdUserId.toString(),
+      email: email
+    });
+
+    // STEP 4: Create teacher profile in teachers.profile with proper linking
+    console.log('💾 [TEACHER CREATION] Creating teacher profile in teachers.profile...');
+
     const now = new Date();
+    const fullName = [firstName, middleName, lastName].filter(part => part && part.trim()).join(' ');
+
     const profileDoc = {
-      userId: userDoc._id,
+      userId: createdUserId,          // CRITICAL: Link to the newly created user
       firstName,
       lastName,
       middleName: middleName || '',
+      name: fullName,                 // Generate full name
       position,
       contact,
       profileImageUrl: profileImageUrl || '',
-      createdAt: now,
-      updatedAt: now,
       address,
       civilStatus,
       dob,
       gender,
-      email
+      email,
+      emergencyContact: emergencyContact || { name: '', number: '' },
+      createdAt: now,
+      updatedAt: now
     };
-    console.log('Inserting teacher profile:', profileDoc);
-    const insertResult = await profileCollection.insertOne(profileDoc);
-    console.log('Insert result:', insertResult);
+
+    console.log('📝 [TEACHER CREATION] Inserting teacher profile:', {
+      name: fullName,
+      email: email,
+      userId: createdUserId.toString()
+    });
+
+    const profileInsertResult = await profileCollection.insertOne(profileDoc);
+
+    console.log('✅ [TEACHER CREATION] Teacher profile created:', {
+      profileId: profileInsertResult.insertedId.toString(),
+      userId: createdUserId.toString()
+    });
+
+    // STEP 5: Verify the complete creation
+    console.log('🔍 [TEACHER CREATION] Verifying complete teacher creation...');
+
+    const verifyUser = await usersCollection.findOne({ _id: createdUserId });
+    const verifyProfile = await profileCollection.findOne({ _id: profileInsertResult.insertedId });
+
+    console.log('✅ [TEACHER CREATION] Verification successful:', {
+      userExists: !!verifyUser,
+      profileExists: !!verifyProfile,
+      userIdMatch: verifyProfile?.userId?.toString() === createdUserId.toString()
+    });
+
+    console.log('🎉 [TEACHER CREATION] Teacher created successfully');
 
     // 6. Respond with credentials for admin to display
     res.json({
       success: true,
       message: 'Teacher created successfully',
       data: {
-        teacherProfile: profileDoc,
-        credentials: { email, password }
+        teacherProfile: {
+          ...profileDoc,
+          _id: profileInsertResult.insertedId
+        },
+        userAccount: {
+          _id: createdUserId,
+          email: email
+        },
+        credentials: { email, password },
+        verification: {
+          userIdLinked: true,
+          emailUnique: true,
+          timestamp: new Date().toISOString()
+        }
       }
     });
+
   } catch (err) {
-    console.error('Error creating teacher:', err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    console.error('❌ [TEACHER CREATION] Error creating teacher:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Teacher creation failed',
+      error: err.message
+    });
   }
 };
 

@@ -239,32 +239,32 @@ router.get('/profile', auth, authorize('teacher', 'guro'), async (req, res) => {
     // Get the correct collection
     const collection = await getProfileCollection();
     
-    // First try finding by the known ID
-    const knownId = '6818bae0e9bed4ff08ab7e8c';
+    // Search by email to handle multiple profiles properly
+    console.log('🔍 [ROUTES PROFILE LOOKUP] Searching for profiles with email:', userEmail);
+
+    const profilesWithEmail = await collection.find({ email: userEmail }).toArray();
+    console.log('🔍 [ROUTES PROFILE LOOKUP] Found profiles with email:', profilesWithEmail.length);
+
     let profile = null;
-    
-    if (mongoose.Types.ObjectId.isValid(knownId)) {
-      const objId = new mongoose.Types.ObjectId(knownId);
-      profile = await collection.findOne({ _id: objId });
-      console.log('Profile search by known ID:', profile ? 'Found' : 'Not found');
-      
-      // If found, update it to link to the current user
-      if (profile && userId) {
-        await collection.updateOne(
-          { _id: objId },
-          { $set: { 
-              userId: toObjectId(userId), 
-              email: userEmail 
-            } 
-          }
-        );
-        profile.userId = toObjectId(userId);
-        profile.email = userEmail;
-        console.log('Updated the known profile to link with current user');
-      }
+
+    if (profilesWithEmail.length === 1) {
+      profile = profilesWithEmail[0];
+      console.log('✅ [ROUTES PROFILE LOOKUP] Single profile found:', profile.firstName, profile.lastName);
+    } else if (profilesWithEmail.length > 1) {
+      // Multiple profiles with same email - select most recent
+      console.log('⚠️ [ROUTES PROFILE LOOKUP] Multiple profiles found with same email:');
+      profilesWithEmail.forEach((p, index) => {
+        console.log(`  ${index + 1}. ${p.firstName} ${p.lastName} (ID: ${p._id.toString()}, Created: ${p.createdAt})`);
+      });
+
+      // Sort by creation date (most recent first) and select the first one
+      const sortedProfiles = profilesWithEmail.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      profile = sortedProfiles[0];
+
+      console.log('✅ [ROUTES PROFILE LOOKUP] Selected most recent profile:', profile.firstName, profile.lastName);
     }
-    
-    // Only if we didn't find by known ID, try other search methods
+
+    // If we still don't have a profile, try other search methods
     if (!profile) {
       // Define query filters
       const filters = [];
