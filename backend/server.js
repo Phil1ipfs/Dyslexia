@@ -514,6 +514,14 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load intervention results routes:', error.message);
     }
 
+    // Load notification routes
+    try {
+      app.use('/api/notifications', require('./routes/notifications'));
+      console.log('✅ Loaded notification routes at /api/notifications/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load notification routes:', error.message);
+    }
+
     // Load dashboard routes
     try {
       const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
@@ -1197,6 +1205,49 @@ server.listen(PORT, async () => {
     console.log('✅ Automatic data consistency fix completed');
   } catch (error) {
     console.warn('⚠️ Could not run automatic data fix:', error.message);
+  }
+
+  // 🚀 INITIALIZE ULTRA-FAST SCORING SYSTEM
+  try {
+    const PerformanceInitializationService = require('./services/PerformanceInitializationService');
+    console.log('🚀 Initializing ultra-fast scoring system...');
+    const initResult = await PerformanceInitializationService.initializeUltraFastScoring();
+
+    if (initResult.success) {
+      console.log('⚡ Ultra-fast scoring system initialized:');
+      console.log(`   📊 Expected response time: ${initResult.performance.expectedResponseTime}`);
+      console.log(`   🔄 Trigger delay: ${initResult.performance.triggerDelay}`);
+      console.log(`   📈 Batch processing: ${initResult.performance.batchProcessing}`);
+
+      // Health check
+      const healthCheck = await PerformanceInitializationService.healthCheck();
+      if (healthCheck.status === 'healthy') {
+        console.log('✅ Performance system health: OPTIMAL');
+      } else {
+        console.warn('⚠️ Performance system health: DEGRADED -', healthCheck.error);
+      }
+    } else {
+      console.warn('⚠️ Ultra-fast scoring initialization warning:', initResult.error);
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not initialize ultra-fast scoring:', error.message);
+  }
+
+  // 📡 INITIALIZE REAL-TIME WEBSOCKET NOTIFICATIONS
+  try {
+    const NotificationService = require('./services/NotificationService');
+    console.log('📡 Initializing real-time WebSocket notifications...');
+    const wsResult = NotificationService.initialize(server);
+
+    if (wsResult.success) {
+      console.log('✅ WebSocket notification service initialized');
+      console.log('   📡 WebSocket endpoint: ws://localhost:' + PORT + '/notifications');
+      console.log('   🔔 Real-time notifications: ENABLED');
+    } else {
+      console.warn('⚠️ WebSocket initialization warning:', wsResult.error);
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not initialize WebSocket notifications:', error.message);
   }
 
   // ❌ DISABLED: Run complete automatic progression validation

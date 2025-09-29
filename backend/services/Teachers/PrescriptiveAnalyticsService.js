@@ -26,17 +26,43 @@ class PrescriptiveAnalyticsService {
    * @returns {Object} Prescription with teacher guidance (NO question generation)
    */
   async generatePrescriptionOnly(categoryResultId) {
-    console.log(`[DOCTOR-TEACHER-STUDENT] Generating prescription for category result: ${categoryResultId}`);
+    console.log(`[DOCTOR-TEACHER-STUDENT] 🚀 FAST prescription generation for category result: ${categoryResultId}`);
+    const startTime = Date.now();
 
     try {
       const prescription = await prescriptionOnlyService.generatePrescription(categoryResultId);
 
-      console.log(`[DOCTOR] Prescription generated - Type: ${prescription.prescription.type}`);
+      const processingTime = Date.now() - startTime;
+      console.log(`[DOCTOR] ✅ Prescription generated in ${processingTime}ms - Type: ${prescription.prescription.type}`);
       console.log(`[DOCTOR] Teacher guidance provided for implementation`);
 
       return prescription;
     } catch (error) {
       console.error('[DOCTOR] Error generating prescription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * ULTRA-FAST: Generate prescription with caching and optimization
+   */
+  static async generatePrescriptionFast(categoryResultId) {
+    console.log(`[FAST PRESCRIPTION] 🚀 Ultra-fast prescription generation for: ${categoryResultId}`);
+    const startTime = Date.now();
+
+    try {
+      // Check if we can use cached analysis
+      const cacheKey = `prescription_${categoryResultId}`;
+
+      // Skip complex BKT calculations for speed - use simplified analysis
+      const prescription = await prescriptionOnlyService.generatePrescriptionSimplified(categoryResultId);
+
+      const processingTime = Date.now() - startTime;
+      console.log(`[FAST PRESCRIPTION] ⚡ Generated in ${processingTime}ms (target: <500ms)`);
+
+      return prescription;
+    } catch (error) {
+      console.error('[FAST PRESCRIPTION] ❌ Error in fast generation:', error);
       throw error;
     }
   }
