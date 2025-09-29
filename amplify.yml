@@ -13,6 +13,12 @@ frontend:
     build:
       commands:
         - echo "Starting build phase..."
+        - echo "Current working directory:"
+        - pwd
+        - echo "Listing current directory:"
+        - ls -la
+        - echo "Checking if frontend directory exists:"
+        - test -d frontend && echo "frontend directory exists" || echo "frontend directory does not exist"
         - echo "Building from frontend directory..."
         - cd frontend && npm run build
         - echo "Build completed!"
