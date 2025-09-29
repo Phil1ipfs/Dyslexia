@@ -5,6 +5,14 @@ import axios from 'axios';
 
 // Get backend URL from environment variables
 const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/';
+console.log('🔍 AuthService DEBUG - Environment variables:', {
+  VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  PROD: import.meta.env.PROD,
+  DEV: import.meta.env.DEV,
+  API_URL: API_URL
+});
 
 const AuthService = {
   /**
