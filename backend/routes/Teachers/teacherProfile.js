@@ -949,9 +949,17 @@ router.get('/current-id', auth, authorize('teacher', 'guro'), async (req, res) =
     // Find teacher profile by email or userId
     let teacherProfile = null;
     if (userId) {
-      const objectId = toObjectId(userId);
-      if (objectId) {
-        teacherProfile = await collection.findOne({ userId: objectId });
+      const userIdAsString = userId.toString();
+      const userIdAsObjectId = toObjectId(userId);
+
+      // Try ObjectId format first
+      if (userIdAsObjectId) {
+        teacherProfile = await collection.findOne({ userId: userIdAsObjectId });
+      }
+
+      // If not found, try string format
+      if (!teacherProfile) {
+        teacherProfile = await collection.findOne({ userId: userIdAsString });
       }
     }
     if (!teacherProfile && userEmail) {
