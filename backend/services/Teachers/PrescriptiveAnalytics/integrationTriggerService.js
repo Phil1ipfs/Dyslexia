@@ -21,13 +21,6 @@ class IntegrationTriggerService {
     try {
       console.log(`[INTEGRATION TRIGGER] 🧹 UPDATED VERSION - Triggering REAL prescriptive analysis for student ${categoryResult.studentId}, reading level: ${categoryResult.readingLevel}`);
 
-      // IMMEDIATE CLEANUP: Delete all old prescriptive analysis records FIRST
-      console.log(`[INTEGRATION TRIGGER] 🚨 IMMEDIATE CLEANUP for student ${categoryResult.studentId}...`);
-      const immediateCleanup = await PrescriptiveAnalysis.deleteMany({
-        studentId: categoryResult.studentId
-      });
-      console.log(`[INTEGRATION TRIGGER] 🗑️ IMMEDIATE CLEANUP: Deleted ${immediateCleanup.deletedCount} old records`);
-
       console.log(`[INTEGRATION TRIGGER] Triggering REAL prescriptive analysis for student ${categoryResult.studentId}, reading level: ${categoryResult.readingLevel}`);
 
       // Validate category result
@@ -43,11 +36,6 @@ class IntegrationTriggerService {
         return existingAnalysis;
       }
 
-      // CRITICAL: Clean up any conflicting old prescriptive analysis records before creating new ones
-      // This prevents duplicate key errors when students progress through reading levels
-      console.log(`[INTEGRATION TRIGGER] 🧹 Cleaning up old prescriptive analysis records for student ${categoryResult.studentId} before creating new ones`);
-      await this.cleanupOldPrescriptiveAnalysis(categoryResult.studentId);
-
       // Use REAL prescription-only analysis (Doctor-Teacher-Student Model)
       // This provides DIAGNOSIS + PRESCRIPTION only, NO question generation
       console.log(`[DOCTOR-TEACHER-STUDENT] Using REAL prescription-only model for category result ${categoryResult._id}`);
@@ -59,6 +47,19 @@ class IntegrationTriggerService {
       }
 
       console.log(`[INTEGRATION TRIGGER] ✅ Successfully generated REAL prescriptive analysis ${analysis._id} for student ${categoryResult.studentId}`);
+
+      // 🧹 SAFE CLEANUP: Now that new analysis is created successfully, clean up old ones
+      try {
+        console.log(`[INTEGRATION TRIGGER] 🧹 Cleaning up old prescriptive analysis records for student ${categoryResult.studentId} (keeping new one: ${analysis.analysisId})`);
+        const cleanup = await PrescriptiveAnalysis.deleteMany({
+          studentId: categoryResult.studentId,
+          _id: { $ne: analysis.analysisId }  // Delete all except the new one
+        });
+        console.log(`[INTEGRATION TRIGGER] 🗑️ SAFE CLEANUP: Deleted ${cleanup.deletedCount} old records (preserved new one)`);
+      } catch (cleanupError) {
+        console.warn('[INTEGRATION TRIGGER] ⚠️ Cleanup warning (non-critical):', cleanupError.message);
+        // Don't fail the entire process if cleanup fails
+      }
 
       // Optional: Trigger additional processes if needed
       await this.postAnalysisProcessing(analysis);

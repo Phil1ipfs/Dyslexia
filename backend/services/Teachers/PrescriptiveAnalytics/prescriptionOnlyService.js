@@ -94,10 +94,10 @@ class PrescriptionOnlyService {
           ? failedCategories[0].categoryName
           : `maintenance_${readingLevel}_${Date.now()}`,
 
-        // Map diagnosis to schema fields
-        skillMastery: new Map(Object.entries(diagnosis.skillMastery)),
-        abilityEstimates: new Map(Object.entries(this.calculateAbilityEstimates(diagnosis.skillMastery))),
-        errorPatterns: new Map(Object.entries(this.fixErrorPatternStructure(diagnosis.errorPatterns))),
+        // Map diagnosis to schema fields (use plain objects for Mongoose Maps)
+        skillMastery: diagnosis.skillMastery || {},
+        abilityEstimates: this.calculateAbilityEstimates(diagnosis.skillMastery) || {},
+        errorPatterns: this.fixErrorPatternStructure(diagnosis.errorPatterns) || {},
 
         // Map intervention plan
         interventionPlan: this.mapToInterventionPlan(prescription),
@@ -105,10 +105,8 @@ class PrescriptionOnlyService {
         // Map insights
         insights: this.mapToInsights(diagnosis, prescription, categoryResult.categories),
 
-        // Map research-based prescriptions to schema format
-        researchBasedPrescriptions: new Map(Object.entries(
-          this.mapToResearchBasedPrescriptions(prescription, diagnosis, categoryResult.categories)
-        )),
+        // Map research-based prescriptions to schema format (use plain object for Mongoose Map)
+        researchBasedPrescriptions: this.mapToResearchBasedPrescriptions(prescription, diagnosis, categoryResult.categories) || {},
 
         // Legacy fields for backward compatibility
         strengths: diagnosis.primaryDifficulties.length === 0 ?
