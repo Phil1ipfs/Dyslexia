@@ -102,6 +102,12 @@ app.options('*', cors({
 // Increase body parser limits for larger file uploads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// OWASP Security Headers and Rate Limiting
+const { apiLimiter, securityHeaders } = require('./middleware/rateLimiter');
+app.use(securityHeaders);
+app.use('/api/', apiLimiter); // Apply general API rate limiting
+
 app.use(requestLogger);
 
 // Test route to verify server is running

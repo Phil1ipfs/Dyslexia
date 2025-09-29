@@ -1,10 +1,20 @@
 // routes/auth/authRoutes.js
 const express = require('express');
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { authenticateToken } = require('../../middleware/auth');
+const {
+  loginLimiter,
+  aggressiveLoginLimiter,
+  createAccountLimiter,
+  securityHeaders,
+  loginLogger
+} = require('../../middleware/rateLimiter');
 const router = express.Router();
+
+// Apply security headers to all auth routes
+router.use(securityHeaders);
 
 /**
  * Checks if a string is a valid bcrypt hash
@@ -46,7 +56,12 @@ const normalizeRole = (role) => {
  * @desc    Authenticate user & get token
  * @access  Public
  */
-router.post('/login', async (req, res) => {
+router.post('/login',
+  loginLimiter,
+  aggressiveLoginLimiter,
+  createAccountLimiter(3, 60 * 60 * 1000), // 3 attempts per hour per email
+  loginLogger,
+  async (req, res) => {
   const { email, password, expectedRole } = req.body;
 
   // Basic validation
@@ -54,10 +69,32 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'Email & password required' });
   }
 
+  // Enhanced security validation
+  if (!expectedRole) {
+    console.warn(`[SECURITY] Login attempt without expectedRole for: ${email}`);
+    return res.status(400).json({ message: 'Account type must be specified' });
+  }
+
+  // Validate expectedRole is one of the allowed values
+  const allowedRoles = ['parent', 'teacher', 'admin'];
+  if (!allowedRoles.includes(expectedRole.toLowerCase())) {
+    console.warn(`[SECURITY] Invalid expectedRole '${expectedRole}' for: ${email}`);
+    return res.status(400).json({ message: 'Invalid account type specified' });
+  }
+
+  // Input sanitization
+  const sanitizedEmail = email.toLowerCase().trim();
+  if (sanitizedEmail !== email.toLowerCase() || email.includes('<') || email.includes('>')) {
+    console.warn(`[SECURITY] Suspicious email format for: ${email}`);
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
+
   try {
     console.log('=== LOGIN ATTEMPT ===');
-    console.log('Login attempt for:', email);
+    console.log('Login attempt for:', sanitizedEmail);
     console.log('Expected role:', expectedRole);
+    console.log('IP address:', req.ip || req.connection.remoteAddress);
+    console.log('User agent:', req.get('User-Agent'));
     
     // Get databases and collections
     const usersDb = mongoose.connection.useDb('users_web');
@@ -65,11 +102,11 @@ router.post('/login', async (req, res) => {
     const rolesCollection = usersDb.collection('roles');
     
     // Fetch user from users_web.users
-    const user = await usersCollection.findOne({ email: email.toLowerCase() });
+    const user = await usersCollection.findOne({ email: sanitizedEmail });
 
     if (!user) {
-      console.log('User not found:', email);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.warn(`[SECURITY] User not found: ${sanitizedEmail}, IP: ${req.ip}`);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
     
     console.log('User found:', user.email);
@@ -93,8 +130,8 @@ router.post('/login', async (req, res) => {
     }
 
     if (!isValidPassword) {
-      console.log('Invalid password for user:', email);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.warn(`[SECURITY] Invalid password for user: ${sanitizedEmail}, IP: ${req.ip}`);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Get user's roles by resolving role references
@@ -164,7 +201,7 @@ router.post('/login', async (req, res) => {
 
         // SECURITY FIX: DO NOT auto-create parent profiles!
         if (!parentProfile) {
-          console.log(`SECURITY: No parent profile found for ${email}. Access denied.`);
+          console.warn(`[SECURITY] No parent profile found for ${sanitizedEmail}. Access denied.`);
           isAuthorized = false;
         }
       }
@@ -181,23 +218,23 @@ router.post('/login', async (req, res) => {
         });
 
         if (!teacherProfile) {
-          console.log(`SECURITY: No teacher profile found for ${email}. Access denied.`);
+          console.warn(`[SECURITY] No teacher profile found for ${sanitizedEmail}. Access denied.`);
           isAuthorized = false;
         } else {
-          console.log('Teacher profile validated');
+          console.log('[SECURITY] Teacher profile validated');
         }
       }
     } else if (normalizedExpectedRole === 'admin') {
       // Admin validation - must have admin role
       if (!userRoles.includes('admin')) {
-        console.log(`SECURITY: User ${email} does not have admin role. Access denied.`);
+        console.warn(`[SECURITY] User ${sanitizedEmail} does not have admin role. Access denied.`);
         isAuthorized = false;
       }
     }
 
     if (!isAuthorized) {
-      console.log('Role mismatch. Expected:', normalizedExpectedRole, 'Has:', userRoles);
-      return res.status(403).json({ message: 'Not authorized for this resource' });
+      console.warn(`[SECURITY] Authorization failed for ${sanitizedEmail}. Expected: ${normalizedExpectedRole}, Has: ${userRoles.join(', ')}, IP: ${req.ip}`);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Generate JWT token with verified roles and parent profile ID if applicable
@@ -218,8 +255,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
     
-    console.log('Login successful for:', email);
-    console.log('Roles assigned:', tokenPayload.roles);
+    console.log(`[SECURITY] Login successful for: ${sanitizedEmail}, Roles: ${tokenPayload.roles.join(', ')}, IP: ${req.ip}`);
     console.log('=== END LOGIN ===');
 
     return res.json({
@@ -243,7 +279,10 @@ router.post('/login', async (req, res) => {
  * @desc    Update user password
  * @access  Private
  */
-router.post('/update-password', authenticateToken, async (req, res) => {
+router.post('/update-password',
+  loginLimiter, // Apply rate limiting to password changes too
+  authenticateToken,
+  async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
@@ -299,7 +338,8 @@ router.post('/update-password', authenticateToken, async (req, res) => {
     }
     
     if (!passwordIsValid) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
+      console.warn(`[SECURITY] Invalid current password attempt for user: ${req.user.email || req.user.id}, IP: ${req.ip}`);
+      return res.status(400).json({ message: 'Authentication failed' });
     }
     
     // Hash the new password
