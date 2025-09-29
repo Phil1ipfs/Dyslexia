@@ -1,0 +1,533 @@
+[
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af01"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "61bcbfaae82d5718169f6bc6"
+    },
+    "questionId": "AK_001",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "A"
+    ],
+    "isCorrect": true,
+    "responseTime": 2.1,
+    "answeredAt": {
+      "$date": "2025-09-17T09:10:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:10:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af02"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "61bcbfaae82d5718169f6bc6"
+    },
+    "questionId": "AK_002",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "B"
+    ],
+    "isCorrect": true,
+    "responseTime": 1.8,
+    "answeredAt": {
+      "$date": "2025-09-17T09:11:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:11:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af03"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "61bcbfaae82d5718169f6bc6"
+    },
+    "questionId": "AK_003",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "C"
+    ],
+    "isCorrect": true,
+    "responseTime": 2.3,
+    "answeredAt": {
+      "$date": "2025-09-17T09:12:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:12:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af04"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "61bcbfaae82d5718169f6bc6"
+    },
+    "questionId": "AK_004",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "D"
+    ],
+    "isCorrect": true,
+    "responseTime": 1.9,
+    "answeredAt": {
+      "$date": "2025-09-17T09:13:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:13:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af05"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "61bcbfaae82d5718169f6bc6"
+    },
+    "questionId": "AK_005",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "E"
+    ],
+    "isCorrect": true,
+    "responseTime": 2.0,
+    "answeredAt": {
+      "$date": "2025-09-17T09:14:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:14:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af06"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "68bb9e66e4c854c11d631622"
+    },
+    "questionId": "PA_001",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "H": "Hh"
+      },
+      {
+        "T": "Tt"
+      },
+      {
+        "N": "Nn"
+      }
+    ],
+    "correctMatches": 0,
+    "totalMatches": 3,
+    "isCorrect": false,
+    "responseTime": 8.5,
+    "answeredAt": {
+      "$date": "2025-09-17T09:15:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:15:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af07"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "68bb9e66e4c854c11d631622"
+    },
+    "questionId": "PA_002",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "L": "Ll"
+      },
+      {
+        "P": "Pp"
+      }
+    ],
+    "correctMatches": 0,
+    "totalMatches": 2,
+    "isCorrect": false,
+    "responseTime": 6.2,
+    "answeredAt": {
+      "$date": "2025-09-17T09:16:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:16:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af08"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "68bb9e66e4c854c11d631622"
+    },
+    "questionId": "PA_003",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "DAGA": "DAGA"
+      },
+      {
+        "ILAW": "ILAW"
+      },
+      {
+        "MATA": "MATA"
+      }
+    ],
+    "correctMatches": 0,
+    "totalMatches": 3,
+    "isCorrect": false,
+    "responseTime": 12.8,
+    "answeredAt": {
+      "$date": "2025-09-17T09:17:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:17:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af09"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "68bb9e66e4c854c11d631622"
+    },
+    "questionId": "PA_004",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "PUNO": "PUNO"
+      },
+      {
+        "RELO": "RELO"
+      }
+    ],
+    "correctMatches": 0,
+    "totalMatches": 2,
+    "isCorrect": false,
+    "responseTime": 9.1,
+    "answeredAt": {
+      "$date": "2025-09-17T09:18:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:18:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af10"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "68bb9e66e4c854c11d631622"
+    },
+    "questionId": "PA_005",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "GA": "GA"
+      },
+      {
+        "LO": "LO"
+      },
+      {
+        "PI": "PI"
+      }
+    ],
+    "correctMatches": 0,
+    "totalMatches": 3,
+    "isCorrect": false,
+    "responseTime": 11.4,
+    "answeredAt": {
+      "$date": "2025-09-17T09:19:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:19:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af11"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_001",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "Y",
+      "E",
+      "L",
+      "O"
+    ],
+    "isCorrect": false,
+    "responseTime": 6.8,
+    "answeredAt": {
+      "$date": "2025-09-17T09:20:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:20:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af12"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_002",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "A",
+      "R",
+      "A",
+      "W"
+    ],
+    "isCorrect": false,
+    "responseTime": 8.2,
+    "answeredAt": {
+      "$date": "2025-09-17T09:21:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:21:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af13"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_003",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "N",
+      "G",
+      "I",
+      "P",
+      "I",
+      "N"
+    ],
+    "isCorrect": false,
+    "responseTime": 12.5,
+    "answeredAt": {
+      "$date": "2025-09-17T09:22:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:22:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af14"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_004",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "E",
+      "R",
+      "O",
+      "P",
+      "L",
+      "A",
+      "N",
+      "O"
+    ],
+    "isCorrect": false,
+    "responseTime": 15.3,
+    "answeredAt": {
+      "$date": "2025-09-17T09:23:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:23:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af15"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_005",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "B",
+      "A",
+      "H",
+      "A",
+      "Y"
+    ],
+    "isCorrect": false,
+    "responseTime": 9.7,
+    "answeredAt": {
+      "$date": "2025-09-17T09:24:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:24:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af16"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bba9b3e4c854c11d63162f"
+    },
+    "questionId": "WR_001",
+    "category": "Word Recognition",
+    "response": [
+      "kutsara"
+    ],
+    "isCorrect": false,
+    "responseTime": 18.2,
+    "answeredAt": {
+      "$date": "2025-09-17T09:25:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:25:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af17"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bba9b3e4c854c11d63162f"
+    },
+    "questionId": "WR_002",
+    "category": "Word Recognition",
+    "response": [
+      "papel"
+    ],
+    "isCorrect": false,
+    "responseTime": 22.1,
+    "answeredAt": {
+      "$date": "2025-09-17T09:26:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:26:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af18"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bba9b3e4c854c11d63162f"
+    },
+    "questionId": "WR_003",
+    "category": "Word Recognition",
+    "response": [
+      "sapatos"
+    ],
+    "isCorrect": false,
+    "responseTime": 19.8,
+    "answeredAt": {
+      "$date": "2025-09-17T09:27:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:27:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af19"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bba9b3e4c854c11d63162f"
+    },
+    "questionId": "WR_004",
+    "category": "Word Recognition",
+    "response": [
+      "tasa"
+    ],
+    "isCorrect": false,
+    "responseTime": 16.5,
+    "answeredAt": {
+      "$date": "2025-09-17T09:28:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:28:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30af20"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bba9b3e4c854c11d63162f"
+    },
+    "questionId": "WR_005",
+    "category": "Word Recognition",
+    "response": [
+      "lapis"
+    ],
+    "isCorrect": false,
+    "responseTime": 21.3,
+    "answeredAt": {
+      "$date": "2025-09-17T09:29:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-17T09:29:00.000Z"
+    },
+    "readingLevel": "Transitioning"
+  }
+]
