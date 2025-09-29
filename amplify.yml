@@ -3,29 +3,24 @@ frontend:
   phases:
     preBuild:
       commands:
-        - echo "=== AWS AMPLIFY BUILD - PRE-BUILD PHASE ==="
+        - echo "=== LITEREXIA AMPLIFY BUILD - PRE-BUILD ==="
         - echo "Working directory:" && pwd
-        - echo "Repository contents:"
-        - ls -la
-        - echo "Frontend directory check:"
+        - echo "Checking frontend directory..."
         - ls -la frontend/
-        - echo "Installing dependencies with npm --prefix..."
+        - echo "Installing dependencies..."
         - npm --prefix frontend ci
         - echo "Dependencies installed successfully"
     build:
       commands:
-        - echo "=== AWS AMPLIFY BUILD - BUILD PHASE ==="
-        - echo "Working directory:" && pwd
-        - echo "Current directory contents:"
-        - ls -la
-        - echo "Frontend directory contents:"
-        - ls -la frontend/
-        - echo "Building frontend application with npm --prefix..."
+        - echo "=== LITEREXIA AMPLIFY BUILD - BUILD ==="
+        - echo "Setting environment variables..."
+        - export REACT_APP_API_URL=https://literexia-backend.com/api
+        - export REACT_APP_BACKEND_URL=https://literexia-backend.com
+        - export NODE_ENV=production
+        - echo "Building React application..."
         - npm --prefix frontend run build
-        - echo "Build completed successfully!"
-        - echo "Checking build output in frontend/dist:"
+        - echo "Build completed! Checking output..."
         - ls -la frontend/dist/
-        - echo "Build artifacts ready for deployment"
   artifacts:
     baseDirectory: frontend/dist
     files:
@@ -37,7 +32,7 @@ backend:
   phases:
     build:
       commands:
-        - echo "No backend build required - backend hosted on EC2"
+        - echo "Backend runs on separate EC2 server"
 customHeaders:
   - pattern: '**/*'
     headers:
