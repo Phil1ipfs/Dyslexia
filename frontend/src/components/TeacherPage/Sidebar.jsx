@@ -6,10 +6,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import cradleLogo from "../../assets/images/Teachers/cradleLogoTrans.png";
 import dashboardIcon from "../../assets/icons/Teachers/Dashboard.png";
 import manageActivityIcon from "../../assets/icons/Teachers/activitymanage.png";
-import manageProgressIcon from "../../assets/icons/Parents/progress.png";
+import manageProgressIcon from "../../assets/icons/Teachers/Progress.png";
 import teacherProfileIcon from "../../assets/icons/Teachers/Feedback.png";
 import logoutIcon from "../../assets/icons/Teachers/Logout.png";
-import avatarFallback from "../../assets/icons/Teachers/avatar.png";
+import avatarFallback from "../../assets/icons/Teachers/Avatar.png";
 import chatbotIcon from "../../assets/icons/Teachers/chatbot.png";
 
 import "./Sidebar.css";
