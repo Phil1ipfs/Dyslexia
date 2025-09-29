@@ -48,7 +48,7 @@ const ParentDashboard = () => {
   const [animated, setAnimated] = useState(false);
   
   // Base URL from environment variable or default
-  const BASE_URL = "http://localhost:5001"; // Hardcoded for local development
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
   // Fetch parent profile data when component mounts
   useEffect(() => {
