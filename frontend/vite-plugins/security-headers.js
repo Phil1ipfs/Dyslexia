@@ -17,7 +17,7 @@ export function securityHeaders() {
           "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
           "img-src 'self' data: blob: https:",
           "media-src 'self' blob:",
-          "connect-src 'self' http://localhost:5001 http://18.139.217.179:5001 ws://localhost:5173 wss://localhost:5173",
+          "connect-src 'self' http://localhost:5001 http://18.139.217.179:5001 https://18.139.217.179:5001 ws://localhost:5173 wss://localhost:5173",
           "object-src 'none'",
           "frame-ancestors 'none'",
           "base-uri 'self'",
