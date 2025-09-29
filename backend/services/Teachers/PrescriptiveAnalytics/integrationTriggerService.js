@@ -32,8 +32,19 @@ class IntegrationTriggerService {
       // Check if prescriptive analysis already exists for this exact category result
       const existingAnalysis = await this.checkExistingAnalysis(categoryResult._id);
       if (existingAnalysis) {
-        console.log(`[INTEGRATION TRIGGER] Prescriptive analysis already exists for category result ${categoryResult._id}: ${existingAnalysis._id}`);
-        return existingAnalysis;
+        // ✅ CRITICAL FIX: Check if regeneration is needed due to data changes
+        const needsRegeneration = await this.checkIfRegenerationNeeded(existingAnalysis, categoryResult);
+
+        if (needsRegeneration.required) {
+          console.log(`[INTEGRATION TRIGGER] 🔄 REGENERATION REQUIRED: ${needsRegeneration.reason}`);
+          console.log(`[INTEGRATION TRIGGER] Deleting stale analysis ${existingAnalysis._id} to regenerate with current data`);
+
+          // Delete stale analysis to force regeneration
+          await PrescriptiveAnalysis.deleteOne({ _id: existingAnalysis._id });
+        } else {
+          console.log(`[INTEGRATION TRIGGER] Prescriptive analysis already exists and is current for category result ${categoryResult._id}: ${existingAnalysis._id}`);
+          return existingAnalysis;
+        }
       }
 
       // Use REAL prescription-only analysis (Doctor-Teacher-Student Model)
@@ -112,6 +123,182 @@ class IntegrationTriggerService {
     } catch (error) {
       console.error('[INTEGRATION TRIGGER] Error checking existing analysis:', error);
       return null;
+    }
+  }
+
+  /**
+   * Check if existing prescriptive analysis needs regeneration due to data changes
+   * This prevents stale analysis from being returned when underlying data has changed
+   *
+   * @param {Object} existingAnalysis - The existing prescriptive analysis document
+   * @param {Object} currentCategoryResult - The current category result with updated data
+   * @returns {Object} Object with 'required' boolean and 'reason' string
+   */
+  static async checkIfRegenerationNeeded(existingAnalysis, currentCategoryResult) {
+    try {
+      console.log(`[INTEGRATION TRIGGER] 🔍 Checking if regeneration needed for analysis ${existingAnalysis._id}`);
+
+      // Get current category result data for comparison
+      const currentCategories = currentCategoryResult.categories || [];
+      const analysisDate = new Date(existingAnalysis.createdAt);
+      const categoryUpdateDate = new Date(currentCategoryResult.updatedAt || currentCategoryResult.createdAt);
+
+      // Rule 1: If category result was updated after analysis creation, regeneration likely needed
+      if (categoryUpdateDate > analysisDate) {
+        const timeDiffMinutes = Math.round((categoryUpdateDate - analysisDate) / (1000 * 60));
+        console.log(`[INTEGRATION TRIGGER] ⏰ Category result updated ${timeDiffMinutes} minutes after analysis creation`);
+
+        // Check if there are meaningful data changes (not just timestamp updates)
+        const hasSignificantDataChanges = await this.checkSignificantDataChanges(existingAnalysis, currentCategories);
+
+        if (hasSignificantDataChanges.detected) {
+          return {
+            required: true,
+            reason: `Significant data changes detected: ${hasSignificantDataChanges.details}`
+          };
+        }
+      }
+
+      // Rule 2: Check if analysis has mostly empty/zero data while category results have real data
+      const hasStaleEmptyData = this.detectStaleEmptyData(existingAnalysis, currentCategories);
+      if (hasStaleEmptyData.detected) {
+        return {
+          required: true,
+          reason: `Stale empty data detected: ${hasStaleEmptyData.details}`
+        };
+      }
+
+      // Rule 3: Check if any category in current results has >0 score but analysis shows 0
+      const hasScoreMismatch = this.detectScoreMismatch(existingAnalysis, currentCategories);
+      if (hasScoreMismatch.detected) {
+        return {
+          required: true,
+          reason: `Score mismatch detected: ${hasScoreMismatch.details}`
+        };
+      }
+
+      console.log(`[INTEGRATION TRIGGER] ✅ No regeneration needed - existing analysis is current`);
+      return { required: false, reason: 'Analysis is current with category data' };
+
+    } catch (error) {
+      console.error('[INTEGRATION TRIGGER] Error checking regeneration need:', error);
+      // When in doubt, regenerate to be safe
+      return {
+        required: true,
+        reason: `Error checking data consistency - regenerating to be safe: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Check for significant data changes between analysis and current category results
+   */
+  static async checkSignificantDataChanges(existingAnalysis, currentCategories) {
+    try {
+      const changes = [];
+
+      // Check each current category against analysis data
+      for (const category of currentCategories) {
+        const categoryName = category.categoryName;
+        const currentScore = category.score || 0;
+        const currentCompleted = category.isCompleted || false;
+        const currentTotalQuestions = category.totalQuestions || 0;
+
+        // Try to find corresponding data in analysis
+        const analysisSkillMastery = existingAnalysis.skillMastery?.[categoryName];
+        const analysisScore = analysisSkillMastery?.score || 0;
+
+        // Check for score changes > 10%
+        if (Math.abs(currentScore - analysisScore) > 10) {
+          changes.push(`${categoryName}: score changed from ${analysisScore}% to ${currentScore}%`);
+        }
+
+        // Check if category became completed when analysis shows incomplete
+        if (currentCompleted && currentTotalQuestions > 0 && analysisScore === 0) {
+          changes.push(`${categoryName}: completed with ${currentTotalQuestions} questions, analysis shows incomplete`);
+        }
+      }
+
+      return {
+        detected: changes.length > 0,
+        details: changes.join('; ')
+      };
+
+    } catch (error) {
+      console.error('[INTEGRATION TRIGGER] Error checking significant changes:', error);
+      return { detected: true, details: 'Error checking changes - assuming changes exist' };
+    }
+  }
+
+  /**
+   * Detect if existing analysis has stale empty data while category results have real data
+   */
+  static detectStaleEmptyData(existingAnalysis, currentCategories) {
+    try {
+      const issues = [];
+
+      // Check if analysis has empty skillMastery but categories have real scores
+      const skillMastery = existingAnalysis.skillMastery || {};
+      const hasEmptySkillMastery = Object.keys(skillMastery).length === 0;
+
+      if (hasEmptySkillMastery) {
+        const categoriesWithScores = currentCategories.filter(cat => (cat.score || 0) > 0);
+        if (categoriesWithScores.length > 0) {
+          issues.push(`Analysis has empty skillMastery but ${categoriesWithScores.length} categories have scores`);
+        }
+      }
+
+      // Check if analysis insights are generic/empty while categories have real data
+      const insights = existingAnalysis.insights || {};
+      const hasGenericInsights = !insights.strengths || insights.strengths.length === 0;
+
+      if (hasGenericInsights) {
+        const completedCategories = currentCategories.filter(cat => cat.isCompleted === true);
+        if (completedCategories.length > 0) {
+          issues.push(`Analysis has no insights but ${completedCategories.length} categories completed`);
+        }
+      }
+
+      return {
+        detected: issues.length > 0,
+        details: issues.join('; ')
+      };
+
+    } catch (error) {
+      console.error('[INTEGRATION TRIGGER] Error detecting stale data:', error);
+      return { detected: true, details: 'Error checking stale data - assuming stale' };
+    }
+  }
+
+  /**
+   * Detect score mismatches between analysis and current category data
+   */
+  static detectScoreMismatch(existingAnalysis, currentCategories) {
+    try {
+      const mismatches = [];
+
+      for (const category of currentCategories) {
+        const categoryName = category.categoryName;
+        const currentScore = category.score || 0;
+
+        // Get score from analysis
+        const analysisSkillMastery = existingAnalysis.skillMastery?.[categoryName];
+        const analysisScore = analysisSkillMastery?.score || 0;
+
+        // Check for significant mismatch (>5% difference and current score >0)
+        if (currentScore > 0 && Math.abs(currentScore - analysisScore) > 5) {
+          mismatches.push(`${categoryName}: analysis shows ${analysisScore}% but category shows ${currentScore}%`);
+        }
+      }
+
+      return {
+        detected: mismatches.length > 0,
+        details: mismatches.join('; ')
+      };
+
+    } catch (error) {
+      console.error('[INTEGRATION TRIGGER] Error detecting score mismatches:', error);
+      return { detected: true, details: 'Error checking score consistency - assuming mismatch' };
     }
   }
 

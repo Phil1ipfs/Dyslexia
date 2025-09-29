@@ -127,7 +127,7 @@
     "response": [
       "1"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 2.2,
     "answeredAt": {
       "$date": "2025-09-17T09:15:00.000Z"
@@ -150,7 +150,7 @@
     "response": [
       "2"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 3.1,
     "answeredAt": {
       "$date": "2025-09-17T09:16:00.000Z"
@@ -173,7 +173,7 @@
     "response": [
       "3"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 2.8,
     "answeredAt": {
       "$date": "2025-09-17T09:17:00.000Z"
@@ -196,7 +196,7 @@
     "response": [
       "2"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 2.5,
     "answeredAt": {
       "$date": "2025-09-17T09:18:00.000Z"
@@ -219,7 +219,7 @@
     "response": [
       "1"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 3.2,
     "answeredAt": {
       "$date": "2025-09-17T09:19:00.000Z"
@@ -242,7 +242,7 @@
     "response": [
       "2"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 2.9,
     "answeredAt": {
       "$date": "2025-09-17T09:20:00.000Z"
@@ -265,7 +265,7 @@
     "response": [
       "2"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 2.7,
     "answeredAt": {
       "$date": "2025-09-17T09:21:00.000Z"
@@ -288,7 +288,7 @@
     "response": [
       "1"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 3.4,
     "answeredAt": {
       "$date": "2025-09-17T09:22:00.000Z"
@@ -311,7 +311,7 @@
     "response": [
       "1"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 3.0,
     "answeredAt": {
       "$date": "2025-09-17T09:23:00.000Z"
@@ -334,7 +334,7 @@
     "response": [
       "2"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 3.3,
     "answeredAt": {
       "$date": "2025-09-17T09:24:00.000Z"

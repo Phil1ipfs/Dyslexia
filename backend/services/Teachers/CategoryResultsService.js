@@ -1417,11 +1417,22 @@ class CategoryResultsService {
             return existingResult; // Return the historical record without modification
           }
 
-          // ✅ PROGRESSION PROTECTION: Check if progression is completed
+          // ✅ PROGRESSION PROTECTION: Check if progression is completed AND no new data
           if (existingResult.allCategoriesPassed === true) {
-            console.log(`[CATEGORY RESULTS] 🚫 PROGRESSION COMPLETED - Cannot modify record with allCategoriesPassed=true`);
-            console.log(`[CATEGORY RESULTS] ✅ This record has completed its level progression - skipping modification`);
-            return existingResult; // Return the completed record without modification
+            // Check if there are new responses that haven't been processed
+            const lastProcessedAt = existingResult.updatedAt || existingResult.createdAt;
+            const hasNewResponses = responses.some(response =>
+              new Date(response.answeredAt || response.createdAt) > lastProcessedAt
+            );
+
+            if (!hasNewResponses) {
+              console.log(`[CATEGORY RESULTS] 🚫 PROGRESSION COMPLETED - Cannot modify record with allCategoriesPassed=true (no new responses)`);
+              console.log(`[CATEGORY RESULTS] ✅ This record has completed its level progression - skipping modification`);
+              return existingResult; // Return the completed record without modification
+            } else {
+              console.log(`[CATEGORY RESULTS] 🔄 PROGRESSION COMPLETED but NEW RESPONSES DETECTED - Allowing update`);
+              console.log(`[CATEGORY RESULTS] 📊 Found ${responses.filter(r => new Date(r.answeredAt || r.createdAt) > lastProcessedAt).length} new responses since ${lastProcessedAt}`);
+            }
           }
 
           // ✅ CRITICAL VALIDATION: Double-check reading levels match
