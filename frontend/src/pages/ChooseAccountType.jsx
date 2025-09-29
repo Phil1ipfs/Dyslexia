@@ -7,7 +7,6 @@ import logo from '../assets/images/Teachers/LITEREXIA.png';
 import parentIcon from '../assets/icons/Teachers/parent.png';
 import teacherIcon from '../assets/icons/Teachers/teacher.png';
 import adminIcon from '../assets/icons/Teachers/admin.png';
-import wave from '../assets/images/Teachers/wave.png';
 
 const ChooseAccountType = () => {
   const navigate = useNavigate();
@@ -93,7 +92,7 @@ const ChooseAccountType = () => {
           </div>
         </div>
       </div>
-      <img src={wave} alt="Wave" className="bottom-wave" />
+
     </div>
   );
 };
