@@ -125,57 +125,73 @@ router.post('/login', async (req, res) => {
     let isAuthorized = userRoles.includes(normalizedExpectedRole);
     let parentProfile = null;
 
-    // If not authorized but trying to log in as parent, check parent profile
-    if (!isAuthorized && normalizedExpectedRole === 'parent') {
-      // Try different parent collections
-      const parentDatabases = ['Literexia', 'parent'];
-      const parentCollections = ['parent', 'parent_profile', 'profile'];
+    // SECURITY FIX: Strict role validation
+    if (normalizedExpectedRole === 'parent') {
+      // For parent login, user MUST have parent role OR have existing parent profile
+      if (userRoles.includes('parent')) {
+        isAuthorized = true;
+        console.log('User has parent role in users_web.users');
+      } else {
+        // Only check for existing parent profile, DO NOT create one
+        console.log('User does not have parent role, checking for existing parent profile...');
+        const parentDatabases = ['parent'];
+        const parentCollections = ['parent_profile'];
 
-      for (const dbName of parentDatabases) {
-        const db = mongoose.connection.useDb(dbName);
-        for (const collName of parentCollections) {
-          try {
-            const collection = db.collection(collName);
-            parentProfile = await collection.findOne({ 
-              $or: [
-                { email: email.toLowerCase() },
-                { userId: user._id },
-                { userId: user._id.toString() }
-              ]
-            });
-            
-            if (parentProfile) {
-              console.log(`Found parent profile in ${dbName}.${collName}`);
-              isAuthorized = true;
-              break;
+        for (const dbName of parentDatabases) {
+          const db = mongoose.connection.useDb(dbName);
+          for (const collName of parentCollections) {
+            try {
+              const collection = db.collection(collName);
+              parentProfile = await collection.findOne({
+                $or: [
+                  { email: email.toLowerCase() },
+                  { userId: user._id },
+                  { userId: user._id.toString() }
+                ]
+              });
+
+              if (parentProfile) {
+                console.log(`Found existing parent profile in ${dbName}.${collName}`);
+                isAuthorized = true;
+                break;
+              }
+            } catch (err) {
+              console.log(`Error checking ${dbName}.${collName}:`, err.message);
             }
-          } catch (err) {
-            console.log(`Error checking ${dbName}.${collName}:`, err.message);
           }
+          if (parentProfile) break;
         }
-        if (parentProfile) break;
-      }
 
-      // If still no profile found, create one in Literexia.parent
-      if (!parentProfile) {
-        try {
-          const literexiaDb = mongoose.connection.useDb('Literexia');
-          const parentCollection = literexiaDb.collection('parent');
-          
-          parentProfile = {
-            userId: user._id,
-            email: email.toLowerCase(),
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-          
-          const result = await parentCollection.insertOne(parentProfile);
-          parentProfile._id = result.insertedId;
-          console.log('Created new parent profile:', result.insertedId);
-          isAuthorized = true;
-        } catch (err) {
-          console.error('Error creating parent profile:', err);
+        // SECURITY FIX: DO NOT auto-create parent profiles!
+        if (!parentProfile) {
+          console.log(`SECURITY: No parent profile found for ${email}. Access denied.`);
+          isAuthorized = false;
         }
+      }
+    } else if (normalizedExpectedRole === 'teacher') {
+      // For teacher login, check teacher profile exists
+      if (userRoles.includes('teacher')) {
+        const teachersDb = mongoose.connection.useDb('teachers');
+        const teacherProfile = await teachersDb.collection('profile').findOne({
+          $or: [
+            { email: email.toLowerCase() },
+            { userId: user._id },
+            { userId: user._id.toString() }
+          ]
+        });
+
+        if (!teacherProfile) {
+          console.log(`SECURITY: No teacher profile found for ${email}. Access denied.`);
+          isAuthorized = false;
+        } else {
+          console.log('Teacher profile validated');
+        }
+      }
+    } else if (normalizedExpectedRole === 'admin') {
+      // Admin validation - must have admin role
+      if (!userRoles.includes('admin')) {
+        console.log(`SECURITY: User ${email} does not have admin role. Access denied.`);
+        isAuthorized = false;
       }
     }
 
