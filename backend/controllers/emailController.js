@@ -19,7 +19,7 @@ transporter.verify(function(error, success) {
 });
 
 // HTML template for the credentials email
-const getEmailTemplate = (userType, email, password, senderName = 'Literexia Admin') => {
+const getEmailTemplate = (userType, email, password, senderName = 'Literexia Admin', senderEmail = '') => {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #1a2035;">Welcome to Literexia</h2>
@@ -33,11 +33,11 @@ const getEmailTemplate = (userType, email, password, senderName = 'Literexia Adm
 
             <p>For security reasons, we recommend changing your password after your first login.</p>
 
-            <p style="color: #666;">If you didn't request this account, please contact ${senderName} immediately.</p>
+            <p style="color: #666;">If you have any questions about your account, please contact ${senderName} at ${senderEmail}.</p>
 
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
-                <p>This is an automated message, please do not reply to this email.</p>
-                <p>Account created by: ${senderName}</p>
+                <p><strong>Note:</strong> This email was sent from our system account. To contact the administrator who created your account, please reply to this email or send a message to ${senderEmail}.</p>
+                <p>Account created by: ${senderName} (${senderEmail})</p>
             </div>
         </div>
     `;
@@ -68,17 +68,19 @@ const sendCredentials = async (req, res) => {
 
         // Log email configuration (without sensitive data)
         console.log('Using email configuration:', {
-            from: `${senderName} <${senderEmail}>`,
+            from: `Literexia System <${process.env.EMAIL_USER}>`,
+            replyTo: `${senderName} <${senderEmail}>`,
             to: email,
             subject: `Your Literexia ${userType} Account Credentials`
         });
 
         // Prepare email options
         const mailOptions = {
-            from: `${senderName} <${senderEmail}>`,
+            from: `Literexia System <${process.env.EMAIL_USER}>`, // Use authenticated email as sender
+            replyTo: `${senderName} <${senderEmail}>`, // Admin's email for replies
             to: email,
             subject: `Your Literexia ${userType.charAt(0).toUpperCase() + userType.slice(1)} Account Credentials`,
-            html: getEmailTemplate(userType, email, password, senderName)
+            html: getEmailTemplate(userType, email, password, senderName, senderEmail)
         };
 
         // Send the email

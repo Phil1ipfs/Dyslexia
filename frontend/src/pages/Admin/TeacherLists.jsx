@@ -4,7 +4,7 @@ import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHor
 import axios from 'axios';
 import adminValidation from '../../utils/adminValidation';
 import { InlineValidation, FormValidationSummary } from '../../components/Admin/ValidationErrorDisplay';
-import { useAuth } from '../../contexts/AuthContext.jsx';
+import authService from '../../services/authService';
 import './TeacherLists.css';
 
 // Success Modal Component
@@ -45,18 +45,20 @@ const ValidationErrorModal = ({ message, onClose }) => (
 const CredentialsModal = ({ credentials, onClose }) => {
   const [isSending, setIsSending] = useState(false);
   const [sendStatus, setSendStatus] = useState(null);
-  const { user } = useAuth(); // Get current admin user
 
   const handleSendCredentials = async () => {
     try {
       setIsSending(true);
       setSendStatus(null);
 
-      // Extract admin information from auth context
-      const adminEmail = user?.user?.email || user?.email || 'admin@literexia.com';
-      const adminName = user?.user?.name ||
-                       (user?.user?.firstName && user?.user?.lastName ?
-                        `${user.user.firstName} ${user.user.lastName}` :
+      // Get current admin user from authService
+      const currentUser = authService.getCurrentUser();
+
+      // Extract admin information from auth service
+      const adminEmail = currentUser?.user?.email || currentUser?.email || 'admin@literexia.com';
+      const adminName = currentUser?.user?.name ||
+                       (currentUser?.user?.firstName && currentUser?.user?.lastName ?
+                        `${currentUser.user.firstName} ${currentUser.user.lastName}` :
                         'Literexia Admin');
 
       console.log('Sending teacher credentials with admin info:', {
