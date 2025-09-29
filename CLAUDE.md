@@ -18,6 +18,7 @@
 10. [Teacher Re-editing System](#teacher-re-editing-system)
 11. [Intervention Revision and Retake System Architecture](#intervention-revision-and-retake-system-architecture)
 12. [Data Normalization and Completeness Validation](#data-normalization-and-completeness-validation)
+13. [Literexia Teaching Assistant AI Context](#literexia-teaching-assistant-ai-context)
 
 ---
 

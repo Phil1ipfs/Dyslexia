@@ -41,7 +41,7 @@ import {
 import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
 import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
 import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
-import AuthService from '../../../services/authService';
+import AuthService from '../../../services/AuthService';
 import { API_BASE_URL } from '../../../services/config';
 import { pdf } from '@react-pdf/renderer';
 import IEPReportPDFRenderer from './IEPReportPDFRenderer';
@@ -970,6 +970,8 @@ const IEPReport = ({
         studentGender: student?.gender,      // Include student gender
         parentName: student?.parentName || student?.parent?.name || 'N/A',
         academicYear: new Date().getFullYear(),
+        teacherProfile: teacherProfile,      // Include teacher profile data
+        teacherName: getTeacherName(),       // Include computed teacher name
         // Validate and clean objectives data
         objectives: (currentIepData?.objectives || []).map(obj => {
           const initialScore = Math.min(100, Math.max(0, obj.assessmentScore || obj.score || 0));
@@ -1098,6 +1100,8 @@ const IEPReport = ({
             studentGender: student?.gender,      // Include student gender
             parentName: student?.parentName || student?.parent?.name || 'N/A',
             academicYear: new Date().getFullYear(),
+            teacherProfile: teacherProfile,      // Include teacher profile data
+            teacherName: getTeacherName(),       // Include computed teacher name
             // Validate and clean objectives data
             objectives: (currentIepData?.objectives || []).map(obj => {
               const initialScore = Math.min(100, Math.max(0, obj.assessmentScore || obj.score || 0));

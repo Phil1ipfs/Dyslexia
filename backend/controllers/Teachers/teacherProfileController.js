@@ -29,7 +29,7 @@ const toObjectId = (id) => {
  */
 const validateAndSanitizeInput = {
   // Sanitize name fields (remove numbers, special chars except spaces, hyphens, apostrophes)
-  sanitizeName: (name) => {
+  sanitizeName: (name, isMiddleName = false) => {
     if (!name || typeof name !== 'string') return '';
 
     const original = name.trim();
@@ -40,8 +40,20 @@ const validateAndSanitizeInput = {
       return ''; // Return empty string to indicate rejection
     }
 
+    // Special handling for middle names - allow single letter with optional period
+    if (isMiddleName) {
+      // Allow single letter with optional period (e.g., "T", "T.", "Jose", etc.)
+      if (original.length === 1 || (original.length === 2 && original.endsWith('.'))) {
+        // Valid single letter middle name
+        if (/^[a-zA-Z]\.?$/.test(original)) {
+          return original; // Return as-is for valid single letter middle names
+        }
+      }
+    }
+
+    const allowedPattern = isMiddleName ? /[^a-zA-Z\s\-'.]/g : /[^a-zA-Z\s\-']/g;
     const sanitized = original
-      .replace(/[^a-zA-Z\s\-']/g, '') // Only letters, spaces, hyphens, apostrophes
+      .replace(allowedPattern, '') // Allow periods for middle names
       .replace(/\s+/g, ' ') // Multiple spaces to single space
       .substring(0, 50); // Max length 50 chars
 
@@ -99,11 +111,29 @@ const validateAndSanitizeInput = {
     const parsedDate = new Date(date);
     if (isNaN(parsedDate.getTime())) return '';
 
-    // Check if date is reasonable (not in future, not too old)
     const now = new Date();
-    const minDate = new Date(now.getFullYear() - 100, 0, 1); // 100 years ago
 
-    if (parsedDate > now || parsedDate < minDate) return '';
+    // Check if date is in the future
+    if (parsedDate > now) {
+      console.log(`🚨 [VALIDATION] REJECTING future date: "${date}"`);
+      return '';
+    }
+
+    // Check if person is at least 18 years old (for teachers)
+    const minBirthDate = new Date();
+    minBirthDate.setFullYear(now.getFullYear() - 18);
+
+    if (parsedDate > minBirthDate) {
+      console.log(`🚨 [VALIDATION] REJECTING date - teacher must be 18+: "${date}"`);
+      return '';
+    }
+
+    // Check if date is reasonable (not more than 100 years ago)
+    const maxBirthDate = new Date(now.getFullYear() - 100, 0, 1);
+    if (parsedDate < maxBirthDate) {
+      console.log(`🚨 [VALIDATION] REJECTING date - too old: "${date}"`);
+      return '';
+    }
 
     return date;
   },
@@ -814,13 +844,13 @@ exports.updateProfile = async (req, res) => {
     console.log('🧹 [PROFILE UPDATE] Sanitizing input data...');
     const sanitizedData = {
       firstName: validateAndSanitizeInput.sanitizeName(req.body.firstName),
-      middleName: validateAndSanitizeInput.sanitizeName(req.body.middleName),
+      middleName: validateAndSanitizeInput.sanitizeName(req.body.middleName, true), // true = isMiddleName
       lastName: validateAndSanitizeInput.sanitizeName(req.body.lastName),
       email: validateAndSanitizeInput.sanitizeEmail(req.body.email),
       position: validateAndSanitizeInput.sanitizeText(req.body.position, 100),
       contact: validateAndSanitizeInput.sanitizePhoneNumber(req.body.contact),
       gender: req.body.gender && ['Male', 'Female', 'Other'].includes(req.body.gender) ? req.body.gender : '',
-      civilStatus: req.body.civilStatus && ['Single', 'Married', 'Divorced', 'Widowed', 'Separated'].includes(req.body.civilStatus) ? req.body.civilStatus : '',
+      civilStatus: req.body.civilStatus && ['Single', 'Married', 'Divorced', 'Separated', 'Widowed'].includes(req.body.civilStatus) ? req.body.civilStatus : '',
       dob: validateAndSanitizeInput.validateDate(req.body.dob),
       address: validateAndSanitizeInput.sanitizeText(req.body.address, 200),
       emergencyContact: validateAndSanitizeInput.sanitizeEmergencyContact(req.body.emergencyContact)

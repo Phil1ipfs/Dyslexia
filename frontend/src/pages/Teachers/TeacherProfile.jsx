@@ -110,6 +110,8 @@ function TeacherProfile() {
         // Debug logs
         console.log("Profile data received:", data);
         console.log("Full profile object:", JSON.stringify(data, null, 2));
+        console.log("Civil Status from database:", data.civilStatus);
+        console.log("Position from database:", data.position);
 
         if (data.profileImageUrl) {
           console.log("Profile image URL:", data.profileImageUrl);
@@ -120,6 +122,13 @@ function TeacherProfile() {
 
         // Update form data state
         setFormData(data);
+
+        // Debug log to see what gets set in form state
+        console.log("Form data after setting:", {
+          civilStatus: data.civilStatus,
+          position: data.position
+        });
+
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -758,7 +767,7 @@ function TeacherProfile() {
                   <span className="lit-input-label">Position:</span>
                   <select
                     name="position"
-                    value={formData.position}
+                    value={formData.position || ""}
                     onChange={handleChange}
                     disabled={!isEditing}
                     aria-label="Position"
@@ -899,7 +908,7 @@ function TeacherProfile() {
               <select
                 id="civil-status"
                 name="civilStatus"
-                value={formData.civilStatus}
+                value={formData.civilStatus || ""}
                 onChange={handleChange}
                 disabled={!isEditing}
                 aria-label="Civil Status"
