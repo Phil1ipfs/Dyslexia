@@ -174,6 +174,7 @@ import './css/ActivityEditModal.css';
 import './css/AlphabetKnowledgeActivityEdit.css';
 import './css/PhonologicalAwarenessActivityEdit.css';
 import './css/DecodingActivityEdit.css';
+import './css/WordRecognitionActivityEdit.css';
 import './css/ReadingComprehensionActivityEdit.css';
 
 // Utility function to safely handle arrays that might be undefined
