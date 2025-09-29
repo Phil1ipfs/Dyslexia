@@ -157,7 +157,7 @@ class AutomaticIEPReportGenerator {
           // Status determination
           status: this.determineStatus(category),
           completed: category.isPassed || false,
-          supportLevel: this.determineSupportLevel(category.score || 0),
+          supportLevel: null, // Teachers will set this manually after assessment
           score: Math.min(category.score || 0, 100),
           passingThreshold: category.passingThreshold || 75,
 
