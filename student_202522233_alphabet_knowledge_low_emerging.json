@@ -1,0 +1,347 @@
+[
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf70"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_001",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "2"
+    ],
+    "isCorrect": false,
+    "responseTime": 8.5,
+    "answeredAt": {
+      "$date": "2025-09-29T11:15:30.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:15:30.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf71"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_002",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "1"
+    ],
+    "isCorrect": false,
+    "responseTime": 12.3,
+    "answeredAt": {
+      "$date": "2025-09-29T11:16:45.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:16:45.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf72"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_003",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "1"
+    ],
+    "isCorrect": false,
+    "responseTime": 15.7,
+    "answeredAt": {
+      "$date": "2025-09-29T11:18:20.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:18:20.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf73"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_004",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "2"
+    ],
+    "isCorrect": false,
+    "responseTime": 18.2,
+    "answeredAt": {
+      "$date": "2025-09-29T11:19:35.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:19:35.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf74"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_005",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "1"
+    ],
+    "isCorrect": false,
+    "responseTime": 14.8,
+    "answeredAt": {
+      "$date": "2025-09-29T11:20:50.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:20:50.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf75"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_006",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "2"
+    ],
+    "isCorrect": false,
+    "responseTime": 16.4,
+    "answeredAt": {
+      "$date": "2025-09-29T11:22:05.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:22:05.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf76"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_007",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "3"
+    ],
+    "isCorrect": false,
+    "responseTime": 20.1,
+    "answeredAt": {
+      "$date": "2025-09-29T11:23:20.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:23:20.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf77"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_008",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "1"
+    ],
+    "isCorrect": false,
+    "responseTime": 22.7,
+    "answeredAt": {
+      "$date": "2025-09-29T11:24:35.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:24:35.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf78"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_009",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "1"
+    ],
+    "isCorrect": false,
+    "responseTime": 19.3,
+    "answeredAt": {
+      "$date": "2025-09-29T11:25:50.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:25:50.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf79"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_010",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "2"
+    ],
+    "isCorrect": false,
+    "responseTime": 25.6,
+    "answeredAt": {
+      "$date": "2025-09-29T11:27:05.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:27:05.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf80"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_011",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "1"
+    ],
+    "isCorrect": false,
+    "responseTime": 28.4,
+    "answeredAt": {
+      "$date": "2025-09-29T11:28:20.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:28:20.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf81"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_012",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "1"
+    ],
+    "isCorrect": false,
+    "responseTime": 31.2,
+    "answeredAt": {
+      "$date": "2025-09-29T11:29:35.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:29:35.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf82"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_013",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "2"
+    ],
+    "isCorrect": false,
+    "responseTime": 33.8,
+    "answeredAt": {
+      "$date": "2025-09-29T11:30:50.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:30:50.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf83"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_014",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "2"
+    ],
+    "isCorrect": false,
+    "responseTime": 36.5,
+    "answeredAt": {
+      "$date": "2025-09-29T11:32:05.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:32:05.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b30bf84"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68bcbfaae32d5718169f6bc6"
+    },
+    "questionId": "AK_015",
+    "category": "Alphabet Knowledge",
+    "response": [
+      "1"
+    ],
+    "isCorrect": false,
+    "responseTime": 39.1,
+    "answeredAt": {
+      "$date": "2025-09-29T11:33:20.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-29T11:33:20.000Z"
+    },
+    "readingLevel": "Low Emerging"
+  }
+]
