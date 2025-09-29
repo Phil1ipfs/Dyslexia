@@ -1068,14 +1068,20 @@ class PrescriptionOnlyService {
     // If BKT is reasonable, use it. Otherwise, constrain it.
     if (bktMastery >= minReasonableMastery && bktMastery <= maxReasonableMastery) {
       console.log(`[BKT ADJUSTMENT] BKT is reasonable, using original: ${bktMastery}`);
-      return Math.round(Math.min(1.0, bktMastery) * 1000) / 1000; // Keep original if reasonable, but cap at 1.0
+      // ✅ CRITICAL FIX: Ensure final result never exceeds 1.0 for Mongoose validation
+      const cappedMastery = Math.min(1.0, Math.round(Math.min(1.0, bktMastery) * 1000) / 1000);
+      console.log(`[BKT ADJUSTMENT] Final reasonable mastery (capped at 1.0): ${cappedMastery}`);
+      return cappedMastery;
     }
 
     // Adjust BKT to be more realistic based on actual performance
     const adjustedMastery = Math.max(minReasonableMastery, Math.min(maxReasonableMastery, Math.min(1.0, scoreRatio + 0.1)));
     console.log(`[BKT ADJUSTMENT] BKT unreasonable, adjusting to: ${adjustedMastery}`);
 
-    return Math.round(adjustedMastery * 1000) / 1000;
+    // ✅ CRITICAL FIX: Ensure final result never exceeds 1.0 for Mongoose validation
+    const finalMastery = Math.min(1.0, Math.round(adjustedMastery * 1000) / 1000);
+    console.log(`[BKT ADJUSTMENT] Final mastery (capped at 1.0): ${finalMastery}`);
+    return finalMastery;
   }
 }
 

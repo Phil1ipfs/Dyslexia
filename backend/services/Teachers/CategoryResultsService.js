@@ -1265,20 +1265,29 @@ class CategoryResultsService {
 
         // Handle different question types
         if (categoryName === 'Phonological Awareness') {
-          // For PA, count total matches and correct matches
+          // ✅ CLAUDE.md FIX: Phonological Awareness should be scored by COMPLETELY CORRECT QUESTIONS, not partial matches
+          // Each question must be 100% correct to count (all matches within question correct)
           categoryResponses.forEach(response => {
             if (response.totalMatches) {
               totalMatches += response.totalMatches;
               correctMatches += response.correctMatches || 0;
+
+              // ✅ CRITICAL FIX: Count question as correct ONLY if ALL matches within question are correct
+              const questionPercentage = response.totalMatches > 0 ?
+                (response.correctMatches / response.totalMatches) * 100 : 0;
+
+              if (questionPercentage === 100) {
+                correctAnswers++; // Only count questions with ALL matches correct
+              }
             } else {
               // Fallback for older data structure
-              totalQuestions++;
               if (response.isCorrect) correctAnswers++;
             }
           });
 
-          if (totalMatches > 0) {
-            const score = Math.round((correctMatches / totalMatches) * 100);
+          // ✅ FIXED SCORING: Use CORRECT QUESTIONS (not partial matches) for Phonological Awareness score
+          if (categoryResponses.length > 0) {
+            const score = Math.round((correctAnswers / categoryResponses.length) * 100);
             categories.push({
               categoryName: categoryName,
               totalQuestions: categoryResponses.length,
