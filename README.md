@@ -693,3 +693,260 @@
 
   Your LITEREXIA backend is now deployed on AWS EC2 with production-grade setup including     
   process management, reverse proxy, monitoring, and security measures!
+
+
+
+
+
+
+PS C:\CapstoneProject\LITEREXIA\backend> npm start
+>>
+
+> backend@1.0.0 start
+> node server.js
+
+AWS credentials detected in environment variables
+AWS Region: ap-southeast-2
+AWS Bucket: literexia-bucket
+Attempting to connect to MongoDB...
+
+✅ Server is running on port 5001 - Data Integrity Fixes Applied
+Frontend URL: http://localhost:5173
+API URL: http://localhost:5001
+🔧 Starting automatic data consistency fix...
+[AUTO-FIX] 🔧 Starting comprehensive category repair system...
+[AUTO-FIX] 📊 Step 1: Fixing question counts from main_assessment...
+(node:10708) [MONGOOSE] Warning: Duplicate schema index on {"categoryResultId":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ MongoDB Connected to test database
+MongoDB Connected: ac-qlfl5i6-shard-00-00.0f8ylb8.mongodb.net
+[AUTO-FIX] 📋 Phonological Awareness: 6 questions
+[AUTO-FIX] 📋 Word Recognition: 15 questions
+[AUTO-FIX] 📋 Alphabet Knowledge: 15 questions
+[AUTO-FIX] 📋 Alphabet Knowledge: 15 questions
+[AUTO-FIX] 📋 Alphabet Knowledge: 15 questions
+[AUTO-FIX] 📋 Alphabet Knowledge: 15 questions
+[AUTO-FIX] 📋 Alphabet Knowledge: 15 questions
+[AUTO-FIX] 📋 Phonological Awareness: 6 questions
+[AUTO-FIX] 📋 Phonological Awareness: 6 questions
+[AUTO-FIX] 📋 Phonological Awareness: 6 questions
+[AUTO-FIX] 📋 Decoding: 15 questions
+[AUTO-FIX] 📋 Decoding: 15 questions
+[AUTO-FIX] 📋 Decoding: 15 questions
+[AUTO-FIX] 📋 Word Recognition: 15 questions
+[AUTO-FIX] 📋 Reading Comprehension: 10 questions
+[AUTO-FIX] 🔧 Processing Phonological Awareness...
+
+Verifying database structure:
+test database collections: [
+  'intervention_responses',
+  'users',
+  'templates_questions',
+  'intervention_results',
+  'prescriptive_analysis',
+  'main_assessment',
+  'student_responses',
+  'iep_reports',
+  'category_results',
+  'intervention_assessment',
+  'sentence_templates'
+]
+teachers database collections: [ 'profile' ]
+parent database collections: [ 'parent_profile', 'child_pdf' ]
+[AUTO-FIX] 📊 Found 0 category results with incorrect Phonological Awareness data
+[AUTO-FIX] 🔧 Processing Word Recognition...
+Available collections in test:
+- intervention_responses
+- users
+- templates_questions
+- intervention_results
+- prescriptive_analysis
+- audit_logs
+- main_assessment
+- student_responses
+- iep_reports
+- category_results
+- intervention_assessment
+- sentence_templates
+[AUTO-FIX] 📊 Found 0 category results with incorrect Word Recognition data
+[AUTO-FIX] 🔧 Processing Alphabet Knowledge...
+[AUTO-FIX] 📊 Found 0 category results with incorrect Alphabet Knowledge data
+[AUTO-FIX] 🔧 Processing Decoding...
+[AUTO-FIX] 📊 Found 0 category results with incorrect Decoding data
+[AUTO-FIX] 🔧 Processing Reading Comprehension...
+[AUTO-FIX] 📊 Found 0 category results with incorrect Reading Comprehension data
+[AUTO-FIX] 🎉 Fixed 0 category results across all categories!
+[COMPREHENSIVE FIX] 🔧 Starting DYNAMIC totalQuestions correction for all category results...
+[COMPREHENSIVE FIX] 📚 Found 15 main assessment records in database
+[COMPREHENSIVE FIX] 📋 DYNAMIC question counts from main_assessment:
+[COMPREHENSIVE FIX]   📝 Phonological Awareness: 6 questions (Reading Level: High Emerging)
+[COMPREHENSIVE FIX]   📝 Word Recognition: 15 questions (Reading Level: Transitioning)
+[COMPREHENSIVE FIX]   📝 Alphabet Knowledge: 15 questions (Reading Level: Low Emerging)
+[COMPREHENSIVE FIX]   📝 Alphabet Knowledge: 15 questions (Reading Level: High Emerging)
+[COMPREHENSIVE FIX]   📝 Alphabet Knowledge: 15 questions (Reading Level: Developing)
+[COMPREHENSIVE FIX]   📝 Alphabet Knowledge: 15 questions (Reading Level: Transitioning)
+[COMPREHENSIVE FIX]   📝 Alphabet Knowledge: 15 questions (Reading Level: At Grade Level)
+[COMPREHENSIVE FIX]   📝 Phonological Awareness: 6 questions (Reading Level: Developing)
+[COMPREHENSIVE FIX]   📝 Phonological Awareness: 6 questions (Reading Level: Transitioning)
+[COMPREHENSIVE FIX]   📝 Phonological Awareness: 6 questions (Reading Level: At Grade Level)
+[COMPREHENSIVE FIX]   📝 Decoding: 15 questions (Reading Level: Developing)
+[COMPREHENSIVE FIX]   📝 Decoding: 15 questions (Reading Level: Transitioning)
+[COMPREHENSIVE FIX]   📝 Decoding: 15 questions (Reading Level: At Grade Level)
+[COMPREHENSIVE FIX]   📝 Word Recognition: 15 questions (Reading Level: At Grade Level)
+[COMPREHENSIVE FIX]   📝 Reading Comprehension: 10 questions (Reading Level: At Grade Level)
+[COMPREHENSIVE FIX] 📊 Found 1 total category result records to check
+[COMPREHENSIVE FIX] 🔍 Checking student 202533333 (1/1)
+[COMPREHENSIVE FIX] ✅ Student 202533333 record already correct
+[COMPREHENSIVE FIX] 🎉 Complete! Checked 1 records, Fixed 0 category result records
+[COMPREHENSIVE FIX] 📊 All totalQuestions now dynamically match main_assessment data
+[COMPREHENSIVE REPAIR] 🔧 Step 2: Repairing ALL incomplete category records...
+
+Initial collection counts:
+- Students (test/users): 1
+- Teachers (teachers/profile): 6
+- Parents (parent/parent_profile): 5
+Total users: 12
+[COMPREHENSIVE REPAIR] 📊 Found 1 students with reading levels
+[COMPREHENSIVE REPAIR] 🔍 Checking Philip Pangilinan (202533333) - Transitioning
+[COMPREHENSIVE REPAIR]   📚 Required categories for Transitioning: Alphabet Knowledge, Phonological Awareness, Decoding, Word Recognition
+Available databases:
+- Literexia
+- Pre_Assessment
+- admin_user
+- parent
+- teachers
+- test
+- users_web
+- admin
+- local
+Created connection to parent database
+Created connection to users_web database
+🔄 Initializing ManageProgress module...
+[COMPREHENSIVE REPAIR]   ✅ COMPLETE CURRENT RECORD - All 4 categories present
+[COMPREHENSIVE REPAIR] ✅ Repair complete: 0 fixed, 1 already complete
+[OVERALL SCORE FIX] 🔧 Fixing existing records with incorrect overall scores...
+Found 1 students to initialize progress tracking for.
+✅ ManageProgress module initialized successfully
+✅ Initialized progress collections
+✅ Category results service initialized for read-only access
+
+✅ Database setup complete
+Database connected successfully - registering routes
+User model is targeting collection: users
+✅ Auth routes registered at /api/auth/*
+Error registering routes: C:\CapstoneProject\LITEREXIA\backend\utils\securityTestSuite.js:16
+    'behavior: url("javascript:alert(\\'XSS\\')");',
+                                        ^^^^
+
+SyntaxError: Invalid or unexpected token
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module._compile (node:internal/modules/cjs/loader:1528:20)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (C:\CapstoneProject\LITEREXIA\backend\routes\securityRoutes.js:6:58)
+Error details: C:\CapstoneProject\LITEREXIA\backend\utils\securityTestSuite.js:16
+    'behavior: url("javascript:alert(\\'XSS\\')");',
+                                        ^^^^
+
+SyntaxError: Invalid or unexpected token
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module._compile (node:internal/modules/cjs/loader:1528:20)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+
+
+
+
+
+    ubuntu@ip-172-31-30-162:~/Dyslexia/backend$ pm2 list
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ literexia-backend  │ fork     │ 0    │ online    │ 0%       │ 113.8mb  │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+ubuntu@ip-172-31-30-162:~/Dyslexia/backend$ client_loop: send disconnect: Connection reset
+
+D:\ssh>ssh -i "literexia-philippines.pem" ubuntu@ec2-18-139-217-179.ap-southeast-1.compute.amazonaws.com
+Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.14.0-1011-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Mon Sep 29 06:46:32 UTC 2025
+
+  System load:  0.0               Processes:             114
+  Usage of /:   40.1% of 6.71GB   Users logged in:       1
+  Memory usage: 40%               IPv4 address for enX0: 172.31.30.162
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+12 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+*** System restart required ***
+Last login: Mon Sep 29 06:41:52 2025 from 3.0.5.37
+ubuntu@ip-172-31-30-162:~$ pm2 status
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ literexia-backend  │ fork     │ 0    │ online    │ 0%       │ 118.6mb  │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+ubuntu@ip-172-31-30-162:~$ pm2 logs literexia-backend
+[TAILING] Tailing last 15 lines for [literexia-backend] process (change the value with --lines option)
+/home/ubuntu/.pm2/logs/literexia-backend-error.log last 15 lines:
+0|literexi |   },
+0|literexi |   index: 0,
+0|literexi |   code: 11000,
+0|literexi |   keyPattern: { studentId: 1, categoryId: 1 },
+0|literexi |   keyValue: { studentId: 202533333, categoryId: 'Alphabet Knowledge' }
+0|literexi | }
+0|literexi | [CATEGORY RESULTS] Error regenerating prescriptive analysis: Error: Duplicate key error: Database indexes need updating to support multiple reading levels. Student 202533333 category Alphabet Knowledge
+0|literexi |     at IntegrationTriggerService.triggerPrescriptiveAnalysis (/home/ubuntu/Dyslexia/backend/services/Teachers/PrescriptiveAnalytics/integrationTriggerService.js:101:15)
+0|literexi |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+0|literexi |     at async CategoryResultsService.updateCategoryResult (/home/ubuntu/Dyslexia/backend/services/Teachers/CategoryResultsService.js:817:40)
+0|literexi |     at async CategoryResultsService.generateCategoryResultsFromResponses (/home/ubuntu/Dyslexia/backend/services/Teachers/CategoryResultsService.js:1560:31)
+0|literexi |     at async AutoProcessingService.processIndividualCategory (/home/ubuntu/Dyslexia/backend/services/Teachers/AutoProcessingService.js:288:31)
+0|literexi |     at async AutoProcessingService.processStudentIfComplete (/home/ubuntu/Dyslexia/backend/services/Teachers/AutoProcessingService.js:88:26)
+0|literexi |     at async AutoProcessingService.processAllCompleteAssessments (/home/ubuntu/Dyslexia/backend/services/Teachers/AutoProcessingService.js:33:26)
+0|literexi |     at async Timeout._onTimeout (/home/ubuntu/Dyslexia/backend/services/Teachers/AutoProcessingService.js:370:9)
+
+/home/ubuntu/.pm2/logs/literexia-backend-out.log last 15 lines:
+0|literexi | [INTERVENTION MONITORING] No active interventions found
+0|literexi | [INTERVENTION MONITORING] 🔍 Checking for completed interventions at 2025-09-29T06:43:57.029Z
+0|literexi | [INTERVENTION MONITORING] No active interventions found
+0|literexi | [INTERVENTION MONITORING] 🔍 Checking for completed interventions at 2025-09-29T06:44:27.029Z
+0|literexi | [INTERVENTION MONITORING] No active interventions found
+0|literexi | [INTERVENTION MONITORING] 🔍 Checking for completed interventions at 2025-09-29T06:44:57.029Z
+0|literexi | [INTERVENTION MONITORING] No active interventions found
+0|literexi | [INTERVENTION MONITORING] 🔍 Checking for completed interventions at 2025-09-29T06:45:27.030Z
+0|literexi | [INTERVENTION MONITORING] No active interventions found
+0|literexi | [INTERVENTION MONITORING] 🔍 Checking for completed interventions at 2025-09-29T06:45:57.030Z
+0|literexi | [INTERVENTION MONITORING] No active interventions found
+0|literexi | [INTERVENTION MONITORING] 🔍 Checking for completed interventions at 2025-09-29T06:46:27.031Z
+0|literexi | [INTERVENTION MONITORING] No active interventions found
+0|literexi | [INTERVENTION MONITORING] 🔍 Checking for completed interventions at 2025-09-29T06:46:57.030Z
+0|literexi | [INTERVENTION MONITORING] No active interventions found
+
+
+ubuntu@ip-172-31-30-162:~$ curl -X POST http://18.139.217.179:5001/api/auth/login -H "Content-Type: application/json" -d '{"email":"admin@gmail.com","password":"Admin101@","expectedRole":"admin"}'
+{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MTY0ODNkODE2Yzk1ODJiMjQ0YmZmOCIsImVtYWlsIjoiYWRtaW5AZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU5MTMwNzEzLCJleHAiOjE3NTkyMTcxMTN9.dIkWpqGB1ao6yp0WgNHRsil-BuraJnVKYmhqYNotvwE","user":{"id":"6816483d816c9582b244bff8","email":"admin@gmail.com","roles":["admin"]}}ubuntu@ip-172-31-30-162:~$
+
+
+
