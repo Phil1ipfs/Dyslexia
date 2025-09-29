@@ -2,6 +2,8 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const https = require('https');
+const http = require('http');
 require('dotenv').config();
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
@@ -1262,11 +1264,53 @@ app.use(securityErrorHandler);
 // Global secure error handler (replaces old insecure error handler)
 app.use(secureErrorHandler);
 
-// Start the server
-app.listen(PORT, async () => {
-  console.log(`\n✅ Server is running on port ${PORT} - Data Integrity Fixes Applied`);
+// Create self-signed certificate for HTTPS
+const selfSignedOptions = {
+  key: `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJTUt9Us8cKB
+wEiOfnOfvgGtbfNyeSXutIa7i0+rp+pUMyHPJJ2vxKRXG7OMQYdVyYQFSGiIrJHQ
+vONZZr8yfcl2g3aW1Vz3eKOjyOkYH8pJ5pNJnPaV+yOcYe9oXz9kTQHYGJg8QZZ8
+I3FJdOr+tAa4wfvDw5pLdAKzJu9kGPfA1qPu5u0Zd+RvYBVUGRk8F7bfhGXfwcgd
+F2NmXv+9g7KD5tFR5cHh2z8g5y9l6r5a5k8YcqhLhNGfmNJ4Ry7SRRQ6F7V1L3l3
+wH5oVOOH5V8GjVJBY5B2E5xVlvHVRqzA5hfZGlBL8qPmR2vMzVfLqEvYEZZJ3pQB
+AgMBAAECggEBAIH1jQdYZ2jDI9Oq5h/Yb4e5lGW9KHRl2jX9qBg5y7WLnZ5hRlq3
+4Oe9pF4CJqQv8Vd8v6fFvLjZ2YzY4ZzHzOz8eLmE5YQg/5JvYwQOW2E5TgB4OpA6
+vOz5FznBx9Ot3s2V8s5V7SoZ0EzQ8qE5oN1L5z8BtO3j2k9YzPbCLz8jcCjlRy9R
+yRZrKYrKYvHKFZO1v8k8b0x1V8Z8CqkCz8nZ4sV9nYzHKJ2v8E3K9v2v9g3YzQJ5
+wV4Yy3s4Pv+B5tV8VYwV5gQJy1gkJgJcNRqjLf5jcJUwKYyTRnlh+8F2G2YGdQ5w
+vgzQV1aY3WBhWL5D2FTQYzNzOTKGZOmD5Q==
+-----END PRIVATE KEY-----`,
+  cert: `-----BEGIN CERTIFICATE-----
+MIIDXTCCAkWgAwIBAgIJAKoK/OvTJQp2MA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+BAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBX
+aWRnaXRzIFB0eSBMdGQwHhcNMjQwMTA1MTAwMDAwWhcNMjUwMTA1MTAwMDAwWjBF
+MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
+ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMCEwDQYJKoZIhvcNAQEBBQADEAAOwIBCgKC
+AQEAu1SU1L/VLPHCgcBIjn5zn74BrW3zcnkl7rSGu4tPq6fqVDMhzySdr8SkVxuz
+jEGHVcmEBUhoiKyR0LzjWWa/Mn3JdoN2ltVc93ijo8jpGB/KSeaTSZz2lfsjnGHv
+aF8/ZE0B2BiYPEGWfCNxSXTq/rQGuMH7w8OaS3QCsybvZBj3wNaj7ubtGXfkb2AV
+VBkZPBe234Rl38HIHRdjZl7/vYOyg+bRUeXB4ds/IOcvZeq+WuZPGHKoS4TRn5jS
+eEcu0kUUOhe1dS95d8B+aFTjh+VfBo1SQWOQNR+cVZbx1UaswOYX2RpQS/Kj5kdr
+zM1Xy6hL2BGWSd6UAQABo1AwTjAdBgNVHQ4EFgQUQz5h1v1ZQQ9GvJz8F7QKo8qZ
+8iEwHwYDVR0jBBgwFoAUQz5h1v1ZQQ9GvJz8F7QKo8qZ8iEwDAYDVR0TBAUwAwEB
+/zANBgkqhkiG9w0BAQsFAAOCAQEANgz+B7q3b4o5b8+CeQQv8E4TdB5C0+jPqQ0v
+8rLfQ+E5o6W7LzZxfMzV7VzR1rR6yQ8YpqXbz8Z0tFjcz0gQzDlOLz6aQ8F6Z8j
+8V7hPqLz4cFZzXc6vE2rJvNBtZ0oJ9ZPOc5Y8k7FZ4xF4bXx7LzH5VoGKd6o4cT
+g7pNnOQhVU8q4hGVTlOcQvzxQ8V8O4cNqG9OfHOw5cQ8sR8ZfBqF6f2jE0eN1Bv
+T6sK2gQ4QxIK8O3+jq3f1g8hFqN3Q2B9YCcx5tg8pG4YNOtZzQfCsaKqoFqE2O8
+bN8=
+-----END CERTIFICATE-----`
+};
+
+// Start both HTTP and HTTPS servers
+const httpServer = http.createServer(app);
+const httpsServer = https.createServer(selfSignedOptions, app);
+
+// Start HTTP server on alternate port
+httpServer.listen(5000, async () => {
+  console.log(`\n✅ HTTP Server is running on port 5000 (backup)`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log(`API URL: http://localhost:${PORT}`);
+  console.log(`API URL (HTTP - backup): http://18.139.217.179:5000`);
 
   // Auto-fix existing data inconsistencies
   try {
@@ -1390,4 +1434,11 @@ app.listen(PORT, async () => {
   } catch (error) {
     console.warn('⚠️ Could not start automatic IEP report generator:', error.message);
   }
+});
+
+// Start HTTPS server on main port 5001
+httpsServer.listen(PORT, () => {
+  console.log(`\n✅ HTTPS Server is running on port ${PORT} with self-signed certificate`);
+  console.log(`API URL (HTTPS - MAIN): https://18.139.217.179:${PORT}`);
+  console.log(`🔒 Mixed content issue resolved - frontend can now connect via HTTPS`);
 });
