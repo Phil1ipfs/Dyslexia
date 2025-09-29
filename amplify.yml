@@ -3,27 +3,29 @@ frontend:
   phases:
     preBuild:
       commands:
-        - echo "Starting pre-build phase..."
-        - echo "Current directory:"
-        - pwd
-        - echo "Listing root directory:"
+        - echo "=== AWS AMPLIFY BUILD - PRE-BUILD PHASE ==="
+        - echo "Working directory: $(pwd)"
+        - echo "Repository contents:"
         - ls -la
-        - echo "Installing dependencies in frontend directory..."
-        - npm ci --prefix frontend
+        - echo "Frontend directory check:"
+        - ls -la frontend/ || echo "Frontend directory not found"
+        - echo "Installing dependencies with npm --prefix..."
+        - npm --prefix frontend ci
+        - echo "Dependencies installed successfully"
     build:
       commands:
-        - echo "Starting build phase..."
-        - echo "Current working directory:"
-        - pwd
-        - echo "Listing current directory:"
+        - echo "=== AWS AMPLIFY BUILD - BUILD PHASE ==="
+        - echo "Working directory: $(pwd)"
+        - echo "Current directory contents:"
         - ls -la
-        - echo "Checking if frontend directory exists:"
-        - test -d frontend && echo "frontend directory exists" || echo "frontend directory does not exist"
-        - echo "Building from frontend directory..."
-        - npm run build --prefix frontend
-        - echo "Build completed!"
-        - echo "Listing dist directory:"
-        - ls -la frontend/dist/
+        - echo "Frontend directory contents:"
+        - ls -la frontend/
+        - echo "Building frontend application with npm --prefix..."
+        - npm --prefix frontend run build
+        - echo "Build completed successfully!"
+        - echo "Checking build output in frontend/dist:"
+        - ls -la frontend/dist/ || echo "Dist directory not found"
+        - echo "Build artifacts ready for deployment"
   artifacts:
     baseDirectory: frontend/dist
     files:
