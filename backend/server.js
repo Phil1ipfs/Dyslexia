@@ -124,6 +124,8 @@ app.use(cors({
       'http://localhost:5174',
       'http://192.168.56.1:5173',
       'http://192.168.1.4:5173',
+      'https://literexia.com',
+      'https://rain.d1et9fk8q5ajyl.amplifyapp.com',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -146,6 +148,8 @@ app.options('*', cors({
       'http://localhost:5174',
       'http://192.168.56.1:5173',
       'http://192.168.1.4:5173',
+      'https://literexia.com',
+      'https://rain.d1et9fk8q5ajyl.amplifyapp.com',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
