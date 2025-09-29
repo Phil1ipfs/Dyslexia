@@ -388,26 +388,115 @@ class AutomaticIEPReportGenerator {
   }
 
   /**
-   * ⚡ OPTIMIZED: Generate concise student summary for single-page layout
+   * ✅ COMPREHENSIVE: Generate complete student summary matching React component
    */
   static generateConciseStudentSummary(categoryResult, student) {
     const totalCategories = categoryResult.categories?.length || 0;
     const passedCategories = categoryResult.categories?.filter(cat => cat.isPassed).length || 0;
     const overallScore = categoryResult.overallScore || 0;
-
-    // Count interventions
     const interventionCategories = categoryResult.categories?.filter(cat => cat.interventionRequired).length || 0;
 
-    // Determine readiness
-    const isReady = passedCategories === totalCategories;
-    const readinessText = isReady ? 'ready for reading level advancement' : 'requires intervention support';
+    // Check if all categories are passed (mastery achieved)
+    const allCategoriesPassed = passedCategories === totalCategories;
+    const masteryText = allCategoriesPassed ?
+      'demonstrating complete mastery across all assessed literacy domains' :
+      `requiring targeted development in ${totalCategories} critical literacy domains`;
 
-    // Format brief performance overview
-    const performanceText = overallScore >= 75 ? 'strong foundational reading skills' :
-                           overallScore >= 50 ? 'developing reading skills with targeted needs' :
-                           'emerging reading skills requiring intensive support';
+    // Build category performance details
+    const categoryDetails = categoryResult.categories?.map(cat => {
+      const score = cat.categoryName === 'Phonological Awareness' &&
+                   cat.totalPossibleMatches > 0 &&
+                   cat.correctMatches !== undefined
+        ? Math.round((cat.correctMatches / cat.totalPossibleMatches) * 100)
+        : (cat.score || 0);
+      return `${cat.categoryName} (${score}%)`;
+    }).join(', ') || '';
 
-    return `${student.firstName} ${student.lastName} is currently functioning at the ${categoryResult.readingLevel} reading level with ${overallScore}% average performance across ${totalCategories} literacy domains. Assessment results show ${performanceText} and ${readinessText}. ${interventionCategories > 0 ? `Currently engaged in ${interventionCategories} intervention(s).` : 'No interventions required.'}`;
+    // Build initial assessment details
+    const initialAssessmentDetails = categoryResult.categories?.map(cat => {
+      const score = cat.categoryName === 'Phonological Awareness' &&
+                   cat.totalPossibleMatches > 0 &&
+                   cat.correctMatches !== undefined
+        ? Math.round((cat.correctMatches / cat.totalPossibleMatches) * 100)
+        : (cat.score || 0);
+      const totalQuestions = cat.totalQuestions || 0;
+      const correctAnswers = cat.correctAnswers || 0;
+      return `${cat.categoryName}: ${score}% (${correctAnswers}/${totalQuestions} questions correct)`;
+    }).join('; ') || '';
+
+    // Build intervention progress details
+    const interventionDetails = categoryResult.categories
+      ?.filter(cat => cat.interventionHistory && cat.interventionHistory.length > 0)
+      ?.map(cat => {
+        const history = cat.interventionHistory[cat.interventionHistory.length - 1]; // Latest intervention
+        const initialScore = cat.categoryName === 'Phonological Awareness' &&
+                            cat.totalPossibleMatches > 0 &&
+                            cat.correctMatches !== undefined
+          ? Math.round((cat.correctMatches / cat.totalPossibleMatches) * 100)
+          : (cat.score || 0);
+        const interventionScore = history.score || 0;
+        const improvement = interventionScore - initialScore;
+        return `${cat.categoryName} (1 attempt with +${improvement}% improvement (latest score: ${interventionScore}%))`;
+      }).join('; ') || '';
+
+    const masteredDomains = categoryResult.categories
+      ?.filter(cat => cat.isPassed)
+      ?.map(cat => cat.categoryName)
+      ?.join(', ') || '';
+
+    const averageImprovement = categoryResult.categories
+      ?.filter(cat => cat.interventionHistory && cat.interventionHistory.length > 0)
+      ?.reduce((sum, cat) => {
+        const history = cat.interventionHistory[cat.interventionHistory.length - 1];
+        const initialScore = cat.score || 0;
+        const interventionScore = history.score || 0;
+        return sum + (interventionScore - initialScore);
+      }, 0) / Math.max(categoryResult.categories?.filter(cat => cat.interventionHistory && cat.interventionHistory.length > 0).length || 1, 1);
+
+    // Generate comprehensive report
+    let comprehensiveReport = `Reading Level Achievement: ${student.firstName} ${student.lastName} is currently functioning at the ${categoryResult.readingLevel} reading level, ${masteryText}: ${categoryDetails}. `;
+
+    if (allCategoriesPassed) {
+      comprehensiveReport += `With an average performance of ${overallScore}%, this achievement reflects strong foundational reading skills and readiness for advancement to the next developmental reading level. `;
+    } else {
+      comprehensiveReport += `Current performance indicates specific skill gaps that benefit from systematic intervention approaches. The average assessment performance of ${overallScore}% suggests foundational skills requiring intensive support through evidence-based instructional strategies. `;
+    }
+
+    comprehensiveReport += `Initial Assessment Performance: The comprehensive initial assessment administered across multiple literacy domains revealed the following detailed performance profile: ${initialAssessmentDetails}. `;
+
+    if (interventionCategories > 0) {
+      const strugglingCategories = categoryResult.categories
+        ?.filter(cat => !cat.isPassed)
+        ?.map(cat => {
+          const score = cat.categoryName === 'Phonological Awareness' &&
+                       cat.totalPossibleMatches > 0 &&
+                       cat.correctMatches !== undefined
+            ? Math.round((cat.correctMatches / cat.totalPossibleMatches) * 100)
+            : (cat.score || 0);
+          const difficulty = score === 0 ? 'significant challenge' :
+                           score < 40 ? 'severe difficulty' :
+                           score < 60 ? 'moderate difficulty' : 'approaching proficiency';
+          return `${cat.categoryName} (${difficulty} at ${score}%)`;
+        }).join(', ') || '';
+
+      comprehensiveReport += `Assessment results indicate ${interventionCategories} domains requiring intervention: ${strugglingCategories}. `;
+    }
+
+    if (interventionDetails) {
+      comprehensiveReport += `Intervention Progress: ${student.firstName} ${student.lastName} has actively engaged in ${interventionCategories} intervention sessions across ${interventionCategories} literacy domains: ${interventionDetails}. `;
+
+      if (masteredDomains) {
+        comprehensiveReport += `The student successfully achieved mastery in ${passedCategories} domains (${masteredDomains}), demonstrating an average improvement of ${Math.round(averageImprovement)}% across intervention areas. This progress indicates strong responsiveness to targeted instructional support and effective skill acquisition through systematic intervention approaches. `;
+      }
+    }
+
+    if (allCategoriesPassed) {
+      comprehensiveReport += `Current Status: Complete mastery achieved - ready for reading level advancement.`;
+    } else {
+      comprehensiveReport += `Current Academic Status and Recommendations: ${student.firstName} ${student.lastName} requires immediate implementation of intensive intervention protocols in ${interventionCategories} critical literacy domains: ${categoryDetails}. With current performance metrics showing ${Math.round((passedCategories/totalCategories)*100)}% mastery rate and ${overallScore}% overall academic achievement, priority actions include: development of individualized intervention plans, implementation of evidence-based instructional strategies, provision of specialized educational supports, and establishment of frequent progress monitoring systems. The student would benefit from multi-sensory teaching approaches, reduced cognitive load strategies, and potential consultation with literacy specialists to address identified learning gaps and facilitate academic progress toward mastery at the ${categoryResult.readingLevel} reading level.`;
+    }
+
+    return comprehensiveReport;
   }
 
   /**
