@@ -1285,9 +1285,9 @@ class CategoryResultsService {
             }
           });
 
-          // ✅ FIXED SCORING: Use CORRECT MATCHES (not questions) for Phonological Awareness score - CONSISTENT WITH AutomaticDataProcessor.js
-          if (totalMatches > 0) {
-            const score = Math.round((correctMatches / totalMatches) * 100);
+          // ✅ FIXED SCORING: Use CORRECT QUESTIONS (not partial matches) for Phonological Awareness score
+          if (categoryResponses.length > 0) {
+            const score = Math.round((correctAnswers / categoryResponses.length) * 100);
             categories.push({
               categoryName: categoryName,
               totalQuestions: categoryResponses.length,

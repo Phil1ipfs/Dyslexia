@@ -143,7 +143,15 @@ class AutomaticIEPReportGenerator {
           lesson: this.generateLessonName(category.categoryName),
 
           // Assessment data (capped at 100 to meet validation requirements)
-          assessmentScore: Math.min(category.score || 0, 100),
+          // ✅ FIXED: Use correct scoring for Phonological Awareness
+          assessmentScore: Math.min(
+            category.categoryName === 'Phonological Awareness' &&
+            category.totalPossibleMatches > 0 &&
+            category.correctMatches !== undefined
+              ? Math.round((category.correctMatches / category.totalPossibleMatches) * 100)
+              : (category.score || 0),
+            100
+          ),
           totalQuestions: category.totalQuestions || 0,
           correctAnswers: category.correctAnswers || 0,
           totalPossibleMatches: category.totalPossibleMatches || 0,
@@ -290,7 +298,16 @@ class AutomaticIEPReportGenerator {
    */
   static formatPerformanceDetails(category) {
     const categoryName = category.categoryName;
-    const score = Math.min(category.score || 0, 100);
+
+    // ✅ FIXED: Calculate correct score for Phonological Awareness using correctMatches/totalMatches
+    let score;
+    if (categoryName === 'Phonological Awareness' &&
+        category.totalPossibleMatches > 0 &&
+        category.correctMatches !== undefined) {
+      score = Math.round((category.correctMatches / category.totalPossibleMatches) * 100);
+    } else {
+      score = Math.min(category.score || 0, 100);
+    }
 
     if (categoryName === 'Phonological Awareness') {
       // Show matches format for Phonological Awareness
