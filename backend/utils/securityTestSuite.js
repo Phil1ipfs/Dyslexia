@@ -22,47 +22,47 @@ const cssInjectionTestCases = {
     '-moz-binding: url(data:text/xml;base64,PHNjcmlwdD5hbGVydCgneHNzJyk8L3NjcmlwdD4=);',
 
     // JavaScript protocol in CSS
-    'background-image: url("javascript:alert(\\'CSS XSS\\')");',
+    'background-image: url("javascript:alert(\'CSS XSS\')");',
     'list-style-image: url(javascript:eval(String.fromCharCode(97,108,101,114,116,40,39,88,83,83,39,41)));',
 
     // VBScript in CSS
     'background: url(vbscript:msgbox("XSS"));',
 
     // Combined attacks
-    '<style>body{background:url("javascript:alert(\\'XSS\\')")}</style>',
-    'style="background: expression(alert(\\'XSS\\'))"'
+    '<style>body{background:url("javascript:alert(\'XSS\')")}</style>',
+    'style="background: expression(alert(\'XSS\'))"'
   ],
 
   // Medium severity CSS injection attempts
   mediumSeverity: [
     // CSS import attacks
     '@import url("http://evil.com/malicious.css");',
-    '@import "javascript:alert(\\'CSS Import XSS\\')";',
+    '@import "javascript:alert(\'CSS Import XSS\')";',
     '@import url(data:text/css;base64,Ym9keXtiYWNrZ3JvdW5kOnVybCgiamF2YXNjcmlwdDphbGVydCgnWFNTJykiKX0=);',
 
     // CSS font-face attacks
-    '@font-face { font-family: "evil"; src: url("javascript:alert(\\'Font XSS\\')"); }',
+    '@font-face { font-family: "evil"; src: url("javascript:alert(\'Font XSS\')"); }',
     '@font-face { src: url(data:application/x-font-woff;base64,malicious_data_here); }',
 
     // CSS keyframes attacks
-    '@keyframes hack { 0% { background-image: url("javascript:alert(\\'Keyframe XSS\\')"); } }',
+    '@keyframes hack { 0% { background-image: url("javascript:alert(\'Keyframe XSS\')"); } }',
     '@-webkit-keyframes evil { from { content: url("javascript:void(0)"); } }',
 
     // CSS filter attacks (IE specific)
-    'filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src="javascript:alert(\\'Filter XSS\\')");',
-    '-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr=javascript:alert(\\'XSS\\'))";',
+    'filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src="javascript:alert(\'Filter XSS\')");',
+    '-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr=javascript:alert(\'XSS\'))";',
 
     // CSS content injection
-    'content: "<script>alert(\\'Content XSS\\')</script>";',
-    'content: url("javascript:alert(\\'Content URL XSS\\')");',
+    'content: "<script>alert(\'Content XSS\')</script>";',
+    'content: url("javascript:alert(\'Content URL XSS\')");',
 
     // CSS counter attacks
-    'counter-reset: evil "<script>alert(\\'Counter XSS\\')</script>";',
-    'counter-increment: hack "<iframe src=javascript:alert(\\'XSS\\')></iframe>";',
+    'counter-reset: evil "<script>alert(\'Counter XSS\')</script>";',
+    'counter-increment: hack "<iframe src=javascript:alert(\'XSS\')></iframe>";',
 
     // CSS pseudo-element attacks
-    '::before { content: "<script>alert(\\'Before XSS\\')</script>"; }',
-    '::after { content: url("javascript:alert(\\'After XSS\\')"); }'
+    '::before { content: "<script>alert(\'Before XSS\')</script>"; }',
+    '::after { content: url("javascript:alert(\'After XSS\')"); }'
   ],
 
   // Low severity CSS injection attempts
@@ -99,11 +99,11 @@ const cssInjectionTestCases = {
   // Edge cases and complex attacks
   edgeCases: [
     // Nested style tags
-    '<style><style>body{background:url("javascript:alert(\\'Nested XSS\\')")}</style></style>',
+    '<style><style>body{background:url("javascript:alert(\'Nested XSS\')")}</style></style>',
 
     // Mixed case evasion
-    'BACKGROUND-IMAGE: URL("JAVASCRIPT:ALERT(\\'CASE EVASION\\')");',
-    'ExPrEsSiOn(AlErT(\\'MiXeD cAsE\\'))',
+    'BACKGROUND-IMAGE: URL("JAVASCRIPT:ALERT(\'CASE EVASION\')");',
+    'ExPrEsSiOn(AlErT(\'MiXeD cAsE\'))',
 
     // URL encoding evasion
     'background: url("%6A%61%76%61%73%63%72%69%70%74%3A%61%6C%65%72%74%28%27%58%53%53%27%29");',
@@ -112,20 +112,20 @@ const cssInjectionTestCases = {
     'background: url("&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;");',
 
     // CSS function chaining
-    'background: calc(1px) url("javascript:alert(\\'Calc XSS\\')");',
-    'width: attr(data-width) expression(alert(\\'Attr Expression\\'));',
+    'background: calc(1px) url("javascript:alert(\'Calc XSS\')");',
+    'width: attr(data-width) expression(alert(\'Attr Expression\'));',
 
     // CDATA injection
-    '<style><![CDATA[body{background:url("javascript:alert(\\'CDATA XSS\\')")}]]></style>',
+    '<style><![CDATA[body{background:url("javascript:alert(\'CDATA XSS\')")}]]></style>',
 
     // Multiple protocol attempts
-    'background: url("vbscript:msgbox(\\'VBS\\')"), url("javascript:alert(\\'JS\\')");',
+    'background: url("vbscript:msgbox(\'VBS\')"), url("javascript:alert(\'JS\')");',
 
     // CSS with HTML injection
-    'content: "</style><script>alert(\\'Breaking out of CSS\\')</script><style>";',
+    'content: "</style><script>alert(\'Breaking out of CSS\')</script><style>";',
 
     // Long payload to test buffer handling
-    'background: ' + 'url("javascript:alert(\\'XSS\\')") '.repeat(100) + ';'
+    'background: ' + 'url("javascript:alert(\'XSS\')") '.repeat(100) + ';'
   ],
 
   // Legitimate CSS that should NOT be blocked

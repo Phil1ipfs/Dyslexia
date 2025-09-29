@@ -21,6 +21,8 @@ function ErrorDialog({ message, onClose }) {
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
+  const [accountType, setAccountType] = useState(''); // Account type selector
+  const [showLoginForm, setShowLoginForm] = useState(false); // Show form after selecting type
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -28,6 +30,18 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleAccountTypeSelect = (type) => {
+    setAccountType(type);
+    setShowLoginForm(true);
+  };
+
+  const handleBackToSelection = () => {
+    setShowLoginForm(false);
+    setAccountType('');
+    setFormData({ email: '', password: '' });
+    setError('');
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -111,12 +125,56 @@ const Login = ({ onLogin }) => {
       <div className="login-card">
         {/* Exit button to return to Homepage */}
         <button className="exit-button" onClick={() => navigate('/')}>X</button>
-        <h1 className="welcome-text">Maligayang Pag Balik!</h1>
-        <p className="instruction-text">
-          Isagay ang iyong email at password.
-        </p>
 
-        <form onSubmit={handleSubmit}>
+        {!showLoginForm ? (
+          // Account Type Selection Screen
+          <>
+            <h1 className="welcome-text">Pumili ng Account Type</h1>
+            <p className="instruction-text">
+              Pumili kung ikaw ay Parent, Teacher, o Admin
+            </p>
+
+            <div className="account-type-selector">
+              <button
+                className="account-type-button parent-button"
+                onClick={() => handleAccountTypeSelect('parent')}
+              >
+                <div className="account-type-icon">👨‍👩‍👧‍👦</div>
+                <h3>Parent</h3>
+                <p>Para sa mga magulang ng mga estudyante</p>
+              </button>
+
+              <button
+                className="account-type-button teacher-button"
+                onClick={() => handleAccountTypeSelect('teacher')}
+              >
+                <div className="account-type-icon">👩‍🏫</div>
+                <h3>Teacher</h3>
+                <p>Para sa mga guro</p>
+              </button>
+
+              <button
+                className="account-type-button admin-button"
+                onClick={() => handleAccountTypeSelect('admin')}
+              >
+                <div className="account-type-icon">👨‍💼</div>
+                <h3>Admin</h3>
+                <p>Para sa mga administrator</p>
+              </button>
+            </div>
+          </>
+        ) : (
+          // Login Form Screen
+          <>
+            <button className="back-button" onClick={handleBackToSelection}>← Bumalik</button>
+            <h1 className="welcome-text">Maligayang Pag Balik!</h1>
+            <p className="instruction-text">
+              {accountType === 'parent' && 'Parent Login'}
+              {accountType === 'teacher' && 'Teacher Login'}
+              {accountType === 'admin' && 'Admin Login'}
+            </p>
+
+            <form onSubmit={handleSubmit}>
           <div className="form-group icon-input">
             <input
               type="email"
@@ -173,6 +231,8 @@ const Login = ({ onLogin }) => {
             {isLoading ? 'Nag-i-sign in...' : 'Sign in'}
           </button>
         </form>
+          </>
+        )}
       </div>
     </div>
   );

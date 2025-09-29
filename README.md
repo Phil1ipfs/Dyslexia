@@ -1666,3 +1666,8 @@ server.js:  console.log(`\n✅ HTTPS Server is running on port ${PORT} with self
 server.js:  console.log(`API URL (HTTPS - MAIN): https://18.139.217.179:${PORT}`);
 server.js:  console.log(`🔒 Mixed content issue resolved - frontend can now connect via HTTPS`);
 ubuntu@ip-172-31-30-162:~/Dyslexia/backend$
+
+
+
+
+

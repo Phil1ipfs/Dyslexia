@@ -231,3 +231,85 @@
 .dialog-close-btn:hover {
   background-color: #e6c757;
 }
+
+/* Account Type Selector Styles */
+.account-type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.account-type-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.account-type-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 204, 0, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.account-type-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.account-type-button h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #FFCC00;
+}
+
+.account-type-button p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.parent-button:hover {
+  border-color: #4CAF50;
+}
+
+.teacher-button:hover {
+  border-color: #2196F3;
+}
+
+.admin-button:hover {
+  border-color: #FF5722;
+}
+
+.back-button {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-2px);
+}

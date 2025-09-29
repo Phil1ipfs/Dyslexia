@@ -68,3 +68,124 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+
+
+PS C:\CapstoneProject\LITEREXIA\backend> npm start
+> backend@1.0.0 start
+> node server.js
+
+AWS credentials detected in environment variables
+AWS Region: ap-southeast-2
+Attempting to connect to MongoDB...
+node:internal/tls/secure-context:70
+    context.setCert(cert);
+            ^
+
+Error: error:04800064:PEM routines::bad base64 decode
+    at node:internal/tls/secure-context:70:13
+    at Array.forEach (<anonymous>)
+    at setCerts (node:internal/tls/secure-context:68:3)
+    at configSecureContext (node:internal/tls/secure-context:191:5)
+    at Object.createSecureContext (node:_tls_common:113:3)
+    at Server.setSecureContext (node:_tls_wrap:1490:27)
+    at Server (node:_tls_wrap:1354:8)
+    at new Server (node:https:80:3)
+    at Object.createServer (node:https:135:10)
+    at Object.<anonymous> (C:\CapstoneProject\LITEREXIA\backend\server.js:1307:27) {
+  library: 'PEM routines',
+  reason: 'bad base64 decode',
+  code: 'ERR_OSSL_PEM_BAD_BASE64_DECODE'
+}
+
+Node.js v22.14.0
+PS C:\CapstoneProject\LITEREXIA\backend> node test-mongodb.js
+Testing MongoDB connection...
+MONGO_URI from .env: Found
+✅ MongoDB Connected Successfully!
+Host: ac-qlfl5i6-shard-00-00.0f8ylb8.mongodb.net
+Database: test
+PS C:\CapstoneProject\LITEREXIA\backend> npm start
+
+> backend@1.0.0 start
+> node server.js
+
+AWS credentials detected in environment variables
+AWS Region: ap-southeast-2
+AWS Bucket: literexia-bucket
+Attempting to connect to MongoDB...
+node:internal/tls/secure-context:70
+    context.setCert(cert);
+            ^
+
+Error: error:04800064:PEM routines::bad base64 decode
+    at node:internal/tls/secure-context:70:13
+    at Array.forEach (<anonymous>)
+    at setCerts (node:internal/tls/secure-context:68:3)
+> backend@1.0.0 start
+> node server.js
+
+AWS credentials detected in environment variables
+AWS Region: ap-southeast-2
+AWS Bucket: literexia-bucket
+Attempting to connect to MongoDB...
+node:internal/tls/secure-context:70
+    context.setCert(cert);
+            ^
+
+Error: error:04800064:PEM routines::bad base64 decode
+    at node:internal/tls/secure-context:70:13
+    at Array.forEach (<anonymous>)
+    at setCerts (node:internal/tls/secure-context:68:3)
+
+AWS credentials detected in environment variables
+AWS Region: ap-southeast-2
+AWS Bucket: literexia-bucket
+Attempting to connect to MongoDB...
+node:internal/tls/secure-context:70
+    context.setCert(cert);
+            ^
+
+Error: error:04800064:PEM routines::bad base64 decode
+    at node:internal/tls/secure-context:70:13
+    at Array.forEach (<anonymous>)
+    at setCerts (node:internal/tls/secure-context:68:3)
+AWS Bucket: literexia-bucket
+Attempting to connect to MongoDB...
+node:internal/tls/secure-context:70
+    context.setCert(cert);
+            ^
+
+Error: error:04800064:PEM routines::bad base64 decode
+    at node:internal/tls/secure-context:70:13
+    at Array.forEach (<anonymous>)
+    at setCerts (node:internal/tls/secure-context:68:3)
+    context.setCert(cert);
+            ^
+
+Error: error:04800064:PEM routines::bad base64 decode
+    at node:internal/tls/secure-context:70:13
+    at Array.forEach (<anonymous>)
+    at setCerts (node:internal/tls/secure-context:68:3)
+Error: error:04800064:PEM routines::bad base64 decode
+    at node:internal/tls/secure-context:70:13
+    at Array.forEach (<anonymous>)
+    at setCerts (node:internal/tls/secure-context:68:3)
+    at configSecureContext (node:internal/tls/secure-context:191:5)
+    at Array.forEach (<anonymous>)
+    at setCerts (node:internal/tls/secure-context:68:3)
+    at configSecureContext (node:internal/tls/secure-context:191:5)
+    at configSecureContext (node:internal/tls/secure-context:191:5)
+    at Object.createSecureContext (node:_tls_common:113:3)
+    at Object.createSecureContext (node:_tls_common:113:3)
+    at Server (node:_tls_wrap:1354:8)
+    at new Server (node:https:80:3)
+    at Object.createServer (node:https:135:10)
+    at Object.<anonymous> (C:\CapstoneProject\LITEREXIA\backend\server.js:1307:27) {
+  library: 'PEM routines',
+  reason: 'bad base64 decode',
+  code: 'ERR_OSSL_PEM_BAD_BASE64_DECODE'
+}
+
+Node.js v22.14.0
