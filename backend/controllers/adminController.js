@@ -108,7 +108,7 @@ exports.updateAdminProfile = async (req, res) => {
         const adminUserDb = mongoose.connection.useDb('admin_user');
         const adminProfileCollection = adminUserDb.collection('admin_profile');
 
-        // Prepare update object
+        // Prepare update object (note: database field is 'dateOfbirth' with lowercase 'b')
         const updateObject = {
             firstName: updateData.firstName,
             lastName: updateData.lastName,
@@ -116,7 +116,7 @@ exports.updateAdminProfile = async (req, res) => {
             email: updateData.email,
             contact: updateData.contact,
             address: updateData.address,
-            dateOfBirth: updateData.dateOfBirth,
+            dateOfbirth: updateData.dateOfBirth,  // Frontend sends dateOfBirth, database expects dateOfbirth
             gender: updateData.gender,
             civilStatus: updateData.civilStatus,
             profileImageUrl: updateData.profileImageUrl,

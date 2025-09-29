@@ -155,17 +155,68 @@ const AdminProfile = () => {
   const validatePassword = () => {
     const errors = {};
 
+    // Current password validation
     if (!passwordData.currentPassword) {
       errors.currentPassword = ['Current password is required'];
     }
 
+    // New password validation - COMPREHENSIVE
     if (!passwordData.newPassword) {
       errors.newPassword = ['New password is required'];
-    } else if (passwordData.newPassword.length < 6) {
-      errors.newPassword = ['Password must be at least 6 characters'];
+    } else {
+      const password = passwordData.newPassword;
+      const passwordErrors = [];
+
+      // Length requirement
+      if (password.length < 8) {
+        passwordErrors.push('Password must be at least 8 characters long');
+      }
+
+      // Uppercase letter requirement
+      if (!/[A-Z]/.test(password)) {
+        passwordErrors.push('Password must contain at least one uppercase letter (A-Z)');
+      }
+
+      // Lowercase letter requirement
+      if (!/[a-z]/.test(password)) {
+        passwordErrors.push('Password must contain at least one lowercase letter (a-z)');
+      }
+
+      // Number requirement
+      if (!/\d/.test(password)) {
+        passwordErrors.push('Password must contain at least one number (0-9)');
+      }
+
+      // Special character requirement (optional but recommended)
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        passwordErrors.push('Password should contain at least one special character (!@#$%^&*)');
+      }
+
+      // Common password check
+      const commonPasswords = ['password', '12345678', 'qwerty123', 'admin123', 'password123'];
+      if (commonPasswords.some(common => password.toLowerCase().includes(common))) {
+        passwordErrors.push('Password is too common - please choose a more secure password');
+      }
+
+      // Sequential characters check
+      if (/012|123|234|345|456|567|678|789|890|abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(password)) {
+        passwordErrors.push('Password should not contain sequential characters (e.g., 123, abc)');
+      }
+
+      // Repeated characters check
+      if (/(.)\1{2,}/.test(password)) {
+        passwordErrors.push('Password should not contain repeated characters (e.g., aaa, 111)');
+      }
+
+      if (passwordErrors.length > 0) {
+        errors.newPassword = passwordErrors;
+      }
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    // Confirm password validation
+    if (!passwordData.confirmPassword) {
+      errors.confirmPassword = ['Please confirm your new password'];
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
       errors.confirmPassword = ['Passwords do not match'];
     }
 
@@ -607,7 +658,7 @@ const AdminProfile = () => {
         </div>
 
         {/* Change Password */}
-        <div className="admin-profile__section">
+        <div className="admin-profile__section admin-profile__section--password">
           <h2>
             <Shield className="admin-profile__section-icon" />
             Change Password
@@ -617,14 +668,14 @@ const AdminProfile = () => {
           </p>
 
           <div className="admin-profile__form-grid">
-            <div className="admin-profile__form-group">
+            <div className="admin-profile__password-field">
               <label>Current Password *</label>
               <div className="admin-profile__password-input">
                 <input
                   type={showCurrentPassword ? 'text' : 'password'}
                   value={passwordData.currentPassword}
                   onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
-                  placeholder="Enter current password"
+                  placeholder="Enter your current password"
                   className={validationErrors.currentPassword ? 'admin-profile__input--error' : ''}
                 />
                 <button
@@ -632,20 +683,20 @@ const AdminProfile = () => {
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                   className="admin-profile__password-toggle"
                 >
-                  {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
               {renderValidationErrors('currentPassword')}
             </div>
 
-            <div className="admin-profile__form-group">
+            <div className="admin-profile__password-field">
               <label>New Password *</label>
               <div className="admin-profile__password-input">
                 <input
                   type={showNewPassword ? 'text' : 'password'}
                   value={passwordData.newPassword}
                   onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
-                  placeholder="Enter new password"
+                  placeholder="Enter your new password"
                   className={validationErrors.newPassword ? 'admin-profile__input--error' : ''}
                 />
                 <button
@@ -653,23 +704,20 @@ const AdminProfile = () => {
                   onClick={() => setShowNewPassword(!showNewPassword)}
                   className="admin-profile__password-toggle"
                 >
-                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
               {renderValidationErrors('newPassword')}
-              <small className="admin-profile__help-text">
-                Password must be at least 6 characters long
-              </small>
             </div>
 
-            <div className="admin-profile__form-group">
+            <div className="admin-profile__password-field">
               <label>Confirm New Password *</label>
               <div className="admin-profile__password-input">
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={passwordData.confirmPassword}
                   onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-                  placeholder="Confirm new password"
+                  placeholder="Confirm your new password"
                   className={validationErrors.confirmPassword ? 'admin-profile__input--error' : ''}
                 />
                 <button
@@ -677,11 +725,21 @@ const AdminProfile = () => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="admin-profile__password-toggle"
                 >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
               {renderValidationErrors('confirmPassword')}
             </div>
+          </div>
+
+          <div className="admin-profile__password-requirements">
+            <strong>Password Requirements:</strong>
+            <ul style={{ margin: '0.5rem 0 0 1rem', padding: 0 }}>
+              <li>At least 8 characters long</li>
+              <li>Contains at least one uppercase letter</li>
+              <li>Contains at least one lowercase letter</li>
+              <li>Contains at least one number</li>
+            </ul>
           </div>
 
           <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
