@@ -11,10 +11,19 @@ const {
   securityHeaders,
   loginLogger
 } = require('../../middleware/rateLimiter');
+
+const {
+  accountLockout,
+  validatePasswordStrength,
+  sanitizeInput,
+  advancedSecurityHeaders,
+  suspiciousActivityDetector,
+  securePasswordCompare
+} = require('../../middleware/advancedSecurity');
 const router = express.Router();
 
-// Apply security headers to all auth routes
-router.use(securityHeaders);
+// Apply advanced security headers to all auth routes
+router.use(advancedSecurityHeaders);
 
 /**
  * Checks if a string is a valid bcrypt hash
@@ -82,11 +91,38 @@ router.post('/login',
     return res.status(400).json({ message: 'Invalid account type specified' });
   }
 
-  // Input sanitization
-  const sanitizedEmail = email.toLowerCase().trim();
-  if (sanitizedEmail !== email.toLowerCase() || email.includes('<') || email.includes('>')) {
-    console.warn(`[SECURITY] Suspicious email format for: ${email}`);
+  // Advanced input sanitization
+  const sanitizedEmail = sanitizeInput(email, 'email');
+  const sanitizedRole = sanitizeInput(expectedRole, 'role');
+
+  if (!sanitizedEmail || sanitizedEmail.length < 3) {
+    console.warn(`[SECURITY] Invalid email format for: ${email}, IP: ${req.ip}`);
     return res.status(400).json({ message: 'Invalid email format' });
+  }
+
+  // Check account lockout
+  if (accountLockout.isAccountLocked(sanitizedEmail)) {
+    const lockoutInfo = accountLockout.getLockoutInfo(sanitizedEmail);
+    console.warn(`[SECURITY] Account locked attempt: ${sanitizedEmail}, IP: ${req.ip}, Remaining: ${lockoutInfo.remainingTime} minutes`);
+    return res.status(423).json({
+      message: 'Account temporarily locked due to multiple failed attempts',
+      retryAfter: lockoutInfo.remainingTime
+    });
+  }
+
+  // Check for suspicious activity
+  const activityCheck = suspiciousActivityDetector.recordActivity(req.ip, {
+    type: 'login_attempt',
+    email: sanitizedEmail,
+    userAgent: req.get('User-Agent')
+  });
+
+  if (activityCheck.isSuspicious) {
+    console.warn(`[SECURITY] Suspicious activity detected: IP ${req.ip}, Score: ${activityCheck.score}, Reasons: ${activityCheck.reasons.join(', ')}`);
+    return res.status(429).json({
+      message: 'Too many requests detected. Please try again later.',
+      retryAfter: '15 minutes'
+    });
   }
 
   try {
@@ -111,18 +147,18 @@ router.post('/login',
     
     console.log('User found:', user.email);
     
-    // Verify password
+    // Secure password verification with timing attack prevention
     let isValidPassword = false;
     try {
       // Check for valid bcrypt hash in passwordHash field first
-      if (user.passwordHash && typeof user.passwordHash === 'string' && 
+      if (user.passwordHash && typeof user.passwordHash === 'string' &&
           (user.passwordHash.startsWith('$2a$') || user.passwordHash.startsWith('$2b$'))) {
-        isValidPassword = await bcrypt.compare(password, user.passwordHash);
-      } 
+        isValidPassword = await securePasswordCompare(password, user.passwordHash);
+      }
       // Fall back to password field if it contains a valid bcrypt hash
-      else if (user.password && typeof user.password === 'string' && 
+      else if (user.password && typeof user.password === 'string' &&
                (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
-        isValidPassword = await bcrypt.compare(password, user.password);
+        isValidPassword = await securePasswordCompare(password, user.password);
       }
     } catch (bcryptError) {
       console.error('Password verification error:', bcryptError);
@@ -130,9 +166,22 @@ router.post('/login',
     }
 
     if (!isValidPassword) {
-      console.warn(`[SECURITY] Invalid password for user: ${sanitizedEmail}, IP: ${req.ip}`);
+      // Record failed attempt for account lockout
+      const isLocked = accountLockout.recordFailedAttempt(sanitizedEmail, req.ip);
+
+      // Record suspicious activity
+      suspiciousActivityDetector.recordActivity(req.ip, {
+        type: 'failed_login',
+        email: sanitizedEmail,
+        userAgent: req.get('User-Agent')
+      });
+
+      console.warn(`[SECURITY] Invalid password for user: ${sanitizedEmail}, IP: ${req.ip}${isLocked ? ' - ACCOUNT LOCKED' : ''}`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    // Clear failed attempts on successful password verification
+    accountLockout.clearFailedAttempts(sanitizedEmail);
 
     // Get user's roles by resolving role references
     let userRoles = [];

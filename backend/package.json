@@ -23,6 +23,7 @@
     "call-bind-apply-helpers": "^1.0.2",
     "call-bound": "^1.0.4",
     "chokidar": "^3.6.0",
+    "compression": "^1.8.1",
     "concat-map": "^0.0.1",
     "content-disposition": "^0.5.4",
     "content-type": "^1.0.5",
@@ -55,6 +56,7 @@
     "has-flag": "^3.0.0",
     "has-symbols": "^1.1.0",
     "hasown": "^2.0.2",
+    "helmet": "^8.1.0",
     "http-errors": "^2.0.0",
     "iconv-lite": "^0.4.24",
     "ignore-by-default": "^1.0.1",
@@ -140,6 +142,8 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "start:cluster": "node cluster.js",
+    "start:production": "NODE_ENV=production node cluster.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "init-iep": "node scripts/initializeIEP.js"
   },

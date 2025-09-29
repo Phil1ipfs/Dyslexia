@@ -105,8 +105,37 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // OWASP Security Headers and Rate Limiting
 const { apiLimiter, securityHeaders } = require('./middleware/rateLimiter');
-app.use(securityHeaders);
+
+// Production Security and AWS EC2 Optimization
+const {
+  createProductionSecurityConfig,
+  setupCloudWatchLogging,
+  createHealthCheckEndpoint,
+  setupPerformanceMonitoring,
+  setupAutoScalingMetrics,
+  optimizeProcess
+} = require('./middleware/productionSecurity');
+
+// Apply production optimizations
+if (process.env.NODE_ENV === 'production') {
+  console.log('[AWS EC2] Applying production security and optimization...');
+  setupCloudWatchLogging();
+  setupPerformanceMonitoring();
+  optimizeProcess();
+
+  const prodConfig = createProductionSecurityConfig();
+  app.use(prodConfig.helmet);
+  app.use(prodConfig.compression);
+  app.set('trust proxy', prodConfig.trustProxy);
+} else {
+  app.use(securityHeaders);
+}
+
 app.use('/api/', apiLimiter); // Apply general API rate limiting
+
+// Add auto-scaling metrics middleware
+const metricsMiddleware = setupAutoScalingMetrics(app);
+app.use(metricsMiddleware);
 
 app.use(requestLogger);
 
@@ -124,12 +153,19 @@ const connectDB = async () => {
   try {
     console.log('Attempting to connect to MongoDB...');
     
-    // FIRST connect to the database
+    // FIRST connect to the database with AWS EC2 optimizations
+    const mongoOptions = process.env.NODE_ENV === 'production'
+      ? require('./middleware/productionSecurity').optimizeMongoConnection()
+      : {
+          dbName: 'test',
+          connectTimeoutMS: 30000,
+          socketTimeoutMS: 45000,
+          serverSelectionTimeoutMS: 60000
+        };
+
     await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017', {
       dbName: 'test',
-      connectTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      serverSelectionTimeoutMS: 60000
+      ...mongoOptions
     });
 
     console.log('✅ MongoDB Connected to test database');
@@ -1197,11 +1233,20 @@ connectDB().then(async (connected) => {
   }
 });
 
+// Setup health checks for AWS Load Balancer
+createHealthCheckEndpoint(app);
+
 // Start the server with WebSocket support
 server.listen(PORT, async () => {
   console.log(`\n✅ Server is running on port ${PORT} - Data Integrity Fixes Applied`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`API URL: http://localhost:${PORT}`);
+
+  if (process.env.NODE_ENV === 'production') {
+    console.log('[AWS EC2] Production optimizations active');
+    console.log(`[AWS EC2] Health check: http://localhost:${PORT}/health`);
+    console.log(`[AWS EC2] Metrics endpoint: http://localhost:${PORT}/metrics`);
+  }
 
   // Auto-fix existing data inconsistencies
   try {
