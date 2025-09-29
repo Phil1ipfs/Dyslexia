@@ -40,71 +40,31 @@
 },
 {
   "_id": {
-    "$oid": "682c574393a85bd83aebee04"
-  },
-  "email": "abad@gmail.com",
-  "passwordHash": "$2b$10$VFr9fzPEEvnmtuYCAebkKu6hLVTFDpIgODz/58pxOSAuu97kLfdkq",
-  "roles": {
-    "$oid": "681b690af9fd9071c6ac2f3a"
-  },
-  "updatedAt": {
-    "$date": "2025-05-20T10:19:47.143Z"
-  },
-  "__v": 0
-},
-{
-  "_id": {
-    "$oid": "6835eef845a2af9158a6d5ab"
-  },
-  "email": "markcaram47@icloudd.com",
-  "passwordHash": "$2b$10$wXqGtctI30LHJ/GrMwk71uvbJHoJsEsA9xWFGzlWsuP6Mv9OMK1BW",
-  "roles": {
-    "$oid": "681b690af9fd9071c6ac2f3a"
-  },
-  "updatedAt": {
-    "$date": "2025-06-02T20:53:51.747Z"
-  },
-  "__v": 0
-},
-{
-  "_id": {
-    "$oid": "683e1376161f2342d78041a7"
-  },
-  "email": "admivuvjn2@gmail.com",
-  "passwordHash": "$2b$10$RFXmmdvZWU8fFGeSxzc.PeuGIL/Z/Plkjt04ezr30ZBxlEdLAkATC",
-  "roles": {
-    "$oid": "681b690af9fd9071c6ac2f3a"
-  },
-  "updatedAt": {
-    "$date": "2025-06-02T21:39:26.250Z"
-  },
-  "__v": 0
-},
-{
-  "_id": {
-    "$oid": "683e1a255acefeeb306806c3"
-  },
-  "email": "j19766890@gmail.com",
-  "passwordHash": "$2b$10$zsGQmMFfoV5.HRyNdtSTW.AefDfz90RTokXRqr2dCgdzylF2jGSAW",
-  "roles": {
-    "$oid": "681b690af9fd9071c6ac2f3a"
-  },
-  "updatedAt": {
-    "$date": "2025-06-11T05:42:51.591Z"
-  },
-  "__v": 0
-},
-{
-  "_id": {
-    "$oid": "68da3d3aac4062854dbacaf1"
+    "$oid": "68dac781cee63bfdad64289a"
   },
   "email": "santiagonikos@gmail.com",
-  "passwordHash": "$2b$10$0l9zwFT27YnJSIx2JOcWZ.oAeH1udy5V0JyOdGYX1wJU5hCGeRtQi",
+  "passwordHash": "$2b$10$H0bKwomoiL55gvYOImjxy.Rgn0Pcyh0KCQ.gWhRovDCXkyFOU/GA6",
   "roles": {
     "$oid": "681b690af9fd9071c6ac2f3a"
   },
   "updatedAt": {
-    "$date": "2025-09-29T08:03:06.017Z"
+    "$date": "2025-09-29T17:53:05.816Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T17:53:05.816Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68daceb4cee63bfdad649e7c"
+  },
+  "email": "santiagogoodboykit@gmail.com",
+  "passwordHash": "$2b$10$xwiqN0uV/8XzPksFTvwgF.YaBnpwUnr7mOox/EUEL/k.qxW2D7B/K",
+  "roles": {
+    "$oid": "681b690af9fd9071c6ac2f3b"
+  },
+  "updatedAt": {
+    "$date": "2025-09-29T18:23:48.653Z"
   },
   "__v": 0
 }]

@@ -1450,7 +1450,9 @@ exports.createTeacher = async (req, res) => {
     if (!firstName || !lastName || !email) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: firstName, lastName, email'
+        message: 'Missing required fields',
+        userType: 'teacher',
+        details: 'First name, last name, and email are required for teacher registration.'
       });
     }
 
@@ -1459,7 +1461,9 @@ exports.createTeacher = async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid email format'
+        message: 'Invalid email format',
+        userType: 'teacher',
+        details: 'Please provide a valid email address for the teacher.'
       });
     }
 
@@ -1481,7 +1485,9 @@ exports.createTeacher = async (req, res) => {
       console.error('❌ [TEACHER CREATION] Email exists in teachers.profile:', email);
       return res.status(400).json({
         success: false,
-        message: 'This email is already registered in teacher profiles.'
+        message: 'Email already registered',
+        userType: 'teacher',
+        details: 'A teacher with this email address is already registered in the system.'
       });
     }
 
@@ -1493,7 +1499,9 @@ exports.createTeacher = async (req, res) => {
       console.error('❌ [TEACHER CREATION] Email exists in users_web.users:', email);
       return res.status(400).json({
         success: false,
-        message: 'This email is already registered in user accounts.'
+        message: 'Email already in use',
+        userType: 'teacher',
+        details: 'This email address is already associated with another user account.'
       });
     }
 
@@ -1613,7 +1621,8 @@ exports.createTeacher = async (req, res) => {
     console.error('❌ [TEACHER CREATION] Error creating teacher:', err);
     res.status(500).json({
       success: false,
-      message: 'Teacher creation failed',
+      message: 'Server error',
+      userType: 'teacher',
       error: err.message
     });
   }

@@ -1,0 +1,480 @@
+[{
+  "_id": {
+    "$oid": "683dd088045045236b530d2d"
+  },
+  "studentId": {
+    "$oid": "683040fd8e4b26952e3ccb42"
+  },
+  "parentId": {
+    "$oid": "681a2933af165878136e05da"
+  },
+  "teacherId": null,
+  "subject": "Progress Report for Kit Nicholas Rish Mark",
+  "content": "Dear Jan Mark Percival Caram,\n\nI'm writing to update you on Kit Nicholas Rish Mark's progress in our reading comprehension activities...",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/683040fd8e4b26952e3ccb42/681a2933af165878136e05da/1748881542737-progress-report-for-kit-nicholas-rish-mark-2025-06-02T16-25-42-584Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-06-02T16:25:44.169Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "683dd20510284b1404d4dce5"
+  },
+  "studentId": {
+    "$oid": "683040fd8e4b26952e3ccb42"
+  },
+  "parentId": {
+    "$oid": "681a2933af165878136e05da"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "Progress Report for Kit Nicholas Rish Mark",
+  "content": "Dear Jan Mark Percival Caram,\n\nI'm writing to update you on Kit Nicholas Rish Mark's progress in our reading comprehension activities...",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/683040fd8e4b26952e3ccb42/681a2933af165878136e05da/1748881924397-progress-report-for-kit-nicholas-rish-mark-2025-06-02T16-32-04-265Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-06-02T16:32:05.845Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "684858ed8953d5b3db08a84a"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "parentId": {
+    "$oid": "683e7186a1338769a9095a7a"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "Progress Report for Philip Casingal Pangilinan",
+  "content": "Dear Ivan Josh Matilde,\n\nI'm writing to update you on Philip Casingal Pangilinan's progress in our reading comprehension activities...",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/683e948a9b13d43b098eb6e3/683e7186a1338769a9095a7a/1749571818104-progress-report-for-philip-casingal-pangilinan-2025-06-10T16-10-18-063Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-06-10T16:10:21.868Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "684858f48953d5b3db08a857"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "parentId": {
+    "$oid": "683e7186a1338769a9095a7a"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "Progress Report for Philip Casingal Pangilinan",
+  "content": "Dear Ivan Josh Matilde,\n\nI'm writing to update you on Philip Casingal Pangilinan's progress in our reading comprehension activities...",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/683e948a9b13d43b098eb6e3/683e7186a1338769a9095a7a/1749571825668-progress-report-for-philip-casingal-pangilinan-2025-06-10T16-10-25-649Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-06-10T16:10:28.788Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68487a5ec981bb24b1ed5bb5"
+  },
+  "studentId": {
+    "$oid": "683e7e6e9b13d43b098eb59c"
+  },
+  "parentId": {
+    "$oid": "683e7eb19b13d43b098eb5a9"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "Progress Report for Birdy Agila Ibon",
+  "content": "Dear Alysa Ara Galang,\n\nI'm writing to update you on Birdy Agila Ibon's progress in our reading comprehension activities...",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/683e7e6e9b13d43b098eb59c/683e7eb19b13d43b098eb5a9/1749580380620-progress-report-for-birdy-agila-ibon-2025-06-10T18-33-00-531Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-06-10T18:33:02.202Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "689ca0798bb2da307b1264f2"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "parentId": {
+    "$oid": "683e7186a1338769a9095a7a"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "Progress Report for Philip Casingal Pangilinan",
+  "content": "Dear Ivan Josh Matilde,\n\nI'm writing to update you on Philip Casingal Pangilinan's progress in our reading comprehension activities...",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/683e948a9b13d43b098eb6e3/683e7186a1338769a9095a7a/1755095160286-progress-report-for-philip-casingal-pangilinan-2025-08-13T14-26-00-267Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-08-13T14:26:01.854Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d4fc9fbec32d0de794b939"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758788765666-iep-progress-report-for-ali-alejaga-2025-09-25T08-26-05-643Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-25T08:26:07.191Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d50343bec32d0de794e6cb"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": null,
+  "includeProgressReport": false,
+  "sentAt": {
+    "$date": "2025-09-25T08:54:27.324Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d50404bec32d0de794edeb"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": null,
+  "includeProgressReport": false,
+  "sentAt": {
+    "$date": "2025-09-25T08:57:40.218Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d5040cbec32d0de794ee0f"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758790666776-iep-progress-report-for-ali-alejaga-2025-09-25T08-57-46-758Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-25T08:57:48.345Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d50410bec32d0de794ee32"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": null,
+  "includeProgressReport": false,
+  "sentAt": {
+    "$date": "2025-09-25T08:57:52.234Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d52b226eca84e68b054188"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758800673068-iep-progress-report-for-ali-alejaga-2025-09-25T11-44-33-050Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-25T11:44:34.664Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d52c226eca84e68b054337"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758800929262-iep-progress-report-for-ali-alejaga-2025-09-25T11-48-49-233Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-25T11:48:50.893Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d52ce76eca84e68b054a58"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758801125494-iep-progress-report-for-ali-alejaga-2025-09-25T11-52-05-460Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-25T11:52:07.111Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d532676eca84e68b056e6b"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758802533849-iep-progress-report-for-ali-alejaga-2025-09-25T12-15-33-819Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-25T12:15:35.548Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d533d26eca84e68b057592"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758802897168-iep-progress-report-for-ali-alejaga-2025-09-25T12-21-37-157Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-25T12:21:38.196Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d60d176eca84e68b089a92"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758858518480-iep-progress-report-for-ali-alejaga-2025-09-26T03-48-38-470Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-26T03:48:39.534Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d6107d6eca84e68b08b123"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758859387232-iep-progress-report-for-ali-alejaga-2025-09-26T04-03-06-592Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-26T04:03:09.170Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d612146eca84e68b08baf6"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758859795498-iep-progress-report-for-ali-alejaga-2025-09-26T04-09-55-252Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-26T04:09:56.740Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68d614cd6eca84e68b08d6c4"
+  },
+  "studentId": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Ali Alejaga",
+  "content": "Dear Philip C Casignla,\n\nI hope this message finds you well. I'm writing to share Ali Alejaga's progress in our Individualized Education Program (IEP).\n\nAli Alejaga has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Ali Alejaga's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Ali Alejaga's progress further, please don't hesitate to reach out to me. Your partnership in Ali Alejaga's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/68491110988139e71b308b55/68d4ddce266d4c7405929d43/1758860492427-iep-progress-report-for-ali-alejaga-2025-09-26T04-21-32-397Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-26T04:21:33.878Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68da3aeeac4062854dbaa3b3"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "parentId": {
+    "$oid": "683e7186a1338769a9095a7a"
+  },
+  "teacherId": {
+    "$oid": "6818bae0e9bed4ff08ab7e8c"
+  },
+  "subject": "IEP Progress Report for Philip Pangilinan",
+  "content": "Dear Ivan Josh Matilde,\n\nI hope this message finds you well. I'm writing to share Philip Pangilinan's progress in our Individualized Education Program (IEP).\n\nPhilip Pangilinan has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Philip Pangilinan's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Philip Pangilinan's progress further, please don't hesitate to reach out to me. Your partnership in Philip Pangilinan's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nJan Mark Caram",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/683e948a9b13d43b098eb6e3/683e7186a1338769a9095a7a/1759132397321-iep-progress-report-for-philip-pangilinan-2025-09-29T07-53-17-290Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-29T07:53:18.459Z"
+  },
+  "status": "sent"
+},
+{
+  "_id": {
+    "$oid": "68dace1ecee63bfdad649613"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "parentId": {
+    "$oid": "683e7186a1338769a9095a7a"
+  },
+  "teacherId": null,
+  "subject": "IEP Progress Report for Philip Pangilinan",
+  "content": "Dear Ivan Josh Matilde,\n\nI hope this message finds you well. I'm writing to share Philip Pangilinan's progress in our Individualized Education Program (IEP).\n\nPhilip Pangilinan has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about Philip Pangilinan's performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss Philip Pangilinan's progress further, please don't hesitate to reach out to me. Your partnership in Philip Pangilinan's educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nKit Nicholasssss Santiago",
+  "pdfS3Path": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pdf-reports/683e948a9b13d43b098eb6e3/683e7186a1338769a9095a7a/1759170077187-iep-progress-report-for-philip-pangilinan-2025-09-29T18-21-17-173Z.pdf",
+  "includeProgressReport": true,
+  "sentAt": {
+    "$date": "2025-09-29T18:21:18.362Z"
+  },
+  "status": "sent"
+}]

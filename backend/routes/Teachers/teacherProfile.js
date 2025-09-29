@@ -663,29 +663,37 @@ router.post('/password', auth, authorize('teacher', 'guro'), async (req, res) =>
     
     // Verify current password
     let passwordIsValid = false;
-    
-    // For password field string starting with $2a$, use bcrypt
-    if (passwordValue && passwordValue.startsWith('$2a$')) {
+
+    console.log('🔐 Password verification for user:', req.user.email);
+    console.log('🔐 Password field found:', passwordField);
+    console.log('🔐 Password hash prefix:', passwordValue ? passwordValue.substring(0, 7) : 'none');
+
+    // For password field string starting with $2a$ or $2b$, use bcrypt
+    if (passwordValue && (passwordValue.startsWith('$2a$') || passwordValue.startsWith('$2b$'))) {
       try {
+        console.log('🔐 Attempting bcrypt comparison...');
         passwordIsValid = await bcrypt.compare(currentPassword, passwordValue);
+        console.log('🔐 Bcrypt comparison result:', passwordIsValid);
       } catch (bcryptError) {
-        console.error('Bcrypt error:', bcryptError.message);
+        console.error('🔐 Bcrypt error:', bcryptError.message);
         // Support the test password as fallback
         if (currentPassword === 'Admin101@') {
           passwordIsValid = true;
-          console.log('Using test password match');
+          console.log('🔐 Using test password match');
         }
       }
     } else {
+      console.log('🔐 Password not in bcrypt format, checking test password...');
       // Support the test password
       if (currentPassword === 'Admin101@') {
         passwordIsValid = true;
-        console.log('Using test password match');
+        console.log('🔐 Using test password match');
       }
     }
-    
+
     if (!passwordIsValid) {
-      console.log('Failed password change attempt - incorrect current password');
+      console.log('🔐 Failed password change attempt - incorrect current password');
+      console.log('🔐 Current password provided:', currentPassword);
       return res.status(400).json({ error: 'INCORRECT_PASSWORD' });
     }
     
@@ -925,6 +933,53 @@ router.get('/profile/debug', auth, authorize('teacher', 'guro'), async (req, res
   } catch (error) {
     console.error('Error in debug route:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get current teacher ID for IEP reports and other teacher-specific operations
+router.get('/current-id', auth, authorize('teacher', 'guro'), async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const userId = req.user.id;
+
+    console.log(`Getting teacher ID for: ${userEmail} (User ID: ${userId})`);
+
+    const collection = await getProfileCollection();
+
+    // Find teacher profile by email or userId
+    let teacherProfile = null;
+    if (userId) {
+      const objectId = toObjectId(userId);
+      if (objectId) {
+        teacherProfile = await collection.findOne({ userId: objectId });
+      }
+    }
+    if (!teacherProfile && userEmail) {
+      teacherProfile = await collection.findOne({ email: userEmail });
+    }
+
+    if (!teacherProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Teacher profile not found',
+        userType: 'teacher'
+      });
+    }
+
+    return res.json({
+      success: true,
+      teacherId: teacherProfile._id.toString(),
+      teacherName: `${teacherProfile.firstName} ${teacherProfile.lastName}`,
+      userType: 'teacher'
+    });
+  } catch (error) {
+    console.error('Error getting current teacher ID:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+      userType: 'teacher'
+    });
   }
 });
 

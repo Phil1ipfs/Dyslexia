@@ -324,47 +324,137 @@ exports.updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
+    const userEmail = req.user.email;
 
-    console.log('[updatePassword] Attempting password change for userId:', userId);
-    console.log('[updatePassword] Received currentPassword (masked): ', currentPassword ? '*****' : '[empty]');
-    console.log('[updatePassword] Received newPassword (masked): ', newPassword ? '*****' : '[empty]');
+    console.log('🔐 [PARENT PASSWORD] Attempting password change for userId:', userId, 'email:', userEmail);
+    console.log('🔐 [PARENT PASSWORD] Received currentPassword (masked): ', currentPassword ? '*****' : '[empty]');
+    console.log('🔐 [PARENT PASSWORD] Received newPassword (masked): ', newPassword ? '*****' : '[empty]');
 
     if (!currentPassword || !newPassword) {
-      console.log('[updatePassword] Missing current or new password');
-      return res.status(400).json({ error: 'Current password and new password are required.' });
+      console.log('🔐 [PARENT PASSWORD] Missing current or new password');
+      return res.status(400).json({
+        error: 'Current password and new password are required.',
+        userType: 'parent'
+      });
     }
 
-    const ParentProfile = await getParentProfileModel();
-    const parent = await ParentProfile.findOne({ userId });
-
-    if (!parent) {
-      console.log('[updatePassword] Parent profile not found for userId:', userId);
-      return res.status(404).json({ error: 'Parent profile not found.' });
+    // Validate password complexity
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        error: 'Password does not meet complexity requirements.',
+        userType: 'parent'
+      });
     }
 
-    console.log('[updatePassword] Parent profile found. Comparing passwords...');
-    // Compare current password with stored hash
-    const isMatch = await bcrypt.compare(currentPassword, parent.passwordHash);
-    if (!isMatch) {
-      console.log('[updatePassword] Current password incorrect for userId:', userId);
-      return res.status(400).json({ error: 'INCORRECT_PASSWORD', message: 'Current password is incorrect.' });
+    // Connect to users_web database to get the password hash
+    const mongoose = require('mongoose');
+    const usersDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersDb.collection('users');
+
+    // Find the user in users_web.users collection
+    const toObjectId = (id) => {
+      try {
+        if (mongoose.Types.ObjectId.isValid(id)) {
+          return new mongoose.Types.ObjectId(id);
+        }
+      } catch (error) {
+        console.error('Invalid ObjectId:', id);
+      }
+      return null;
+    };
+
+    let user = null;
+    const objectId = toObjectId(userId);
+    if (objectId) {
+      user = await usersCollection.findOne({ _id: objectId });
+    }
+    if (!user && userEmail) {
+      user = await usersCollection.findOne({ email: userEmail });
     }
 
-    console.log('[updatePassword] Current password matched. Hashing new password...');
+    if (!user) {
+      console.log('🔐 [PARENT PASSWORD] User not found in users_web.users for userId:', userId);
+      return res.status(404).json({
+        error: 'Parent profile not found.',
+        userType: 'parent'
+      });
+    }
+
+    console.log('🔐 [PARENT PASSWORD] User found in users_web.users, checking password...');
+
+    // Get the password hash
+    const passwordField = user.passwordHash ? 'passwordHash' : (user.password ? 'password' : null);
+    const passwordValue = user.passwordHash || user.password;
+
+    if (!passwordField) {
+      return res.status(500).json({
+        error: 'Password field not found in user record',
+        userType: 'parent'
+      });
+    }
+
+    console.log('🔐 [PARENT PASSWORD] Password field found:', passwordField);
+    console.log('🔐 [PARENT PASSWORD] Password hash prefix:', passwordValue ? passwordValue.substring(0, 7) : 'none');
+
+    // Verify current password
+    let passwordIsValid = false;
+
+    // For bcrypt hashes (starting with $2a$ or $2b$)
+    if (passwordValue && (passwordValue.startsWith('$2a$') || passwordValue.startsWith('$2b$'))) {
+      try {
+        console.log('🔐 [PARENT PASSWORD] Attempting bcrypt comparison...');
+        passwordIsValid = await bcrypt.compare(currentPassword, passwordValue);
+        console.log('🔐 [PARENT PASSWORD] Bcrypt comparison result:', passwordIsValid);
+      } catch (bcryptError) {
+        console.error('🔐 [PARENT PASSWORD] Bcrypt error:', bcryptError.message);
+      }
+    } else {
+      console.log('🔐 [PARENT PASSWORD] Password not in bcrypt format');
+    }
+
+    if (!passwordIsValid) {
+      console.log('🔐 [PARENT PASSWORD] Current password incorrect for userId:', userId);
+      console.log('🔐 [PARENT PASSWORD] Current password provided:', currentPassword);
+      return res.status(400).json({
+        error: 'INCORRECT_PASSWORD',
+        message: 'Current password is incorrect.',
+        userType: 'parent'
+      });
+    }
+
+    console.log('🔐 [PARENT PASSWORD] Current password matched. Hashing new password...');
+
     // Hash the new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
-    // Update password hash in the database
-    parent.passwordHash = hashedNewPassword;
-    parent.updatedAt = new Date();
-    await parent.save();
+    // Update the password in users_web.users
+    const updateData = {
+      [passwordField]: newPasswordHash,
+      updatedAt: new Date()
+    };
 
-    console.log('[updatePassword] Password updated successfully for userId:', userId);
-    res.json({ success: true, message: 'Password updated successfully.' });
+    const result = await usersCollection.updateOne(
+      { _id: user._id },
+      { $set: updateData }
+    );
+
+    console.log('🔐 [PARENT PASSWORD] Password updated result:', result);
+    console.log('🔐 [PARENT PASSWORD] Password updated successfully for user:', userEmail);
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully.',
+      userType: 'parent'
+    });
 
   } catch (err) {
-    console.error('[updatePassword] Error updating password:', err);
-    res.status(500).json({ error: 'Failed to update password.', details: err.message });
+    console.error('🔐 [PARENT PASSWORD] Error updating password:', err);
+    res.status(500).json({
+      error: 'Failed to update password.',
+      details: err.message,
+      userType: 'parent'
+    });
   }
 };
 

@@ -4,6 +4,9 @@ const parentAdminController = require('../../controllers/parentAdminController')
 const multer = require('multer');
 const upload = multer();
 
+// Get all parents (admin)
+router.get('/parents', parentAdminController.getParents);
+
 // Create parent (admin)
 router.post('/parents', upload.single('profileImage'), parentAdminController.createParent);
 

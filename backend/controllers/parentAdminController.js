@@ -47,20 +47,59 @@ exports.createParent = async (req, res) => {
     const {
       firstName, lastName, middleName, contact, address, civilStatus, dateOfBirth, gender, email, children = []
     } = req.body;
+
+    // Validation for required fields
+    if (!firstName || !lastName || !email || !contact) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields',
+        userType: 'parent',
+        details: 'First name, last name, email, and contact are required for parent registration.'
+      });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format',
+        userType: 'parent',
+        details: 'Please provide a valid email address for the parent.'
+      });
+    }
+
     // Ensure children is always an array
     const childrenArray = Array.isArray(children) ? children : (children ? [children] : []);
+
     // Check for duplicate email in parent.parent_profile
     const profileCollection = await getParentProfileCollection();
     const existing = await profileCollection.findOne({ email });
     if (existing) {
-      return res.status(400).json({ success: false, message: 'This email is already registered.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Email already registered',
+        userType: 'parent',
+        details: 'A parent with this email address is already registered in the system.'
+      });
+    }
+
+    // Check for duplicate email in users_web.users as well
+    const User = await getUserModel();
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already in use',
+        userType: 'parent',
+        details: 'This email address is already associated with another user account.'
+      });
     }
     // 1. Generate password
     const password = generatePassword(8);
     // 2. Hash password
     const passwordHash = await bcrypt.hash(password, 10);
-    // 3. Create user in users_web.users
-    const User = await getUserModel();
+    // 3. Create user in users_web.users (User already declared above)
     const userDoc = new User({
       email,
       passwordHash,
