@@ -9,7 +9,7 @@ frontend:
         - echo "Listing root directory:"
         - ls -la
         - echo "Installing dependencies in frontend directory..."
-        - cd frontend && npm ci
+        - npm ci --prefix frontend
     build:
       commands:
         - echo "Starting build phase..."
@@ -20,7 +20,7 @@ frontend:
         - echo "Checking if frontend directory exists:"
         - test -d frontend && echo "frontend directory exists" || echo "frontend directory does not exist"
         - echo "Building from frontend directory..."
-        - cd frontend && npm run build
+        - npm run build --prefix frontend
         - echo "Build completed!"
         - echo "Listing dist directory:"
         - ls -la frontend/dist/
