@@ -7,8 +7,12 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const s3Client = require('./config/s3');
+const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// Create HTTP server for WebSocket integration
+const server = http.createServer(app);
 
 // Check for AWS environment variables
 if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_REGION) {
@@ -1114,6 +1118,33 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load data migration routes:', error.message);
     }
 
+    // Load mobile-optimized category results routes
+    try {
+      const categoryResultsMobileRoutes = require('./routes/mobile/categoryResultsMobileRoutes');
+      app.use('/api/mobile/category-results', categoryResultsMobileRoutes);
+      console.log('✅ Loaded mobile-optimized category results routes at /api/mobile/category-results/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load mobile category results routes:', error.message);
+    }
+
+    // Load mobile-optimized student response routes
+    try {
+      const studentResponseMobileRoutes = require('./routes/mobile/studentResponseMobileRoutes');
+      app.use('/api/mobile/student-responses', studentResponseMobileRoutes);
+      console.log('✅ Loaded mobile-optimized student response routes at /api/mobile/student-responses/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load mobile student response routes:', error.message);
+    }
+
+    // Initialize WebSocket service for real-time updates
+    try {
+      const WebSocketService = require('./services/mobile/WebSocketService');
+      WebSocketService.initialize(server);
+      console.log('✅ WebSocket service initialized for real-time mobile updates');
+    } catch (error) {
+      console.warn('⚠️ Could not initialize WebSocket service:', error.message);
+    }
+
 
     // 404 handler
     app.use((req, res) => {
@@ -1134,8 +1165,8 @@ connectDB().then(async (connected) => {
   }
 });
 
-// Start the server
-app.listen(PORT, async () => {
+// Start the server with WebSocket support
+server.listen(PORT, async () => {
   console.log(`\n✅ Server is running on port ${PORT} - Data Integrity Fixes Applied`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`API URL: http://localhost:${PORT}`);
