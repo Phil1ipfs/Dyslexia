@@ -202,7 +202,7 @@ class PrescriptionOnlyService {
   async generateTeacherPrescription(diagnosis, categoryResults, readingLevel, studentId) {
     // Identify categories needing intervention (CLAUDE.md: only completed AND failed categories)
     const failedCategories = categoryResults.filter(cat =>
-      !cat.isPassed && cat.isCompleted === true && cat.score > 0
+      !cat.isPassed && cat.isCompleted === true // ✅ REMOVED cat.score > 0 filter - even 0% scores can need intervention
     );
 
     console.log(`[PRESCRIPTION] Failed categories (completed & failed): [${failedCategories.map(c => c.categoryName).join(', ')}]`);
