@@ -476,18 +476,26 @@ class CategoryResultsOptimizedService {
           totalQuestions: category.totalQuestions,
           correctAnswers: category.correctAnswers,
           interventionRequired: category.interventionRequired,
+
+          // ⚡ OPTIMIZED: Intervention tracking for mobile
+          interventionData: this.formatInterventionDataForMobile(category),
+
           badge: this.getCategoryBadge(category),
           status: this.getCategoryStatus(category)
         })),
         summary: {
           performance: this.getPerformanceSummary(categoryResults.overallScore),
           nextAction: this.getNextActionRecommendation(categoryResults),
-          progressPercentage: Math.round((categoryResults.completedCategories / categoryResults.totalCategories) * 100)
+          progressPercentage: Math.round((categoryResults.completedCategories / categoryResults.totalCategories) * 100),
+
+          // ⚡ OPTIMIZED: Intervention summary for mobile dashboard
+          interventionSummary: this.getInterventionSummaryForMobile(categoryResults.categories)
         },
         metadata: {
           processedAt: new Date().toISOString(),
           optimized: true,
-          version: '2.0'
+          version: '2.1', // Updated version with intervention optimization
+          interventionOptimized: true
         }
       };
     } catch (error) {
@@ -497,12 +505,218 @@ class CategoryResultsOptimizedService {
   }
 
   /**
+   * ⚡ OPTIMIZED: Format intervention data for mobile apps
+   */
+  formatInterventionDataForMobile(category) {
+    try {
+      if (!category.interventionRequired && !category.interventionHistory?.length) {
+        return {
+          required: false,
+          attempts: 0,
+          status: 'not_needed',
+          message: 'No intervention required'
+        };
+      }
+
+      const history = category.interventionHistory || [];
+      const currentIntervention = category.currentInterventionId;
+      const attempts = category.interventionAttempts || 0;
+      const completed = category.interventionCompleted || false;
+
+      // Fast status determination for mobile
+      let status = 'required';
+      let message = 'Intervention needed';
+      let lastAttempt = null;
+
+      if (history.length > 0) {
+        const lastAttemptData = history[history.length - 1];
+        lastAttempt = {
+          attemptNumber: lastAttemptData.attemptNumber,
+          score: lastAttemptData.score,
+          isPassed: lastAttemptData.isPassed,
+          completedAt: lastAttemptData.completedAt,
+          interventionId: lastAttemptData.interventionId
+        };
+
+        if (lastAttemptData.isPassed) {
+          status = 'passed';
+          message = 'Intervention completed successfully';
+        } else if (attempts >= 3) {
+          status = 'max_attempts';
+          message = 'Maximum attempts reached - teacher review needed';
+        } else {
+          status = 'failed_can_retry';
+          message = `Attempt ${attempts} failed - can retry or teacher can revise`;
+        }
+      }
+
+      return {
+        required: category.interventionRequired,
+        attempts: attempts,
+        maxAttempts: 3,
+        status: status,
+        message: message,
+        completed: completed,
+        currentInterventionId: currentIntervention,
+        lastAttempt: lastAttempt,
+
+        // Quick mobile access data
+        canRetry: attempts < 3 && !completed,
+        needsTeacherReview: attempts >= 2 && !completed,
+
+        // Progress tracking
+        progressPercentage: lastAttempt ?
+          Math.min(100, Math.round((lastAttempt.score / 75) * 100)) : 0
+      };
+
+    } catch (error) {
+      console.error(`[OPTIMIZED] Error formatting intervention data:`, error);
+      return {
+        required: false,
+        attempts: 0,
+        status: 'error',
+        message: 'Error loading intervention data'
+      };
+    }
+  }
+
+  /**
+   * ⚡ OPTIMIZED: Get intervention summary for mobile dashboard
+   */
+  getInterventionSummaryForMobile(categories) {
+    try {
+      const interventionCategories = categories.filter(cat => cat.interventionRequired);
+
+      if (interventionCategories.length === 0) {
+        return {
+          hasInterventions: false,
+          totalRequired: 0,
+          message: 'No interventions required'
+        };
+      }
+
+      const completed = interventionCategories.filter(cat => cat.interventionCompleted).length;
+      const inProgress = interventionCategories.filter(cat =>
+        cat.interventionAttempts > 0 && !cat.interventionCompleted
+      ).length;
+      const notStarted = interventionCategories.filter(cat =>
+        !cat.interventionAttempts || cat.interventionAttempts === 0
+      ).length;
+
+      // Calculate overall intervention progress
+      const totalAttempts = interventionCategories.reduce((sum, cat) =>
+        sum + (cat.interventionAttempts || 0), 0);
+      const averageAttempts = totalAttempts / interventionCategories.length;
+
+      // Determine urgency level for mobile UI
+      let urgency = 'low';
+      let urgencyMessage = 'Interventions progressing normally';
+
+      if (averageAttempts >= 2) {
+        urgency = 'high';
+        urgencyMessage = 'Multiple intervention attempts - teacher review recommended';
+      } else if (inProgress > 0) {
+        urgency = 'medium';
+        urgencyMessage = 'Interventions in progress';
+      }
+
+      return {
+        hasInterventions: true,
+        totalRequired: interventionCategories.length,
+        completed: completed,
+        inProgress: inProgress,
+        notStarted: notStarted,
+
+        // Progress metrics
+        completionRate: Math.round((completed / interventionCategories.length) * 100),
+        averageAttempts: Math.round(averageAttempts * 10) / 10,
+
+        // Urgency indicators for mobile UI
+        urgency: urgency,
+        urgencyMessage: urgencyMessage,
+
+        // Quick action recommendations
+        nextAction: this.getInterventionNextAction(interventionCategories),
+
+        // Categories needing attention
+        categoriesNeedingAttention: interventionCategories
+          .filter(cat => (cat.interventionAttempts || 0) >= 2 && !cat.interventionCompleted)
+          .map(cat => cat.categoryName)
+      };
+
+    } catch (error) {
+      console.error(`[OPTIMIZED] Error getting intervention summary:`, error);
+      return {
+        hasInterventions: false,
+        totalRequired: 0,
+        message: 'Error loading intervention summary'
+      };
+    }
+  }
+
+  /**
+   * ⚡ OPTIMIZED: Get next intervention action for mobile
+   */
+  getInterventionNextAction(interventionCategories) {
+    const notStarted = interventionCategories.filter(cat =>
+      !cat.interventionAttempts || cat.interventionAttempts === 0
+    );
+
+    const needsRetry = interventionCategories.filter(cat =>
+      cat.interventionAttempts > 0 && !cat.interventionCompleted && cat.interventionAttempts < 3
+    );
+
+    const needsTeacherReview = interventionCategories.filter(cat =>
+      cat.interventionAttempts >= 2 && !cat.interventionCompleted
+    );
+
+    if (needsTeacherReview.length > 0) {
+      return {
+        type: 'teacher_review',
+        priority: 'high',
+        message: `${needsTeacherReview.length} intervention(s) need teacher review`,
+        categories: needsTeacherReview.map(cat => cat.categoryName)
+      };
+    }
+
+    if (needsRetry.length > 0) {
+      return {
+        type: 'student_retry',
+        priority: 'medium',
+        message: `${needsRetry.length} intervention(s) can be retried`,
+        categories: needsRetry.map(cat => cat.categoryName)
+      };
+    }
+
+    if (notStarted.length > 0) {
+      return {
+        type: 'start_intervention',
+        priority: 'medium',
+        message: `${notStarted.length} intervention(s) need to be started`,
+        categories: notStarted.map(cat => cat.categoryName)
+      };
+    }
+
+    return {
+      type: 'all_complete',
+      priority: 'low',
+      message: 'All interventions completed',
+      categories: []
+    };
+  }
+
+  /**
    * Get category badge for mobile display
    */
   getCategoryBadge(category) {
     if (!category.isCompleted) return 'NOT ATTEMPTED';
     if (category.isPassed) return 'PASSED';
-    if (category.interventionRequired) return 'INTERVENTION REQUIRED';
+    if (category.interventionRequired) {
+      // Enhanced badge with intervention status
+      if (category.interventionCompleted) return 'INTERVENTION COMPLETED';
+      if (category.interventionAttempts >= 2) return 'NEEDS TEACHER REVIEW';
+      return 'INTERVENTION REQUIRED';
+    }
     return 'FAILED';
   }
 

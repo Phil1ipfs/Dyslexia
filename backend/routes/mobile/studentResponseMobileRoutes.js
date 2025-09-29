@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const RealTimeStudentProcessor = require('../../services/mobile/RealTimeStudentProcessor');
 const WebSocketService = require('../../services/mobile/WebSocketService');
+const InterventionResultsOptimizedService = require('../../services/mobile/InterventionResultsOptimizedService');
+const CategoryResultsOptimizedService = require('../../services/Teachers/CategoryResultsOptimizedService');
 const mongoose = require('mongoose');
 
 /**
@@ -443,6 +445,197 @@ async function saveStudentResponseToDatabase(responseData) {
 
   } catch (error) {
     console.error(`[MOBILE RESPONSE] Error saving to database:`, error);
+    throw error;
+  }
+}
+
+// ⚡ OPTIMIZED: Submit intervention response with automatic cache clearing
+router.post('/submit-intervention', async (req, res) => {
+  try {
+    const {
+      studentId,
+      interventionAssessmentId,
+      questionId,
+      category,
+      response,
+      isCorrect,
+      correctSequence,
+      totalSequence,
+      responseTime,
+      revisionNumber
+    } = req.body;
+
+    if (!studentId || !interventionAssessmentId || !questionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'studentId, interventionAssessmentId, and questionId are required'
+      });
+    }
+
+    console.log(`[MOBILE INTERVENTION] Processing intervention response for student ${studentId}, question ${questionId}`);
+
+    const startTime = Date.now();
+
+    // Save intervention response to database
+    const savedResponse = await saveInterventionResponseToDatabase({
+      studentId,
+      interventionAssessmentId,
+      questionId,
+      category,
+      response,
+      isCorrect,
+      correctSequence,
+      totalSequence,
+      responseTime,
+      revisionNumber
+    });
+
+    // ⚡ AUTOMATIC CACHE CLEARING for optimization
+    console.log(`[MOBILE INTERVENTION] 🧹 Clearing intervention caches for optimized performance`);
+
+    // Clear intervention results cache
+    InterventionResultsOptimizedService.clearInterventionCache(studentId, interventionAssessmentId);
+
+    // Clear category results cache (includes intervention data)
+    CategoryResultsOptimizedService.clearStudentCache(studentId);
+
+    // Get quick intervention status after response
+    const quickStatus = await InterventionResultsOptimizedService.getQuickInterventionStatus(
+      studentId,
+      interventionAssessmentId
+    );
+
+    const processingTime = Date.now() - startTime;
+
+    // Send real-time update via WebSocket
+    WebSocketService.sendToStudent(studentId, 'intervention_response_processed', {
+      questionId,
+      isCorrect,
+      interventionStatus: quickStatus.success ? quickStatus.data : null,
+      processingTime
+    });
+
+    res.json({
+      success: true,
+      message: 'Intervention response processed successfully',
+      data: {
+        responseId: savedResponse._id,
+        studentId,
+        interventionAssessmentId,
+        questionId,
+        isCorrect,
+        quickStatus: quickStatus.success ? quickStatus.data : null,
+        cacheCleared: true, // Indicates optimization applied
+        processingTime,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error(`[MOBILE INTERVENTION] Error processing intervention response:`, error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing intervention response',
+      error: error.message
+    });
+  }
+});
+
+// ⚡ OPTIMIZED: Complete intervention with final results and cache optimization
+router.post('/complete-intervention', async (req, res) => {
+  try {
+    const { studentId, interventionAssessmentId } = req.body;
+
+    if (!studentId || !interventionAssessmentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'studentId and interventionAssessmentId are required'
+      });
+    }
+
+    console.log(`[MOBILE INTERVENTION] Completing intervention for student ${studentId}`);
+
+    const startTime = Date.now();
+
+    // Generate final intervention results with optimization
+    const interventionResults = await InterventionResultsOptimizedService.getInterventionResultsOptimized(
+      studentId,
+      interventionAssessmentId,
+      true // Force refresh for final results
+    );
+
+    // Force refresh category results to include updated intervention data
+    const categoryResults = await CategoryResultsOptimizedService.getCategoryResultsOptimized(
+      studentId,
+      true // Force refresh
+    );
+
+    const processingTime = Date.now() - startTime;
+
+    // Send completion notification via WebSocket
+    WebSocketService.sendToStudent(studentId, 'intervention_completed', {
+      interventionAssessmentId,
+      results: interventionResults.success ? interventionResults.data : null,
+      categoryResults: categoryResults.success ? categoryResults.data : null,
+      processingTime
+    });
+
+    res.json({
+      success: true,
+      message: 'Intervention completed successfully',
+      data: {
+        studentId,
+        interventionAssessmentId,
+        interventionResults: interventionResults.success ? interventionResults.data : null,
+        categoryResults: categoryResults.success ? categoryResults.data : null,
+        optimized: true,
+        processingTime,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error(`[MOBILE INTERVENTION] Error completing intervention:`, error);
+    res.status(500).json({
+      success: false,
+      message: 'Error completing intervention',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Helper function to save intervention response to database
+ */
+async function saveInterventionResponseToDatabase(responseData) {
+  try {
+    const testDb = mongoose.connection.useDb('test');
+    const interventionResponsesCollection = testDb.collection('intervention_responses');
+
+    const document = {
+      studentId: parseInt(responseData.studentId),
+      interventionAssessmentId: new mongoose.Types.ObjectId(responseData.interventionAssessmentId),
+      questionId: responseData.questionId,
+      category: responseData.category,
+      response: responseData.response,
+      isCorrect: responseData.isCorrect,
+      correctSequence: responseData.correctSequence || 0,
+      totalSequence: responseData.totalSequence || 0,
+      responseTime: responseData.responseTime || 0,
+      revisionNumber: responseData.revisionNumber || 1,
+      answeredAt: new Date(),
+      createdAt: new Date()
+    };
+
+    const result = await interventionResponsesCollection.insertOne(document);
+
+    return {
+      _id: result.insertedId,
+      createdAt: document.createdAt
+    };
+
+  } catch (error) {
+    console.error(`[MOBILE INTERVENTION] Error saving intervention response to database:`, error);
     throw error;
   }
 }

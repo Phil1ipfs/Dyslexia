@@ -1136,6 +1136,24 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load mobile student response routes:', error.message);
     }
 
+    // Load comprehensive optimization routes
+    try {
+      const comprehensiveOptimizationRoutes = require('./routes/mobile/comprehensiveOptimizationRoutes');
+      app.use('/api/mobile/comprehensive', comprehensiveOptimizationRoutes);
+      console.log('✅ Loaded comprehensive optimization routes at /api/mobile/comprehensive/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load comprehensive optimization routes:', error.message);
+    }
+
+    // Load intervention results mobile routes
+    try {
+      const interventionResultsMobileRoutes = require('./routes/mobile/interventionResultsMobileRoutes');
+      app.use('/api/mobile/intervention-results', interventionResultsMobileRoutes);
+      console.log('✅ Loaded intervention results mobile routes at /api/mobile/intervention-results/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load intervention results mobile routes:', error.message);
+    }
+
     // Initialize WebSocket service for real-time updates
     try {
       const WebSocketService = require('./services/mobile/WebSocketService');

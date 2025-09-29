@@ -75,6 +75,10 @@ class AutomaticIEPReportGenerator {
         overallScore: categoryResult.overallScore || 0,
         objectives: objectives,
         basedOnAssessmentId: categoryResult._id,
+
+        // ⚡ OPTIMIZED: Add concise student summary for single-page layout
+        studentSummary: this.generateConciseStudentSummary(categoryResult, student),
+
         isActive: true,
         academicYear: new Date().getFullYear().toString(),
         createdAt: new Date(),
@@ -147,12 +151,18 @@ class AutomaticIEPReportGenerator {
           isCompleted: category.isCompleted || false,
           isPassed: category.isPassed || false,
 
+          // ⚡ OPTIMIZED: Proper performance formatting for different categories
+          performanceDetails: this.formatPerformanceDetails(category),
+
           // Status determination
           status: this.determineStatus(category),
           completed: category.isPassed || false,
           supportLevel: this.determineSupportLevel(category.score || 0),
           score: Math.min(category.score || 0, 100),
           passingThreshold: category.passingThreshold || 75,
+
+          // ⚡ OPTIMIZED: Proper intervention progress formatting
+          interventionProgress: this.formatInterventionProgress(interventionData, category),
 
           // Intervention tracking
           hasIntervention: interventionData.hasIntervention,
@@ -276,6 +286,78 @@ class AutomaticIEPReportGenerator {
   }
 
   /**
+   * ⚡ OPTIMIZED: Format performance details properly for different categories
+   */
+  static formatPerformanceDetails(category) {
+    const categoryName = category.categoryName;
+    const score = Math.min(category.score || 0, 100);
+
+    if (categoryName === 'Phonological Awareness') {
+      // Show matches format for Phonological Awareness
+      const correctMatches = category.correctMatches || 0;
+      const totalMatches = category.totalPossibleMatches || 0;
+      return `${score}% (${correctMatches}/${totalMatches} matches correct)`;
+    } else if (categoryName === 'Reading Comprehension') {
+      // Show all-or-nothing scoring info
+      const correctAnswers = category.correctAnswers || 0;
+      const totalQuestions = category.totalQuestions || 0;
+      return `${score}% (${correctAnswers}/${totalQuestions} stories fully understood)`;
+    } else {
+      // Standard format for other categories
+      const correctAnswers = category.correctAnswers || 0;
+      const totalQuestions = category.totalQuestions || 0;
+      return `${score}% (${correctAnswers}/${totalQuestions} questions correct)`;
+    }
+  }
+
+  /**
+   * ⚡ OPTIMIZED: Format intervention progress properly
+   */
+  static formatInterventionProgress(interventionData, category) {
+    // Handle case where interventionData might be undefined or category might be undefined
+    if (!interventionData && !category) {
+      return 'Not Started';
+    }
+
+    // If category passed and no intervention needed
+    if (category && category.isPassed && category.score >= 75) {
+      return 'Not Started'; // No intervention needed - category passed
+    }
+
+    // If no intervention data available
+    if (!interventionData) {
+      if (category && !category.isPassed) {
+        return 'Required'; // Intervention needed but not started yet
+      }
+      return 'Not Started';
+    }
+
+    // If intervention data indicates no intervention
+    if (!interventionData.hasIntervention) {
+      if (category && category.isPassed) {
+        return 'Not Started'; // No intervention needed - category passed
+      } else {
+        return 'Required'; // Intervention needed but not started yet
+      }
+    }
+
+    // If intervention exists but no attempts yet
+    if (interventionData.interventionAttempts === 0) {
+      return 'Not Started'; // Intervention exists but no attempts yet
+    }
+
+    const attempts = interventionData.interventionAttempts;
+    const latestScore = interventionData.latestInterventionScore || 0;
+    const passed = interventionData.latestInterventionPassed;
+
+    if (passed) {
+      return `${latestScore}% (${attempts} attempt${attempts > 1 ? 's' : ''}) - COMPLETED`;
+    } else {
+      return `${latestScore}% (${attempts} attempt${attempts > 1 ? 's' : ''}) - IN PROGRESS`;
+    }
+  }
+
+  /**
    * Determine status based on category performance
    */
   static determineStatus(category) {
@@ -286,6 +368,29 @@ class AutomaticIEPReportGenerator {
     } else {
       return 'not_started';
     }
+  }
+
+  /**
+   * ⚡ OPTIMIZED: Generate concise student summary for single-page layout
+   */
+  static generateConciseStudentSummary(categoryResult, student) {
+    const totalCategories = categoryResult.categories?.length || 0;
+    const passedCategories = categoryResult.categories?.filter(cat => cat.isPassed).length || 0;
+    const overallScore = categoryResult.overallScore || 0;
+
+    // Count interventions
+    const interventionCategories = categoryResult.categories?.filter(cat => cat.interventionRequired).length || 0;
+
+    // Determine readiness
+    const isReady = passedCategories === totalCategories;
+    const readinessText = isReady ? 'ready for reading level advancement' : 'requires intervention support';
+
+    // Format brief performance overview
+    const performanceText = overallScore >= 75 ? 'strong foundational reading skills' :
+                           overallScore >= 50 ? 'developing reading skills with targeted needs' :
+                           'emerging reading skills requiring intensive support';
+
+    return `${student.firstName} ${student.lastName} is currently functioning at the ${categoryResult.readingLevel} reading level with ${overallScore}% average performance across ${totalCategories} literacy domains. Assessment results show ${performanceText} and ${readinessText}. ${interventionCategories > 0 ? `Currently engaged in ${interventionCategories} intervention(s).` : 'No interventions required.'}`;
   }
 
   /**
