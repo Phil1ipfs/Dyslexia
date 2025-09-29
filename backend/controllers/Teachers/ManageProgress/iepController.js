@@ -1044,39 +1044,74 @@ class IEPController {
       const parentDb = mongoose.connection.useDb('parent');
       const childPdfCollection = parentDb.collection('child_pdf');
       
-      // Get teacher profile ID from users collection
+      // Get teacher profile ID using proper lookup (same logic as /current-id endpoint)
       let teacherId = null;
       if (req.user && req.user.id) {
         try {
           const teacherDb = mongoose.connection.useDb('teachers');
           const teacherProfileCollection = teacherDb.collection('profile');
-          
-          // Find teacher profile using userId from users_web
-          const teacherProfile = await teacherProfileCollection.findOne({
-            userId: new mongoose.Types.ObjectId(req.user.id)
-          });
-          
-          if (teacherProfile) {
-            teacherId = teacherProfile._id;
-            console.log(`Found teacher profile with ID: ${teacherId}`);
-          } else {
-            // Try to find by the known ID
-            const knownId = '6818bae0e9bed4ff08ab7e8c';
-            if (mongoose.Types.ObjectId.isValid(knownId)) {
-              const objId = new mongoose.Types.ObjectId(knownId);
-              const knownProfile = await teacherProfileCollection.findOne({ _id: objId });
-              
-              if (knownProfile) {
-                teacherId = knownProfile._id;
-                console.log(`Using known teacher profile with ID: ${teacherId}`);
-              } else {
-                console.warn(`No teacher profile found for user ID: ${req.user.id}`);
-              }
+
+          console.log(`Looking up teacher profile for user ID: ${req.user.id}, email: ${req.user.email}`);
+
+          // Find teacher profile using userId from users_web (same as /current-id endpoint)
+          let teacherProfile = null;
+
+          // Method 1: Find by userId (try both ObjectId and string formats)
+          if (req.user.id) {
+            const userIdAsString = req.user.id.toString();
+            const userIdAsObjectId = new mongoose.Types.ObjectId(req.user.id);
+
+            // Try ObjectId format first
+            teacherProfile = await teacherProfileCollection.findOne({
+              userId: userIdAsObjectId
+            });
+
+            // If not found, try string format
+            if (!teacherProfile) {
+              teacherProfile = await teacherProfileCollection.findOne({
+                userId: userIdAsString
+              });
+            }
+
+            if (teacherProfile) {
+              console.log(`✅ Found teacher profile by userId: ${teacherProfile._id}`);
             }
           }
+
+          // Method 2: Find by email if userId lookup failed
+          if (!teacherProfile && req.user.email) {
+            teacherProfile = await teacherProfileCollection.findOne({
+              email: req.user.email
+            });
+
+            if (teacherProfile) {
+              console.log(`✅ Found teacher profile by email: ${teacherProfile._id}`);
+            }
+          }
+
+          // Method 3: Debug - show what's actually in the collection
+          if (!teacherProfile) {
+            console.log(`❌ No teacher profile found. Debugging collection contents...`);
+            const allProfiles = await teacherProfileCollection.find({}).limit(5).toArray();
+            console.log(`Found ${allProfiles.length} teacher profiles in collection:`);
+            allProfiles.forEach((profile, index) => {
+              console.log(`  ${index + 1}. _id: ${profile._id}, userId: ${profile.userId}, email: ${profile.email}, name: ${profile.firstName} ${profile.lastName}`);
+            });
+
+            console.log(`Current request user - ID: ${req.user.id}, Email: ${req.user.email}`);
+          }
+
+          if (teacherProfile) {
+            teacherId = teacherProfile._id;
+            console.log(`✅ Successfully found teacher profile with ID: ${teacherId} for ${teacherProfile.firstName} ${teacherProfile.lastName}`);
+          } else {
+            console.warn(`⚠️ No teacher profile found for user ID: ${req.user.id}, email: ${req.user.email}`);
+          }
         } catch (error) {
-          console.error('Error fetching teacher profile:', error);
+          console.error('❌ Error fetching teacher profile:', error);
         }
+      } else {
+        console.warn('⚠️ No user information in request (req.user.id or req.user missing)');
       }
       
       // Create PDF record
