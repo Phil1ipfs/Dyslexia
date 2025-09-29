@@ -67,6 +67,7 @@ router.get('/child_pdf', authenticateToken, async (req, res) => {
         parent: parentName,
         student: studentName,
         subject: item.subject || 'Unknown',
+        content: item.content || 'No message content available',
         week: item.week || 'N/A',
         date: item.sentAt,
         pdfUrl: item.pdfS3Path,

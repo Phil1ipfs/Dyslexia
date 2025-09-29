@@ -10,7 +10,8 @@ import {
   Download,
   BookOpen,
   Eye,
-  Home
+  Home,
+  MessageSquare
 } from 'lucide-react';
 import '../../css/Parents/Feedback.css';
 import axios from 'axios';
@@ -18,6 +19,7 @@ import axios from 'axios';
 const Feedback = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [selectedPdf, setSelectedPdf] = useState(null);
+  const [viewMode, setViewMode] = useState(null); // 'pdf' or 'message'
   const [animated, setAnimated] = useState(false);
 
   // Fetch feedbacks from backend
@@ -54,12 +56,20 @@ const Feedback = () => {
   }, [selectedPdf]);
 
   // Function to handle PDF viewing
-  const viewPdf = (pdfUrl) => {
-    setSelectedPdf(pdfUrl);
+  const viewPdf = (feedback) => {
+    setSelectedPdf(feedback);
+    setViewMode('pdf');
+  };
+
+  // Function to handle message viewing
+  const viewMessage = (feedback) => {
+    setSelectedPdf(feedback);
+    setViewMode('message');
   };
 
   const closePdf = () => {
     setSelectedPdf(null);
+    setViewMode(null);
   };
 
   // Format date string to readable format
@@ -146,7 +156,7 @@ const Feedback = () => {
                   </th>
                   <th>
                     <div className="parent-feedback__th-content">
-                      <FileText size={16} className="parent-feedback__th-icon" /> 
+                      <FileText size={16} className="parent-feedback__th-icon" />
                       <span>Action</span>
                     </div>
                   </th>
@@ -169,13 +179,24 @@ const Feedback = () => {
                     <td>{feedback.week}</td>
                     <td>{formatDate(feedback.date)}</td>
                     <td>
-                      <button
-                        className="parent-feedback__view-btn"
-                        onClick={() => viewPdf(feedback.pdfUrl)}
-                      >
-                        <Eye size={16} />
-                        <span>View Report</span>
-                      </button>
+                      <div className="parent-feedback__action-buttons">
+                        <button
+                          className="parent-feedback__message-btn"
+                          onClick={() => viewMessage(feedback)}
+                          title="View message content"
+                        >
+                          <MessageSquare size={16} />
+                          <span>View Message</span>
+                        </button>
+                        <button
+                          className="parent-feedback__view-btn"
+                          onClick={() => viewPdf(feedback)}
+                          title="View full report with PDF"
+                        >
+                          <Eye size={16} />
+                          <span>View Report</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -201,16 +222,18 @@ const Feedback = () => {
         <div className="parent-feedback__modal-overlay" onClick={closePdf}>
           <div className="parent-feedback__modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="parent-feedback__modal-header">
-              <h2>Progress Report</h2>
+              <h2>{viewMode === 'message' ? 'Teacher Message' : 'Progress Report'}</h2>
               <div className="parent-feedback__modal-actions">
-                <a
-                  href={selectedPdf}
-                  download
-                  className="parent-feedback__download-btn"
-                >
-                  <Download size={16} />
-                  <span>Download</span>
-                </a>
+                {viewMode === 'pdf' && (
+                  <a
+                    href={selectedPdf.pdfUrl}
+                    download
+                    className="parent-feedback__download-btn"
+                  >
+                    <Download size={16} />
+                    <span>Download</span>
+                  </a>
+                )}
                 <button
                   className="parent-feedback__close-btn"
                   onClick={closePdf}
@@ -220,14 +243,57 @@ const Feedback = () => {
                 </button>
               </div>
             </div>
-            <div className="parent-feedback__modal-body">
-              <iframe
-                src={selectedPdf}
-                title="Progress Report PDF"
-                className="parent-feedback__pdf-frame"
-                allow="autoplay"
-              />
-            </div>
+
+            {/* Message Content Section - Only show when viewing message */}
+            {viewMode === 'message' && (
+              <div className="parent-feedback__message-section">
+                <div className="parent-feedback__message-info">
+                  <div className="parent-feedback__message-subject">
+                    <strong>Subject: </strong>
+                    <span>{selectedPdf.subject || 'No subject available'}</span>
+                  </div>
+                  <div className="parent-feedback__message-from">
+                    <strong>From: </strong>
+                    <span>{selectedPdf.teacher}</span>
+                  </div>
+                  <div className="parent-feedback__message-date">
+                    <strong>Date: </strong>
+                    <span>{formatDate(selectedPdf.date)}</span>
+                  </div>
+                </div>
+                <div className="parent-feedback__message-content-box">
+                  <strong>Message:</strong>
+                  <div className="parent-feedback__message-text-full">
+                    {selectedPdf.content || 'No message content available'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PDF Section - Only show when viewing PDF report */}
+            {viewMode === 'pdf' && (
+              <div className="parent-feedback__modal-body">
+                <iframe
+                  src={selectedPdf.pdfUrl}
+                  title="Progress Report PDF"
+                  className="parent-feedback__pdf-frame"
+                  allow="autoplay"
+                />
+              </div>
+            )}
+
+            {/* Message-only mode actions */}
+            {viewMode === 'message' && (
+              <div className="parent-feedback__message-actions">
+                <button
+                  className="parent-feedback__view-full-btn"
+                  onClick={() => setViewMode('pdf')}
+                >
+                  <Eye size={16} />
+                  <span>View Full Report with PDF</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

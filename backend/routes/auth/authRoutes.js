@@ -1,10 +1,29 @@
 // routes/auth/authRoutes.js
 const express = require('express');
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { authenticateToken } = require('../../middleware/auth');
+const {
+  loginLimiter,
+  aggressiveLoginLimiter,
+  createAccountLimiter,
+  securityHeaders,
+  loginLogger
+} = require('../../middleware/rateLimiter');
+
+const {
+  accountLockout,
+  validatePasswordStrength,
+  sanitizeInput,
+  advancedSecurityHeaders,
+  suspiciousActivityDetector,
+  securePasswordCompare
+} = require('../../middleware/advancedSecurity');
 const router = express.Router();
+
+// Apply advanced security headers to all auth routes
+router.use(advancedSecurityHeaders);
 
 /**
  * Checks if a string is a valid bcrypt hash
@@ -46,7 +65,12 @@ const normalizeRole = (role) => {
  * @desc    Authenticate user & get token
  * @access  Public
  */
-router.post('/login', async (req, res) => {
+router.post('/login',
+  loginLimiter,
+  aggressiveLoginLimiter,
+  createAccountLimiter(3, 60 * 60 * 1000), // 3 attempts per hour per email
+  loginLogger,
+  async (req, res) => {
   const { email, password, expectedRole } = req.body;
 
   // Basic validation
@@ -54,10 +78,59 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'Email & password required' });
   }
 
+  // Enhanced security validation
+  if (!expectedRole) {
+    console.warn(`[SECURITY] Login attempt without expectedRole for: ${email}`);
+    return res.status(400).json({ message: 'Account type must be specified' });
+  }
+
+  // Validate expectedRole is one of the allowed values
+  const allowedRoles = ['parent', 'teacher', 'admin'];
+  if (!allowedRoles.includes(expectedRole.toLowerCase())) {
+    console.warn(`[SECURITY] Invalid expectedRole '${expectedRole}' for: ${email}`);
+    return res.status(400).json({ message: 'Invalid account type specified' });
+  }
+
+  // Advanced input sanitization
+  const sanitizedEmail = sanitizeInput(email, 'email');
+  const sanitizedRole = sanitizeInput(expectedRole, 'role');
+
+  if (!sanitizedEmail || sanitizedEmail.length < 3) {
+    console.warn(`[SECURITY] Invalid email format for: ${email}, IP: ${req.ip}`);
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
+
+  // Check account lockout
+  if (accountLockout.isAccountLocked(sanitizedEmail)) {
+    const lockoutInfo = accountLockout.getLockoutInfo(sanitizedEmail);
+    console.warn(`[SECURITY] Account locked attempt: ${sanitizedEmail}, IP: ${req.ip}, Remaining: ${lockoutInfo.remainingTime} minutes`);
+    return res.status(423).json({
+      message: 'Account temporarily locked due to multiple failed attempts',
+      retryAfter: lockoutInfo.remainingTime
+    });
+  }
+
+  // Check for suspicious activity
+  const activityCheck = suspiciousActivityDetector.recordActivity(req.ip, {
+    type: 'login_attempt',
+    email: sanitizedEmail,
+    userAgent: req.get('User-Agent')
+  });
+
+  if (activityCheck.isSuspicious) {
+    console.warn(`[SECURITY] Suspicious activity detected: IP ${req.ip}, Score: ${activityCheck.score}, Reasons: ${activityCheck.reasons.join(', ')}`);
+    return res.status(429).json({
+      message: 'Too many requests detected. Please try again later.',
+      retryAfter: '15 minutes'
+    });
+  }
+
   try {
     console.log('=== LOGIN ATTEMPT ===');
-    console.log('Login attempt for:', email);
+    console.log('Login attempt for:', sanitizedEmail);
     console.log('Expected role:', expectedRole);
+    console.log('IP address:', req.ip || req.connection.remoteAddress);
+    console.log('User agent:', req.get('User-Agent'));
     
     // Get databases and collections
     const usersDb = mongoose.connection.useDb('users_web');
@@ -65,27 +138,27 @@ router.post('/login', async (req, res) => {
     const rolesCollection = usersDb.collection('roles');
     
     // Fetch user from users_web.users
-    const user = await usersCollection.findOne({ email: email.toLowerCase() });
+    const user = await usersCollection.findOne({ email: sanitizedEmail });
 
     if (!user) {
-      console.log('User not found:', email);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.warn(`[SECURITY] User not found: ${sanitizedEmail}, IP: ${req.ip}`);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
     
     console.log('User found:', user.email);
     
-    // Verify password
+    // Secure password verification with timing attack prevention
     let isValidPassword = false;
     try {
       // Check for valid bcrypt hash in passwordHash field first
-      if (user.passwordHash && typeof user.passwordHash === 'string' && 
+      if (user.passwordHash && typeof user.passwordHash === 'string' &&
           (user.passwordHash.startsWith('$2a$') || user.passwordHash.startsWith('$2b$'))) {
-        isValidPassword = await bcrypt.compare(password, user.passwordHash);
-      } 
+        isValidPassword = await securePasswordCompare(password, user.passwordHash);
+      }
       // Fall back to password field if it contains a valid bcrypt hash
-      else if (user.password && typeof user.password === 'string' && 
+      else if (user.password && typeof user.password === 'string' &&
                (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
-        isValidPassword = await bcrypt.compare(password, user.password);
+        isValidPassword = await securePasswordCompare(password, user.password);
       }
     } catch (bcryptError) {
       console.error('Password verification error:', bcryptError);
@@ -93,9 +166,22 @@ router.post('/login', async (req, res) => {
     }
 
     if (!isValidPassword) {
-      console.log('Invalid password for user:', email);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      // Record failed attempt for account lockout
+      const isLocked = accountLockout.recordFailedAttempt(sanitizedEmail, req.ip);
+
+      // Record suspicious activity
+      suspiciousActivityDetector.recordActivity(req.ip, {
+        type: 'failed_login',
+        email: sanitizedEmail,
+        userAgent: req.get('User-Agent')
+      });
+
+      console.warn(`[SECURITY] Invalid password for user: ${sanitizedEmail}, IP: ${req.ip}${isLocked ? ' - ACCOUNT LOCKED' : ''}`);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    // Clear failed attempts on successful password verification
+    accountLockout.clearFailedAttempts(sanitizedEmail);
 
     // Get user's roles by resolving role references
     let userRoles = [];
@@ -125,63 +211,79 @@ router.post('/login', async (req, res) => {
     let isAuthorized = userRoles.includes(normalizedExpectedRole);
     let parentProfile = null;
 
-    // If not authorized but trying to log in as parent, check parent profile
-    if (!isAuthorized && normalizedExpectedRole === 'parent') {
-      // Try different parent collections
-      const parentDatabases = ['Literexia', 'parent'];
-      const parentCollections = ['parent', 'parent_profile', 'profile'];
+    // SECURITY FIX: Strict role validation
+    if (normalizedExpectedRole === 'parent') {
+      // For parent login, user MUST have parent role OR have existing parent profile
+      if (userRoles.includes('parent')) {
+        isAuthorized = true;
+        console.log('User has parent role in users_web.users');
+      } else {
+        // Only check for existing parent profile, DO NOT create one
+        console.log('User does not have parent role, checking for existing parent profile...');
+        const parentDatabases = ['parent'];
+        const parentCollections = ['parent_profile'];
 
-      for (const dbName of parentDatabases) {
-        const db = mongoose.connection.useDb(dbName);
-        for (const collName of parentCollections) {
-          try {
-            const collection = db.collection(collName);
-            parentProfile = await collection.findOne({ 
-              $or: [
-                { email: email.toLowerCase() },
-                { userId: user._id },
-                { userId: user._id.toString() }
-              ]
-            });
-            
-            if (parentProfile) {
-              console.log(`Found parent profile in ${dbName}.${collName}`);
-              isAuthorized = true;
-              break;
+        for (const dbName of parentDatabases) {
+          const db = mongoose.connection.useDb(dbName);
+          for (const collName of parentCollections) {
+            try {
+              const collection = db.collection(collName);
+              parentProfile = await collection.findOne({
+                $or: [
+                  { email: email.toLowerCase() },
+                  { userId: user._id },
+                  { userId: user._id.toString() }
+                ]
+              });
+
+              if (parentProfile) {
+                console.log(`Found existing parent profile in ${dbName}.${collName}`);
+                isAuthorized = true;
+                break;
+              }
+            } catch (err) {
+              console.log(`Error checking ${dbName}.${collName}:`, err.message);
             }
-          } catch (err) {
-            console.log(`Error checking ${dbName}.${collName}:`, err.message);
           }
+          if (parentProfile) break;
         }
-        if (parentProfile) break;
-      }
 
-      // If still no profile found, create one in Literexia.parent
-      if (!parentProfile) {
-        try {
-          const literexiaDb = mongoose.connection.useDb('Literexia');
-          const parentCollection = literexiaDb.collection('parent');
-          
-          parentProfile = {
-            userId: user._id,
-            email: email.toLowerCase(),
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-          
-          const result = await parentCollection.insertOne(parentProfile);
-          parentProfile._id = result.insertedId;
-          console.log('Created new parent profile:', result.insertedId);
-          isAuthorized = true;
-        } catch (err) {
-          console.error('Error creating parent profile:', err);
+        // SECURITY FIX: DO NOT auto-create parent profiles!
+        if (!parentProfile) {
+          console.warn(`[SECURITY] No parent profile found for ${sanitizedEmail}. Access denied.`);
+          isAuthorized = false;
         }
+      }
+    } else if (normalizedExpectedRole === 'teacher') {
+      // For teacher login, check teacher profile exists
+      if (userRoles.includes('teacher')) {
+        const teachersDb = mongoose.connection.useDb('teachers');
+        const teacherProfile = await teachersDb.collection('profile').findOne({
+          $or: [
+            { email: email.toLowerCase() },
+            { userId: user._id },
+            { userId: user._id.toString() }
+          ]
+        });
+
+        if (!teacherProfile) {
+          console.warn(`[SECURITY] No teacher profile found for ${sanitizedEmail}. Access denied.`);
+          isAuthorized = false;
+        } else {
+          console.log('[SECURITY] Teacher profile validated');
+        }
+      }
+    } else if (normalizedExpectedRole === 'admin') {
+      // Admin validation - must have admin role
+      if (!userRoles.includes('admin')) {
+        console.warn(`[SECURITY] User ${sanitizedEmail} does not have admin role. Access denied.`);
+        isAuthorized = false;
       }
     }
 
     if (!isAuthorized) {
-      console.log('Role mismatch. Expected:', normalizedExpectedRole, 'Has:', userRoles);
-      return res.status(403).json({ message: 'Not authorized for this resource' });
+      console.warn(`[SECURITY] Authorization failed for ${sanitizedEmail}. Expected: ${normalizedExpectedRole}, Has: ${userRoles.join(', ')}, IP: ${req.ip}`);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Generate JWT token with verified roles and parent profile ID if applicable
@@ -202,8 +304,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
     
-    console.log('Login successful for:', email);
-    console.log('Roles assigned:', tokenPayload.roles);
+    console.log(`[SECURITY] Login successful for: ${sanitizedEmail}, Roles: ${tokenPayload.roles.join(', ')}, IP: ${req.ip}`);
     console.log('=== END LOGIN ===');
 
     return res.json({
@@ -227,7 +328,10 @@ router.post('/login', async (req, res) => {
  * @desc    Update user password
  * @access  Private
  */
-router.post('/update-password', authenticateToken, async (req, res) => {
+router.post('/update-password',
+  loginLimiter, // Apply rate limiting to password changes too
+  authenticateToken,
+  async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
@@ -283,7 +387,8 @@ router.post('/update-password', authenticateToken, async (req, res) => {
     }
     
     if (!passwordIsValid) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
+      console.warn(`[SECURITY] Invalid current password attempt for user: ${req.user.email || req.user.id}, IP: ${req.ip}`);
+      return res.status(400).json({ message: 'Authentication failed' });
     }
     
     // Hash the new password
