@@ -191,6 +191,92 @@ function TeacherProfile() {
     return phoneRegex.test(cleanPhone);
   };
 
+  // Date of birth validation
+  const validateDateOfBirth = (dob) => {
+    if (!dob) {
+      return null; // Optional field, no validation needed if empty
+    }
+
+    const selectedDate = new Date(dob);
+    const today = new Date();
+    const minAge = 18;
+
+    // Calculate minimum birth date (18 years ago)
+    const minBirthDate = new Date();
+    minBirthDate.setFullYear(today.getFullYear() - minAge);
+
+    // Check if date is in the future
+    if (selectedDate > today) {
+      return "Date of birth cannot be in the future.";
+    }
+
+    // Check if person is at least 18 years old
+    if (selectedDate > minBirthDate) {
+      return "Teachers must be at least 18 years old.";
+    }
+
+    // Check if date is reasonable (not more than 100 years ago)
+    const maxBirthDate = new Date();
+    maxBirthDate.setFullYear(today.getFullYear() - 100);
+    if (selectedDate < maxBirthDate) {
+      return "Please enter a valid birth date.";
+    }
+
+    return null; // Valid
+  };
+
+  // Enhanced frontend name validation to match backend validation
+  const validateName = (name, fieldName, isMiddleName = false) => {
+    if (!name || typeof name !== 'string') {
+      return `${fieldName} is required and cannot be empty.`;
+    }
+
+    const trimmedName = name.trim();
+
+    // Check for numbers (critical validation)
+    if (/\d/.test(trimmedName)) {
+      return `${fieldName} cannot contain numbers. "${trimmedName}" is not allowed.`;
+    }
+
+    // Special validation for middle name (can be single letter with period)
+    if (isMiddleName) {
+      // Allow single letter with optional period (e.g., "T", "T.", "Jose", etc.)
+      if (trimmedName.length === 1 || (trimmedName.length === 2 && trimmedName.endsWith('.'))) {
+        // Valid single letter middle name
+        if (!/^[a-zA-Z]\.?$/.test(trimmedName)) {
+          return `${fieldName} should be a letter optionally followed by a period (e.g., "T" or "T.").`;
+        }
+        return null; // Valid single letter middle name
+      }
+    }
+
+    // Length validation (minimum 2 for regular names, but middle name can be 1)
+    const minLength = isMiddleName ? 1 : 2;
+    if (trimmedName.length < minLength) {
+      return `${fieldName} must be at least ${minLength} character${minLength > 1 ? 's' : ''} long.`;
+    }
+
+    if (trimmedName.length > 50) {
+      return `${fieldName} is too long. Maximum 50 characters allowed.`;
+    }
+
+    // Removed consecutive character check - names like "Nicholasss" are valid
+
+    // Check for invalid spacing
+    if (/\s{2,}/.test(trimmedName) || trimmedName !== trimmedName.trim()) {
+      return `${fieldName} has invalid spacing.`;
+    }
+
+    // Check for basic character validity (letters, spaces, hyphens, apostrophes, and periods for middle names)
+    const allowedPattern = isMiddleName ? /^[a-zA-Z\s\-'.]+$/ : /^[a-zA-Z\s\-']+$/;
+    if (!allowedPattern.test(trimmedName)) {
+      const allowedChars = isMiddleName ? "letters, spaces, hyphens (-), apostrophes ('), and periods (.)" : "letters, spaces, hyphens (-), and apostrophes (')";
+      return `${fieldName} contains invalid characters. Only ${allowedChars} are allowed.`;
+    }
+
+    return null; // Valid
+  };
+
   // Handle profile image click - only show controls when in edit mode
   const handleImageClick = () => {
     if (isEditing) {
@@ -343,22 +429,39 @@ function TeacherProfile() {
     }
   };
 
-  // Toggle edit mode with validation
+  // Toggle edit mode with enhanced validation
   const toggleEdit = async () => {
     if (isEditing) {
-      // Form validation
-      if (!formData.firstName.trim() || !formData.lastName.trim()) {
-        return setErrorDialog({ show: true, message: "First and last name are required." });
+      // Enhanced frontend validation - check names first
+      const firstNameError = validateName(formData.firstName, 'First name');
+      if (firstNameError) {
+        return setErrorDialog({ show: true, message: firstNameError });
       }
 
-      if (!formData.email.trim()) {
-        return setErrorDialog({ show: true, message: "Email is required." });
+      const lastNameError = validateName(formData.lastName, 'Last name');
+      if (lastNameError) {
+        return setErrorDialog({ show: true, message: lastNameError });
       }
 
-      if (!isValidEmail(formData.email)) {
-        return setErrorDialog({ show: true, message: "Please enter a valid email address." });
+      // Middle name validation (optional field, special rules)
+      if (formData.middleName && formData.middleName.trim()) {
+        const middleNameError = validateName(formData.middleName, 'Middle name', true);
+        if (middleNameError) {
+          return setErrorDialog({ show: true, message: middleNameError });
+        }
       }
 
+      // Emergency contact name validation (if provided)
+      if (formData.emergencyContact?.name && formData.emergencyContact.name.trim()) {
+        const emergencyNameError = validateName(formData.emergencyContact.name, 'Emergency contact name');
+        if (emergencyNameError) {
+          return setErrorDialog({ show: true, message: emergencyNameError });
+        }
+      }
+
+      // Email validation removed - email field is read-only and cannot be changed
+
+      // Contact number validation
       if (!formData.contact.trim()) {
         return setErrorDialog({ show: true, message: "Contact number is required." });
       }
@@ -368,6 +471,24 @@ function TeacherProfile() {
           show: true,
           message: "Please enter a valid Philippine phone number (e.g., +63 912 345 6789 or 0912 345 6789)."
         });
+      }
+
+      // Emergency contact number validation (if provided)
+      if (formData.emergencyContact?.number && formData.emergencyContact.number.trim()) {
+        if (!isValidPhoneNumber(formData.emergencyContact.number)) {
+          return setErrorDialog({
+            show: true,
+            message: "Please enter a valid emergency contact phone number."
+          });
+        }
+      }
+
+      // Date of birth validation (if provided)
+      if (formData.dob && formData.dob.trim()) {
+        const dobError = validateDateOfBirth(formData.dob);
+        if (dobError) {
+          return setErrorDialog({ show: true, message: dobError });
+        }
       }
       try {
         // Create a copy of the form data to normalize
@@ -405,14 +526,44 @@ function TeacherProfile() {
         });
       } catch (error) {
         console.error("Error updating profile:", error);
+
+        // Enhanced error handling for backend validation errors
+        let errorMessage = "Failed to update profile. Please try again later.";
+
+        if (error.response?.data) {
+          const errorData = error.response.data;
+
+          // Check for validation errors in the new dialog-friendly format
+          if (errorData.dialogErrors && errorData.dialogErrors.length > 0) {
+            // Display the first validation error in a user-friendly way
+            const firstError = errorData.dialogErrors[0];
+            errorMessage = `${firstError.displayField}: ${firstError.message}`;
+            if (firstError.suggestion) {
+              errorMessage += ` ${firstError.suggestion}`;
+            }
+          }
+          // Check for legacy validation errors format
+          else if (errorData.details && Array.isArray(errorData.details) && errorData.details.length > 0) {
+            errorMessage = errorData.details[0]; // Show first validation error
+          }
+          // Check for general error message
+          else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+          // Check for specific message
+          else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        }
+
         setErrorDialog({
           show: true,
-          message: error.response?.data?.error || "Failed to update profile. Please try again later."
+          message: errorMessage
         });
 
         setLastAction({
           type: 'error',
-          message: `Failed to update profile: ${error.message || 'Unknown error'}`,
+          message: `Failed to update profile: ${errorMessage}`,
           timestamp: new Date()
         });
       }
@@ -596,23 +747,33 @@ function TeacherProfile() {
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleChange}
-                    readOnly={!isEditing}
+                    readOnly={true}
                     placeholder="Email Address"
                     aria-label="Email Address"
+                    style={{ backgroundColor: '#f8f9fa', cursor: 'not-allowed' }}
+                    title="Email cannot be changed as it's used for authentication"
                   />
                 </div>
                 <div className="lit-input-group">
                   <span className="lit-input-label">Position:</span>
-                  <input
-                    type="text"
+                  <select
                     name="position"
                     value={formData.position}
                     onChange={handleChange}
-                    readOnly={!isEditing}
-                    placeholder="Position"
+                    disabled={!isEditing}
                     aria-label="Position"
-                  />
+                  >
+                    <option value="">Select Position</option>
+                    <option value="Grade 1 Teacher">Grade 1 Teacher</option>
+                    <option value="Grade 2 Teacher">Grade 2 Teacher</option>
+                    <option value="Grade 3 Teacher">Grade 3 Teacher</option>
+                    <option value="Grade 4 Teacher">Grade 4 Teacher</option>
+                    <option value="Special Education Teacher">Special Education Teacher</option>
+                    <option value="Reading Specialist">Reading Specialist</option>
+                    <option value="Department Head">Department Head</option>
+                    <option value="Assistant Principal">Assistant Principal</option>
+                    <option value="Principal">Principal</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -710,6 +871,9 @@ function TeacherProfile() {
                 onChange={handleChange}
                 readOnly={!isEditing}
                 aria-label="Date of Birth"
+                max={new Date().toISOString().split('T')[0]}
+                min={new Date(new Date().getFullYear() - 100, 0, 1).toISOString().split('T')[0]}
+                title="Teachers must be at least 18 years old. Future dates are not allowed."
               />
             </div>
             <div className="lit-input-group">
@@ -743,6 +907,9 @@ function TeacherProfile() {
                 <option value="">Select Civil Status</option>
                 <option value="Single">Single</option>
                 <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Separated">Separated</option>
+                <option value="Widowed">Widowed</option>
               </select>
             </div>
 

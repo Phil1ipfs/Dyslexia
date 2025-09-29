@@ -135,16 +135,113 @@ const validateAndSanitizeInput = {
 };
 
 /**
- * Comprehensive input validation for profile updates with detailed logging
+ * Advanced name validation helper functions
+ */
+const advancedNameValidation = {
+  // Check for suspicious consecutive characters
+  hasConsecutiveChars: (name, count = 3) => {
+    if (!name || typeof name !== 'string') return false;
+
+    // Check for same character repeated consecutively
+    const pattern = new RegExp(`(.)\\1{${count - 1},}`, 'i');
+    return pattern.test(name);
+  },
+
+  // Check for too many spaces or invalid spacing
+  hasInvalidSpacing: (name) => {
+    if (!name || typeof name !== 'string') return false;
+
+    // Check for multiple consecutive spaces or leading/trailing spaces after trim
+    return /\s{2,}/.test(name) || name !== name.trim();
+  },
+
+  // Check for suspicious patterns (like keyboard mashing)
+  hasSuspiciousPattern: (name) => {
+    if (!name || typeof name !== 'string') return false;
+
+    // Check for common keyboard patterns
+    const suspiciousPatterns = [
+      /qwerty/i, /asdf/i, /zxcv/i, /123/i, /abc/i,
+      /qqqq/i, /aaaa/i, /ssss/i, /dddd/i, /ffff/i
+    ];
+
+    return suspiciousPatterns.some(pattern => pattern.test(name));
+  },
+
+  // Check for mixed scripts (basic check)
+  hasMixedScripts: (name) => {
+    if (!name || typeof name !== 'string') return false;
+
+    // Very basic check for mixed Latin and non-Latin characters
+    const hasLatin = /[a-zA-Z]/.test(name);
+    const hasNonLatin = /[^\x00-\x7F\s\-']/.test(name);
+
+    return hasLatin && hasNonLatin;
+  }
+};
+
+/**
+ * Enhanced dialog-friendly error message formatter
+ */
+const formatDialogError = (field, error, suggestion = null) => {
+  const fieldDisplayNames = {
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    middleName: 'Middle Name',
+    email: 'Email Address',
+    contact: 'Contact Number',
+    emergencyContact: 'Emergency Contact',
+    dob: 'Date of Birth',
+    gender: 'Gender',
+    civilStatus: 'Civil Status',
+    position: 'Position',
+    address: 'Address'
+  };
+
+  const displayName = fieldDisplayNames[field] || field;
+
+  let formattedError = {
+    field: field,
+    displayField: displayName,
+    message: error,
+    type: 'validation_error',
+    severity: 'error'
+  };
+
+  if (suggestion) {
+    formattedError.suggestion = suggestion;
+  }
+
+  // Add specific icons/indicators for different error types
+  if (error.includes('required')) {
+    formattedError.icon = 'required';
+    formattedError.severity = 'error';
+  } else if (error.includes('format') || error.includes('invalid')) {
+    formattedError.icon = 'format';
+    formattedError.severity = 'warning';
+  } else if (error.includes('numbers') || error.includes('special characters')) {
+    formattedError.icon = 'restriction';
+    formattedError.severity = 'error';
+  } else if (error.includes('consecutive') || error.includes('pattern')) {
+    formattedError.icon = 'pattern';
+    formattedError.severity = 'warning';
+  }
+
+  return formattedError;
+};
+
+/**
+ * Comprehensive input validation for profile updates with detailed logging and dialog-friendly errors
  */
 const validateProfileInput = (data) => {
   const errors = [];
+  const dialogErrors = []; // New: Dialog-friendly error format
   const validationLog = [];
 
   console.log('🔍 [VALIDATION] Starting comprehensive input validation...');
 
   // Helper function to log validation details
-  const logValidation = (field, value, isValid, errorMessage = null) => {
+  const logValidation = (field, value, isValid, errorMessage = null, suggestion = null) => {
     const logEntry = {
       field,
       value: typeof value === 'string' ? value.substring(0, 50) : value,
@@ -157,32 +254,35 @@ const validateProfileInput = (data) => {
       console.log(`✅ [VALIDATION] ${field}: VALID - "${logEntry.value}"`);
     } else {
       console.log(`❌ [VALIDATION] ${field}: INVALID - "${logEntry.value}" - ${errorMessage}`);
+      // Add to both legacy errors array and new dialog-friendly format
+      errors.push(errorMessage);
+      dialogErrors.push(formatDialogError(field, errorMessage, suggestion));
     }
   };
 
-  // Required field validation with detailed logging
+  // Required field validation with detailed logging and dialog-friendly messages
   console.log('🔍 [VALIDATION] Checking required fields...');
 
   if (!data.firstName || data.firstName.trim().length === 0) {
-    const error = 'First name is required and cannot be empty';
-    errors.push(error);
-    logValidation('firstName', data.firstName, false, error);
+    const error = 'First name is required and cannot be empty.';
+    const suggestion = 'Please enter your first name using only letters, spaces, hyphens, and apostrophes.';
+    logValidation('firstName', data.firstName, false, error, suggestion);
   } else {
     logValidation('firstName', data.firstName, true);
   }
 
   if (!data.lastName || data.lastName.trim().length === 0) {
-    const error = 'Last name is required and cannot be empty';
-    errors.push(error);
-    logValidation('lastName', data.lastName, false, error);
+    const error = 'Last name is required and cannot be empty.';
+    const suggestion = 'Please enter your last name using only letters, spaces, hyphens, and apostrophes.';
+    logValidation('lastName', data.lastName, false, error, suggestion);
   } else {
     logValidation('lastName', data.lastName, true);
   }
 
   if (!data.email || data.email.trim().length === 0) {
-    const error = 'Email is required and cannot be empty';
-    errors.push(error);
-    logValidation('email', data.email, false, error);
+    const error = 'Email address is required and cannot be empty.';
+    const suggestion = 'Please enter a valid email address (e.g., teacher@school.edu.ph).';
+    logValidation('email', data.email, false, error, suggestion);
   } else {
     logValidation('email', data.email, true);
   }
@@ -191,54 +291,103 @@ const validateProfileInput = (data) => {
   console.log('🔍 [VALIDATION] Checking email format...');
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (data.email && !emailRegex.test(data.email)) {
-    const error = 'Invalid email format. Please use format: example@domain.com';
-    errors.push(error);
-    logValidation('email format', data.email, false, error);
+    const error = 'Invalid email format. Please use a valid email address.';
+    const suggestion = 'Email should include @ symbol and domain (e.g., teacher@school.edu.ph).';
+    logValidation('email', data.email, false, error, suggestion);
   } else if (data.email) {
-    logValidation('email format', data.email, true);
+    logValidation('email', data.email, true);
   }
 
   // Name validation with detailed logging (no numbers or special characters)
   console.log('🔍 [VALIDATION] Checking name format restrictions...');
   const nameRegex = /^[a-zA-Z\s\-']+$/;
 
-  // STRICT VALIDATION: Check for numbers first (explicit rejection)
-  if (data.firstName && /\d/.test(data.firstName)) {
-    const error = `First name "${data.firstName}" contains numbers which are not allowed. Please use only letters, spaces, hyphens, and apostrophes.`;
-    errors.push(error);
-    logValidation('firstName format', data.firstName, false, error);
-  } else if (data.firstName && !nameRegex.test(data.firstName)) {
-    const error = 'First name can only contain letters, spaces, hyphens, and apostrophes. Numbers and special characters are not allowed.';
-    errors.push(error);
-    logValidation('firstName format', data.firstName, false, error);
+  // ENHANCED FIRST NAME VALIDATION with advanced pattern detection
+  if (data.firstName && data.firstName.trim()) {
+    const fname = data.firstName.trim();
+
+    // Check for numbers first (explicit rejection)
+    if (/\d/.test(fname)) {
+      const error = `First name cannot contain numbers. "${fname}" is not allowed.`;
+      const suggestion = 'Please use only letters, spaces, hyphens (-), and apostrophes (\') in your first name.';
+      logValidation('firstName', fname, false, error, suggestion);
+    }
+    // Length validation
+    else if (fname.length < 2) {
+      const error = 'First name must be at least 2 characters long.';
+      const suggestion = 'Please enter a valid first name with at least 2 letters.';
+      logValidation('firstName', fname, false, error, suggestion);
+    }
+    else if (fname.length > 50) {
+      const error = 'First name is too long. Maximum 50 characters allowed.';
+      const suggestion = 'Please shorten your first name to 50 characters or less.';
+      logValidation('firstName', fname, false, error, suggestion);
+    }
+    // Advanced pattern validation
+    else if (advancedNameValidation.hasConsecutiveChars(fname, 3)) {
+      const error = 'First name contains too many consecutive identical characters.';
+      const suggestion = 'Please check your first name for repeated characters (e.g., "aaa" or "lll").';
+      logValidation('firstName', fname, false, error, suggestion);
+    }
+    else if (advancedNameValidation.hasInvalidSpacing(fname)) {
+      const error = 'First name has invalid spacing.';
+      const suggestion = 'Please remove extra spaces and ensure proper formatting.';
+      logValidation('firstName', fname, false, error, suggestion);
+    }
+    else if (advancedNameValidation.hasSuspiciousPattern(fname)) {
+      const error = 'First name contains an invalid pattern.';
+      const suggestion = 'Please enter a proper first name without keyboard patterns or random characters.';
+      logValidation('firstName', fname, false, error, suggestion);
+    }
+    // Basic character validation
+    else if (!nameRegex.test(fname)) {
+      const error = 'First name contains invalid characters.';
+      const suggestion = 'Only letters, spaces, hyphens (-), and apostrophes (\') are allowed.';
+      logValidation('firstName', fname, false, error, suggestion);
+    }
+    else {
+      logValidation('firstName', fname, true);
+    }
   } else if (data.firstName) {
-    logValidation('firstName format', data.firstName, true);
+    logValidation('firstName', data.firstName, true);
   }
 
-  // STRICT VALIDATION: Check last name for numbers
+  // STRICT VALIDATION: Check last name for numbers and enhanced validation
   if (data.lastName && /\d/.test(data.lastName)) {
-    const error = `Last name "${data.lastName}" contains numbers which are not allowed. Please use only letters, spaces, hyphens, and apostrophes.`;
-    errors.push(error);
-    logValidation('lastName format', data.lastName, false, error);
+    const error = `Last name cannot contain numbers. "${data.lastName}" is not allowed.`;
+    const suggestion = 'Please use only letters, spaces, hyphens (-), and apostrophes (\') in your last name.';
+    logValidation('lastName', data.lastName, false, error, suggestion);
+  } else if (data.lastName && data.lastName.trim().length < 2) {
+    const error = 'Last name must be at least 2 characters long.';
+    const suggestion = 'Please enter a valid last name with at least 2 letters.';
+    logValidation('lastName', data.lastName, false, error, suggestion);
+  } else if (data.lastName && data.lastName.trim().length > 50) {
+    const error = 'Last name is too long. Maximum 50 characters allowed.';
+    const suggestion = 'Please shorten your last name to 50 characters or less.';
+    logValidation('lastName', data.lastName, false, error, suggestion);
   } else if (data.lastName && !nameRegex.test(data.lastName)) {
-    const error = 'Last name can only contain letters, spaces, hyphens, and apostrophes. Numbers and special characters are not allowed.';
-    errors.push(error);
-    logValidation('lastName format', data.lastName, false, error);
+    const error = 'Last name contains invalid characters.';
+    const suggestion = 'Only letters, spaces, hyphens (-), and apostrophes (\') are allowed.';
+    logValidation('lastName', data.lastName, false, error, suggestion);
   } else if (data.lastName) {
-    logValidation('lastName format', data.lastName, true);
+    logValidation('lastName', data.lastName, true);
   }
 
-  // STRICT VALIDATION: Check middle name for numbers
+  // STRICT VALIDATION: Check middle name for numbers and enhanced validation
   if (data.middleName && data.middleName.trim() && /\d/.test(data.middleName)) {
-    const error = `Middle name "${data.middleName}" contains numbers which are not allowed. Please use only letters, spaces, hyphens, and apostrophes.`;
-    errors.push(error);
-    logValidation('middleName format', data.middleName, false, error);
+    const error = `Middle name cannot contain numbers. "${data.middleName}" is not allowed.`;
+    const suggestion = 'Please use only letters, spaces, hyphens (-), and apostrophes (\') in your middle name.';
+    logValidation('middleName', data.middleName, false, error, suggestion);
+  } else if (data.middleName && data.middleName.trim() && data.middleName.trim().length > 50) {
+    const error = 'Middle name is too long. Maximum 50 characters allowed.';
+    const suggestion = 'Please shorten your middle name to 50 characters or less.';
+    logValidation('middleName', data.middleName, false, error, suggestion);
   } else if (data.middleName && data.middleName.trim() && !nameRegex.test(data.middleName)) {
-    const error = 'Middle name can only contain letters, spaces, hyphens, and apostrophes. Numbers and special characters are not allowed.';
-    errors.push(error);
-    logValidation('middleName format', data.middleName, false, error);
+    const error = 'Middle name contains invalid characters.';
+    const suggestion = 'Only letters, spaces, hyphens (-), and apostrophes (\') are allowed.';
+    logValidation('middleName', data.middleName, false, error, suggestion);
   } else if (data.middleName && data.middleName.trim()) {
-    logValidation('middleName format', data.middleName, true);
+    logValidation('middleName', data.middleName, true);
   }
 
   // Phone number validation with detailed logging
@@ -246,11 +395,11 @@ const validateProfileInput = (data) => {
   if (data.contact && data.contact.trim()) {
     const sanitizedPhone = validateAndSanitizeInput.sanitizePhoneNumber(data.contact);
     if (!sanitizedPhone) {
-      const error = 'Invalid phone number format. Please use valid Philippines phone number format (e.g., 09171234567, +639171234567, or landline format)';
-      errors.push(error);
-      logValidation('contact phone', data.contact, false, error);
+      const error = 'Invalid phone number format.';
+      const suggestion = 'Please use valid Philippines format: 09171234567 (mobile) or +639171234567 (international).';
+      logValidation('contact', data.contact, false, error, suggestion);
     } else {
-      logValidation('contact phone', data.contact, true, `Sanitized to: ${sanitizedPhone}`);
+      logValidation('contact', data.contact, true, `Sanitized to: ${sanitizedPhone}`);
     }
   }
 
@@ -261,26 +410,34 @@ const validateProfileInput = (data) => {
       // Check for numbers in emergency contact name
       const hasNumbers = /\d/.test(data.emergencyContact.name);
       if (hasNumbers) {
-        const error = `Emergency contact name "${data.emergencyContact.name}" contains numbers which are not allowed. Please use only letters, spaces, hyphens, and apostrophes.`;
-        errors.push(error);
-        logValidation('emergency contact name', data.emergencyContact.name, false, error);
+        const error = `Emergency contact name cannot contain numbers. "${data.emergencyContact.name}" is not allowed.`;
+        const suggestion = 'Please use only letters, spaces, hyphens (-), and apostrophes (\') in the emergency contact name.';
+        logValidation('emergencyContact', data.emergencyContact.name, false, error, suggestion);
+      } else if (data.emergencyContact.name.trim().length < 2) {
+        const error = 'Emergency contact name must be at least 2 characters long.';
+        const suggestion = 'Please enter a valid emergency contact name with at least 2 letters.';
+        logValidation('emergencyContact', data.emergencyContact.name, false, error, suggestion);
+      } else if (data.emergencyContact.name.trim().length > 50) {
+        const error = 'Emergency contact name is too long. Maximum 50 characters allowed.';
+        const suggestion = 'Please shorten the emergency contact name to 50 characters or less.';
+        logValidation('emergencyContact', data.emergencyContact.name, false, error, suggestion);
       } else if (!nameRegex.test(data.emergencyContact.name)) {
-        const error = 'Emergency contact name can only contain letters, spaces, hyphens, and apostrophes. Numbers and special characters are not allowed.';
-        errors.push(error);
-        logValidation('emergency contact name', data.emergencyContact.name, false, error);
+        const error = 'Emergency contact name contains invalid characters.';
+        const suggestion = 'Only letters, spaces, hyphens (-), and apostrophes (\') are allowed.';
+        logValidation('emergencyContact', data.emergencyContact.name, false, error, suggestion);
       } else {
-        logValidation('emergency contact name', data.emergencyContact.name, true);
+        logValidation('emergencyContact', data.emergencyContact.name, true);
       }
     }
 
     if (data.emergencyContact.number && data.emergencyContact.number.trim()) {
       const sanitizedEmergencyPhone = validateAndSanitizeInput.sanitizePhoneNumber(data.emergencyContact.number);
       if (!sanitizedEmergencyPhone) {
-        const error = 'Invalid emergency contact phone number format. Please use valid Philippines phone number format.';
-        errors.push(error);
-        logValidation('emergency contact phone', data.emergencyContact.number, false, error);
+        const error = 'Invalid emergency contact phone number format.';
+        const suggestion = 'Please use valid Philippines format: 09171234567 (mobile) or +639171234567 (international).';
+        logValidation('emergencyContact', data.emergencyContact.number, false, error, suggestion);
       } else {
-        logValidation('emergency contact phone', data.emergencyContact.number, true, `Sanitized to: ${sanitizedEmergencyPhone}`);
+        logValidation('emergencyContact', data.emergencyContact.number, true, `Sanitized to: ${sanitizedEmergencyPhone}`);
       }
     }
   }
@@ -347,14 +504,22 @@ const validateProfileInput = (data) => {
   console.log('📊 [VALIDATION SUMMARY] Valid fields:', validationLog.filter(log => log.isValid).length);
   console.log('📊 [VALIDATION SUMMARY] Invalid fields:', validationLog.filter(log => !log.isValid).length);
   console.log('📊 [VALIDATION SUMMARY] Total errors:', errors.length);
+  console.log('📊 [VALIDATION SUMMARY] Dialog-friendly errors:', dialogErrors.length);
 
   if (errors.length > 0) {
     console.log('❌ [VALIDATION SUMMARY] Validation failed with errors:', errors);
+    console.log('📋 [VALIDATION SUMMARY] Dialog errors format:', dialogErrors);
   } else {
     console.log('✅ [VALIDATION SUMMARY] All validation checks passed successfully!');
   }
 
-  return errors;
+  return {
+    errors: errors,           // Legacy format for backward compatibility
+    dialogErrors: dialogErrors, // New dialog-friendly format
+    hasErrors: errors.length > 0,
+    errorCount: errors.length,
+    validationLog: validationLog
+  };
 };
 
 /**
@@ -626,15 +791,22 @@ exports.updateProfile = async (req, res) => {
     console.log('📝 [PROFILE UPDATE] Starting profile update for user:', req.user.id);
     console.log('📝 [PROFILE UPDATE] Request data:', req.body);
 
-    // STEP 1: COMPREHENSIVE INPUT VALIDATION
+    // STEP 1: COMPREHENSIVE INPUT VALIDATION WITH DIALOG-FRIENDLY FORMAT
     console.log('🔍 [PROFILE UPDATE] Validating input data...');
-    const validationErrors = validateProfileInput(req.body);
+    const validationResult = validateProfileInput(req.body);
 
-    if (validationErrors.length > 0) {
-      console.error('❌ [PROFILE UPDATE] Validation errors:', validationErrors);
+    if (validationResult.hasErrors) {
+      console.error('❌ [PROFILE UPDATE] Validation errors:', validationResult.errors);
+      console.error('📋 [PROFILE UPDATE] Dialog-friendly errors:', validationResult.dialogErrors);
       return res.status(400).json({
+        success: false,
         error: 'Validation failed',
-        details: validationErrors
+        message: 'Please correct the following errors and try again.',
+        details: validationResult.errors,        // Legacy format for backward compatibility
+        dialogErrors: validationResult.dialogErrors, // New dialog-friendly format
+        validationFailures: validationResult.dialogErrors, // Alternative name for frontend
+        errorCount: validationResult.errorCount,
+        type: 'validation_error'
       });
     }
 
