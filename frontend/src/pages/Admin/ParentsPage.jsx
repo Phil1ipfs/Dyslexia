@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Edit, Trash2, Eye, UserSquare2, BookOpen, Clock, MessageSquare, User, X } from 'lucide-react';
 import axios from 'axios';
 import Select from 'react-select';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import './ParentsPage.css';
 
 // Success Modal Component
@@ -41,22 +42,41 @@ const ValidationErrorModal = ({ message, onClose }) => (
 const CredentialsModal = ({ credentials, onClose }) => {
   const [isSending, setIsSending] = useState(false);
   const [sendStatus, setSendStatus] = useState(null);
+  const { user } = useAuth(); // Get current admin user
 
   const handleSendCredentials = async () => {
     try {
       setIsSending(true);
       setSendStatus(null);
+
+      // Extract admin information from auth context
+      const adminEmail = user?.user?.email || user?.email || 'admin@literexia.com';
+      const adminName = user?.user?.name ||
+                       (user?.user?.firstName && user?.user?.lastName ?
+                        `${user.user.firstName} ${user.user.lastName}` :
+                        'Literexia Admin');
+
+      console.log('Sending credentials with admin info:', {
+        adminEmail,
+        adminName,
+        recipientEmail: credentials.email
+      });
+
       const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
         email: credentials.email,
         password: credentials.password,
-        userType: 'parent'
+        userType: 'parent',
+        adminEmail: adminEmail,
+        adminName: adminName
       });
+
       if (response.data.success) {
         setSendStatus({ type: 'success', message: 'Credentials sent successfully!' });
       } else {
         setSendStatus({ type: 'error', message: 'Failed to send credentials.' });
       }
     } catch (error) {
+      console.error('Error sending credentials:', error);
       setSendStatus({ type: 'error', message: error.response?.data?.message || 'Failed to send credentials.' });
     } finally {
       setIsSending(false);
@@ -374,6 +394,28 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
             return (
               <div key={field} className="admin-parent-form-group full-width">
                 <label className="admin-parent-optional">Profile Image (Optional)</label>
+                
+                {/* Show image preview - either current image or new image preview */}
+                {(formData.profileImageUrl || (formData.profileImage && typeof formData.profileImage === 'string') || (formData.profileImage && typeof formData.profileImage === 'object')) && (
+                  <div className="admin-parent-current-image">
+                    <img 
+                      src={
+                        formData.profileImage && typeof formData.profileImage === 'object' 
+                          ? URL.createObjectURL(formData.profileImage)
+                          : (formData.profileImageUrl || formData.profileImage)
+                      } 
+                      alt="Profile preview"
+                      className="admin-parent-profile-preview"
+                    />
+                    <p className="admin-parent-image-label">
+                      {formData.profileImage && typeof formData.profileImage === 'object' 
+                        ? 'New Image Preview' 
+                        : 'Current Image'
+                      }
+                    </p>
+                  </div>
+                )}
+
                 <div className="admin-parent-file-input-wrapper">
                   <input
                     type="file"

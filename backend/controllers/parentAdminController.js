@@ -4,6 +4,203 @@ const multer = require('multer');
 const upload = multer();
 const uploadToS3 = require('../utils/s3Upload');
 
+// Comprehensive admin validation utility
+const adminValidation = {
+  // Name validation (no numbers, proper format)
+  validateName: (name, fieldName = 'Name', isMiddleName = false) => {
+    if (!name || typeof name !== 'string') {
+      return { isValid: false, errors: [`${fieldName} is required`] };
+    }
+
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return { isValid: false, errors: [`${fieldName} cannot be empty`] };
+    }
+
+    // CRITICAL: Reject names with numbers completely
+    if (/\d/.test(trimmed)) {
+      console.log(`🚨 [ADMIN VALIDATION] REJECTING ${fieldName} with numbers: "${trimmed}"`);
+      return {
+        isValid: false,
+        errors: [`${fieldName} cannot contain numbers (e.g., "John123" is not allowed)`]
+      };
+    }
+
+    // Special handling for middle names
+    if (isMiddleName) {
+      // Allow single letter with optional period (T, T.)
+      if (trimmed.length <= 2 && /^[a-zA-Z]\.?$/.test(trimmed)) {
+        return { isValid: true, errors: [] };
+      }
+    }
+
+    // Check length constraints
+    if (trimmed.length < 2) {
+      return { isValid: false, errors: [`${fieldName} must be at least 2 characters long`] };
+    }
+    if (trimmed.length > 50) {
+      return { isValid: false, errors: [`${fieldName} must be less than 50 characters`] };
+    }
+
+    // Check for allowed characters
+    const allowedPattern = isMiddleName ? /^[a-zA-Z\s\-'.]+$/ : /^[a-zA-Z\s\-']+$/;
+    if (!allowedPattern.test(trimmed)) {
+      const allowedChars = isMiddleName
+        ? "letters, spaces, hyphens, apostrophes, and periods"
+        : "letters, spaces, hyphens, and apostrophes";
+      return { isValid: false, errors: [`${fieldName} can only contain ${allowedChars}`] };
+    }
+
+    // Check for suspicious patterns
+    if (/(.)\1{3,}/.test(trimmed)) {
+      return { isValid: false, errors: [`${fieldName} cannot have more than 3 consecutive identical characters`] };
+    }
+
+    if (/\s{2,}/.test(trimmed)) {
+      return { isValid: false, errors: [`${fieldName} cannot have multiple consecutive spaces`] };
+    }
+
+    return { isValid: true, errors: [], sanitized: trimmed };
+  },
+
+  // Contact number validation (Philippine format)
+  validateContactNumber: (contact, fieldName = 'Contact Number') => {
+    if (!contact || typeof contact !== 'string') {
+      return { isValid: false, errors: [`${fieldName} is required`] };
+    }
+
+    const trimmed = contact.trim();
+    if (!trimmed) {
+      return { isValid: false, errors: [`${fieldName} cannot be empty`] };
+    }
+
+    // Check if only contains valid characters
+    if (!/^[\d\s\-\(\)\+]+$/.test(trimmed)) {
+      return { isValid: false, errors: [`${fieldName} can only contain numbers, spaces, hyphens, parentheses, and plus sign`] };
+    }
+
+    // Remove all non-digits for validation
+    const digitsOnly = trimmed.replace(/\D/g, '');
+
+    // Philippine phone number validation
+    let isValidFormat = false;
+    if (digitsOnly.length === 11 && digitsOnly.startsWith('09')) {
+      isValidFormat = true; // Mobile: 09xxxxxxxxx
+    } else if (digitsOnly.length === 13 && digitsOnly.startsWith('639')) {
+      isValidFormat = true; // International: +639xxxxxxxxx
+    } else if (digitsOnly.length >= 7 && digitsOnly.length <= 11) {
+      isValidFormat = true; // Landline variations
+    }
+
+    if (!isValidFormat) {
+      return {
+        isValid: false,
+        errors: [
+          `${fieldName} must be a valid Philippine number format:`,
+          '• Mobile: 09XXXXXXXXX (11 digits)',
+          '• International: +639XXXXXXXXX',
+          '• Landline: 02XXXXXXXX or area code variations'
+        ]
+      };
+    }
+
+    return { isValid: true, errors: [], sanitized: digitsOnly };
+  },
+
+  // Email validation
+  validateEmail: (email, fieldName = 'Email') => {
+    if (!email || typeof email !== 'string') {
+      return { isValid: false, errors: [`${fieldName} is required`] };
+    }
+
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) {
+      return { isValid: false, errors: [`${fieldName} cannot be empty`] };
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(trimmed)) {
+      return { isValid: false, errors: [`${fieldName} must be a valid email format (e.g., user@gmail.com)`] };
+    }
+
+    if (trimmed.length > 100) {
+      return { isValid: false, errors: [`${fieldName} must be less than 100 characters`] };
+    }
+
+    return { isValid: true, errors: [], sanitized: trimmed };
+  },
+
+  // Date validation for parents
+  validateBirthdate: (date, fieldName = 'Date of Birth') => {
+    if (!date || typeof date !== 'string') {
+      return { isValid: false, errors: [`${fieldName} is required`] };
+    }
+
+    const trimmed = date.trim();
+    if (!trimmed) {
+      return { isValid: false, errors: [`${fieldName} cannot be empty`] };
+    }
+
+    // Check date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(trimmed)) {
+      return { isValid: false, errors: [`${fieldName} must be in YYYY-MM-DD format`] };
+    }
+
+    // Parse and validate date
+    const parsedDate = new Date(trimmed);
+    if (isNaN(parsedDate.getTime())) {
+      return { isValid: false, errors: [`${fieldName} is not a valid date`] };
+    }
+
+    const now = new Date();
+
+    // Check if date is in the future
+    if (parsedDate > now) {
+      return { isValid: false, errors: [`${fieldName} cannot be in the future`] };
+    }
+
+    // Age validation for parents (must be at least 16)
+    const userAge = Math.floor((now - parsedDate) / (365.25 * 24 * 60 * 60 * 1000));
+    if (userAge < 16) {
+      return { isValid: false, errors: ['Parents must be at least 16 years old'] };
+    }
+    if (userAge > 100) {
+      return { isValid: false, errors: ['Please verify the birth date - age seems unusually high'] };
+    }
+
+    return { isValid: true, errors: [], sanitized: trimmed };
+  },
+
+  // Text validation
+  validateText: (text, fieldName, required = false, maxLength = 200) => {
+    if (required && (!text || typeof text !== 'string')) {
+      return { isValid: false, errors: [`${fieldName} is required`] };
+    }
+
+    if (!text) {
+      return { isValid: true, errors: [], sanitized: '' }; // Optional field
+    }
+
+    const trimmed = text.trim();
+    if (required && !trimmed) {
+      return { isValid: false, errors: [`${fieldName} cannot be empty`] };
+    }
+
+    if (trimmed.length > maxLength) {
+      return { isValid: false, errors: [`${fieldName} must be less than ${maxLength} characters`] };
+    }
+
+    // Check for dangerous characters
+    if (/[<>\"'&]/.test(trimmed)) {
+      return { isValid: false, errors: [`${fieldName} cannot contain special HTML characters (< > " ' &)`] };
+    }
+
+    return { isValid: true, errors: [], sanitized: trimmed };
+  }
+};
+
 // Helper: get parent profile collection
 const getParentProfileCollection = async () => {
   const db = mongoose.connection.useDb('parent');
@@ -48,51 +245,112 @@ exports.createParent = async (req, res) => {
       firstName, lastName, middleName, contact, address, civilStatus, dateOfBirth, gender, email, children = []
     } = req.body;
 
-    // Validation for required fields
-    if (!firstName || !lastName || !email || !contact) {
+    console.log('🔍 [PARENT ADMIN] Create parent validation starting...', {
+      firstName, lastName, middleName, contact, email, dateOfBirth
+    });
+
+    // Comprehensive validation
+    const validationErrors = [];
+
+    // Validate first name
+    const firstNameResult = adminValidation.validateName(firstName, 'First Name');
+    if (!firstNameResult.isValid) {
+      validationErrors.push(...firstNameResult.errors);
+    }
+
+    // Validate last name
+    const lastNameResult = adminValidation.validateName(lastName, 'Last Name');
+    if (!lastNameResult.isValid) {
+      validationErrors.push(...lastNameResult.errors);
+    }
+
+    // Validate middle name (optional but must be valid if provided)
+    let middleNameResult = { isValid: true, sanitized: '' };
+    if (middleName && middleName.trim()) {
+      middleNameResult = adminValidation.validateName(middleName, 'Middle Name', true);
+      if (!middleNameResult.isValid) {
+        validationErrors.push(...middleNameResult.errors);
+      }
+    }
+
+    // Validate email
+    const emailResult = adminValidation.validateEmail(email);
+    if (!emailResult.isValid) {
+      validationErrors.push(...emailResult.errors);
+    }
+
+    // Validate contact number
+    const contactResult = adminValidation.validateContactNumber(contact);
+    if (!contactResult.isValid) {
+      validationErrors.push(...contactResult.errors);
+    }
+
+    // Validate birthdate (optional)
+    let birthdateResult = { isValid: true, sanitized: dateOfBirth };
+    if (dateOfBirth && dateOfBirth.trim()) {
+      birthdateResult = adminValidation.validateBirthdate(dateOfBirth);
+      if (!birthdateResult.isValid) {
+        validationErrors.push(...birthdateResult.errors);
+      }
+    }
+
+    // Validate address (optional)
+    const addressResult = adminValidation.validateText(address, 'Address', false, 200);
+    if (!addressResult.isValid) {
+      validationErrors.push(...addressResult.errors);
+    }
+
+    // If there are validation errors, return them
+    if (validationErrors.length > 0) {
+      console.log('🚨 [PARENT ADMIN] Validation failed:', validationErrors);
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields',
+        message: 'Validation failed',
         userType: 'parent',
-        details: 'First name, last name, email, and contact are required for parent registration.'
+        validationErrors: validationErrors,
+        details: 'Please fix the validation errors and try again.'
       });
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid email format',
-        userType: 'parent',
-        details: 'Please provide a valid email address for the parent.'
-      });
-    }
+    console.log('✅ [PARENT ADMIN] Validation passed, proceeding with parent creation...');
+
+    // Use sanitized data from validation
+    const sanitizedData = {
+      firstName: firstNameResult.sanitized,
+      lastName: lastNameResult.sanitized,
+      middleName: middleNameResult.sanitized || '',
+      email: emailResult.sanitized,
+      contact: contactResult.sanitized,
+      dateOfBirth: birthdateResult.sanitized,
+      address: addressResult.sanitized || ''
+    };
 
     // Ensure children is always an array
     const childrenArray = Array.isArray(children) ? children : (children ? [children] : []);
 
     // Check for duplicate email in parent.parent_profile
     const profileCollection = await getParentProfileCollection();
-    const existing = await profileCollection.findOne({ email });
+    const existing = await profileCollection.findOne({ email: sanitizedData.email });
     if (existing) {
       return res.status(400).json({
         success: false,
         message: 'Email already registered',
         userType: 'parent',
-        details: 'A parent with this email address is already registered in the system.'
+        validationErrors: ['A parent with this email address is already registered in the system.'],
+        details: 'Please use a different email address.'
       });
     }
 
     // Check for duplicate email in users_web.users as well
     const User = await getUserModel();
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: sanitizedData.email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'Email already in use',
         userType: 'parent',
-        details: 'This email address is already associated with another user account.'
+        validationErrors: ['This email address is already associated with another user account.'],
+        details: 'Please use a different email address.'
       });
     }
     // 1. Generate password
@@ -101,26 +359,28 @@ exports.createParent = async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     // 3. Create user in users_web.users (User already declared above)
     const userDoc = new User({
-      email,
+      email: sanitizedData.email,
       passwordHash,
       roles: new mongoose.Types.ObjectId('681b690af9fd9071c6ac2f3b'), // Parent role ObjectId
       updatedAt: new Date()
     });
     await userDoc.save();
+    console.log('✅ [PARENT ADMIN] User created in users_web.users');
+
     // 4. Create parent profile in parent.parent_profile
     const now = new Date();
     const profileImageUrl = req.file ? await uploadToS3(req.file, 'parent-profiles') : null;
     const profileDoc = {
       userId: userDoc._id,
-      firstName,
-      lastName,
-      middleName: middleName || '',
-      contact,
-      address,
+      firstName: sanitizedData.firstName,
+      lastName: sanitizedData.lastName,
+      middleName: sanitizedData.middleName,
+      contact: sanitizedData.contact,
+      address: sanitizedData.address,
       civilStatus,
-      dateOfBirth,
+      dateOfBirth: sanitizedData.dateOfBirth,
       gender,
-      email,
+      email: sanitizedData.email,
       children: childrenArray,
       profileImageUrl: profileImageUrl || '',
       createdAt: now,
@@ -144,18 +404,25 @@ exports.createParent = async (req, res) => {
       { parentId: parentId, _id: { $nin: validChildrenObjectIds } },
       { $unset: { parentId: "" } }
     );
+    console.log('✅ [PARENT ADMIN] Parent profile created successfully');
+
     // 5. Respond with credentials for admin to display
     res.json({
       success: true,
       message: 'Parent created successfully',
       data: {
         parentProfile: { ...profileDoc, _id: parentId },
-        credentials: { email, password }
+        credentials: { email: sanitizedData.email, password }
       }
     });
   } catch (err) {
-    console.error('Error creating parent:', err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    console.error('🚨 [PARENT ADMIN] Error creating parent:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message,
+      details: 'An unexpected error occurred while creating the parent account.'
+    });
   }
 };
 
@@ -165,20 +432,102 @@ exports.updateParent = async (req, res) => {
     const {
       firstName, lastName, middleName, contact, address, civilStatus, dateOfBirth, gender, email, children = []
     } = req.body;
+
+    console.log('🔍 [PARENT ADMIN] Update parent validation starting...', {
+      parentId, firstName, lastName, middleName, contact, email, dateOfBirth
+    });
+
+    // Comprehensive validation
+    const validationErrors = [];
+
+    // Validate first name
+    const firstNameResult = adminValidation.validateName(firstName, 'First Name');
+    if (!firstNameResult.isValid) {
+      validationErrors.push(...firstNameResult.errors);
+    }
+
+    // Validate last name
+    const lastNameResult = adminValidation.validateName(lastName, 'Last Name');
+    if (!lastNameResult.isValid) {
+      validationErrors.push(...lastNameResult.errors);
+    }
+
+    // Validate middle name (optional but must be valid if provided)
+    let middleNameResult = { isValid: true, sanitized: '' };
+    if (middleName && middleName.trim()) {
+      middleNameResult = adminValidation.validateName(middleName, 'Middle Name', true);
+      if (!middleNameResult.isValid) {
+        validationErrors.push(...middleNameResult.errors);
+      }
+    }
+
+    // Validate email
+    const emailResult = adminValidation.validateEmail(email);
+    if (!emailResult.isValid) {
+      validationErrors.push(...emailResult.errors);
+    }
+
+    // Validate contact number
+    const contactResult = adminValidation.validateContactNumber(contact);
+    if (!contactResult.isValid) {
+      validationErrors.push(...contactResult.errors);
+    }
+
+    // Validate birthdate (optional)
+    let birthdateResult = { isValid: true, sanitized: dateOfBirth };
+    if (dateOfBirth && dateOfBirth.trim()) {
+      birthdateResult = adminValidation.validateBirthdate(dateOfBirth);
+      if (!birthdateResult.isValid) {
+        validationErrors.push(...birthdateResult.errors);
+      }
+    }
+
+    // Validate address (optional)
+    const addressResult = adminValidation.validateText(address, 'Address', false, 200);
+    if (!addressResult.isValid) {
+      validationErrors.push(...addressResult.errors);
+    }
+
+    // If there are validation errors, return them
+    if (validationErrors.length > 0) {
+      console.log('🚨 [PARENT ADMIN] Update validation failed:', validationErrors);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        userType: 'parent',
+        validationErrors: validationErrors,
+        details: 'Please fix the validation errors and try again.'
+      });
+    }
+
+    console.log('✅ [PARENT ADMIN] Update validation passed, proceeding...');
+
+    // Use sanitized data from validation
+    const sanitizedData = {
+      firstName: firstNameResult.sanitized,
+      lastName: lastNameResult.sanitized,
+      middleName: middleNameResult.sanitized || '',
+      email: emailResult.sanitized,
+      contact: contactResult.sanitized,
+      dateOfBirth: birthdateResult.sanitized,
+      address: addressResult.sanitized || ''
+    };
+
     // Ensure children is always an array
     const childrenArray = Array.isArray(children) ? children : (children ? [children] : []);
+
     // Update parent profile
     const profileCollection = await getParentProfileCollection();
     const updateData = {
-      firstName,
-      lastName,
-      middleName: middleName || '',
-      contact,
-      address,
+      firstName: sanitizedData.firstName,
+      lastName: sanitizedData.lastName,
+      middleName: sanitizedData.middleName,
+      contact: sanitizedData.contact,
+      address: sanitizedData.address,
       civilStatus,
-      dateOfBirth,
+      dateOfBirth: sanitizedData.dateOfBirth,
       gender,
-      email,
+      email: sanitizedData.email,
       children: childrenArray,
       updatedAt: new Date()
     };
@@ -196,12 +545,13 @@ exports.updateParent = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Parent not found' });
     }
     // Also update user in users_web.users if email is changed
-    if (email && updatedProfile.userId) {
+    if (sanitizedData.email && updatedProfile.userId) {
       const User = await getUserModel();
       await User.updateOne(
         { _id: updatedProfile.userId },
-        { $set: { email, updatedAt: new Date() } }
+        { $set: { email: sanitizedData.email, updatedAt: new Date() } }
       );
+      console.log('✅ [PARENT ADMIN] User email updated in users_web.users');
     }
     // --- Bidirectional linking: update students' parentId field ---
     const studentCollection = await getStudentCollection();
@@ -219,14 +569,21 @@ exports.updateParent = async (req, res) => {
       { parentId: new mongoose.Types.ObjectId(parentId), _id: { $nin: validChildrenObjectIds } },
       { $unset: { parentId: "" } }
     );
+    console.log('✅ [PARENT ADMIN] Parent updated successfully');
+
     res.json({
       success: true,
       message: 'Parent updated successfully',
       data: { parentProfile: updatedProfile }
     });
   } catch (err) {
-    console.error('Error updating parent:', err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    console.error('🚨 [PARENT ADMIN] Error updating parent:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message,
+      details: 'An unexpected error occurred while updating the parent account.'
+    });
   }
 };
 

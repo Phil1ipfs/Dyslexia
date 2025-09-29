@@ -19,24 +19,25 @@ transporter.verify(function(error, success) {
 });
 
 // HTML template for the credentials email
-const getEmailTemplate = (userType, email, password) => {
+const getEmailTemplate = (userType, email, password, senderName = 'Literexia Admin') => {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #1a2035;">Welcome to Literexia</h2>
             <p>Hello,</p>
-            <p>Your ${userType} account has been created successfully. Here are your login credentials:</p>
-            
+            <p>Your ${userType} account has been created successfully by ${senderName}. Here are your login credentials:</p>
+
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
                 <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
                 <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
             </div>
-            
+
             <p>For security reasons, we recommend changing your password after your first login.</p>
-            
-            <p style="color: #666;">If you didn't request this account, please contact the administrator immediately.</p>
-            
+
+            <p style="color: #666;">If you didn't request this account, please contact ${senderName} immediately.</p>
+
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
                 <p>This is an automated message, please do not reply to this email.</p>
+                <p>Account created by: ${senderName}</p>
             </div>
         </div>
     `;
@@ -46,11 +47,12 @@ const getEmailTemplate = (userType, email, password) => {
 const sendCredentials = async (req, res) => {
     console.log('Received request to send credentials:', {
         email: req.body.email,
-        userType: req.body.userType
+        userType: req.body.userType,
+        adminEmail: req.body.adminEmail
     });
 
     try {
-        const { email, password, userType } = req.body;
+        const { email, password, userType, adminEmail, adminName } = req.body;
 
         if (!email || !password || !userType) {
             console.error('Missing required fields:', { email: !!email, password: !!password, userType: !!userType });
@@ -60,19 +62,23 @@ const sendCredentials = async (req, res) => {
             });
         }
 
+        // Use admin email if provided, otherwise fallback to default
+        const senderEmail = adminEmail && adminEmail.trim() ? adminEmail.trim() : process.env.EMAIL_USER;
+        const senderName = adminName && adminName.trim() ? adminName.trim() : 'Literexia Admin';
+
         // Log email configuration (without sensitive data)
         console.log('Using email configuration:', {
-            from: process.env.EMAIL_USER,
+            from: `${senderName} <${senderEmail}>`,
             to: email,
             subject: `Your Literexia ${userType} Account Credentials`
         });
 
         // Prepare email options
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `${senderName} <${senderEmail}>`,
             to: email,
             subject: `Your Literexia ${userType.charAt(0).toUpperCase() + userType.slice(1)} Account Credentials`,
-            html: getEmailTemplate(userType, email, password)
+            html: getEmailTemplate(userType, email, password, senderName)
         };
 
         // Send the email

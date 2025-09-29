@@ -1234,3 +1234,42 @@
   }
 }
 
+/* ===== PROFILE IMAGE PREVIEW ===== */
+.admin-parent-current-image {
+  margin-bottom: 1rem;
+  text-align: center;
+  padding: 1rem;
+  border: 2px dashed #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+}
+
+.admin-parent-profile-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #3B4F81;
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.15);
+  margin-bottom: 0.5rem;
+}
+
+.admin-parent-image-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Responsive design for profile image */
+@media (max-width: 768px) {
+  .admin-parent-profile-preview {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .admin-parent-current-image {
+    padding: 0.75rem;
+  }
+}
+
