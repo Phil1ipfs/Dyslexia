@@ -669,6 +669,19 @@ class CategoryResultsService {
         // Don't fail the category result creation if analytics fails
       }
 
+      // 🎯 AUTOMATIC IEP REPORT UPDATE - Sync overallScore with category results
+      try {
+        console.log(`[CATEGORY RESULTS] Triggering automatic IEP report update for student ${savedResult.studentId}`);
+
+        const AutomaticIEPReportGenerator = require('../AutomaticIEPReportGenerator');
+        await AutomaticIEPReportGenerator.generateOrUpdateIEPReport(savedResult.toObject(), 'category_results_updated');
+
+        console.log(`[CATEGORY RESULTS] ✅ IEP report automatically updated with latest overallScore`);
+      } catch (iepError) {
+        console.error('[CATEGORY RESULTS] ❌ Error updating IEP report:', iepError);
+        // Don't fail the category result creation if IEP update fails
+      }
+
       // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK - DISABLED (Teacher-triggered only)
       // Check if student is now eligible for reading level progression after category completion
       // DISABLED: Progression now requires manual teacher approval via IEP dashboard button
@@ -808,6 +821,19 @@ class CategoryResultsService {
         } catch (analyticsError) {
           console.error('[CATEGORY RESULTS] Error regenerating prescriptive analysis:', analyticsError);
         }
+      }
+
+      // 🎯 AUTOMATIC IEP REPORT UPDATE - Sync overallScore with updated category results
+      try {
+        console.log(`[CATEGORY RESULTS] Triggering automatic IEP report update for student ${updatedResult.studentId} (update)`);
+
+        const AutomaticIEPReportGenerator = require('../AutomaticIEPReportGenerator');
+        await AutomaticIEPReportGenerator.generateOrUpdateIEPReport(updatedResult.toObject(), 'category_results_updated');
+
+        console.log(`[CATEGORY RESULTS] ✅ IEP report automatically updated with latest overallScore (update)`);
+      } catch (iepError) {
+        console.error('[CATEGORY RESULTS] ❌ Error updating IEP report (update):', iepError);
+        // Don't fail the category result update if IEP update fails
       }
 
       return updatedResult.toObject();

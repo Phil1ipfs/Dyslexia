@@ -6761,24 +6761,31 @@ const renderSentenceSelectionStep = () => {
 const renderAlphabetKnowledgeStep = () => {
   return (
     <div className="alphabet-knowledge-container">
+      {/* Header Section */}
+      <div className="alphabet-knowledge-header">
+        <h2 className="alphabet-knowledge-title">Create Alphabet Knowledge Questions</h2>
+        <button
+          type="button"
+          className="alphabet-knowledge-add-question-btn"
+          onClick={addQuestionChoicePair}
+        >
+          <FaPlus /> Add Question
+        </button>
+      </div>
 
+      {/* Quick Instructions */}
+      <div className="alphabet-knowledge-info-banner">
+        <FaInfoCircle className="info-icon" />
+        <p className="alphabet-knowledge-info-text">
+          Create questions to test students' alphabet knowledge. Each question needs exactly 3 answer choices with one correct answer.
+        </p>
+      </div>
 
       {/* Questions Section */}
       <div className="alphabet-knowledge-questions-section">
-        <div className="alphabet-knowledge-section-header">
-          <h3 className="alphabet-knowledge-section-title">Questions</h3>
-          <button
-            type="button"
-            className="alphabet-knowledge-add-question-btn"
-            onClick={addQuestionChoicePair}
-          >
-            <FaPlus /> Add Question
-          </button>
-        </div>
-
-        {/* Question List */}
         {safe(questionChoicePairs).map((pair, index) => (
           <div key={pair.id} className="alphabet-knowledge-question-card">
+            {/* Question Header */}
             <div className="alphabet-knowledge-question-header">
               <h4 className="alphabet-knowledge-question-number">Question {index + 1}</h4>
               <button
@@ -6791,20 +6798,14 @@ const renderAlphabetKnowledgeStep = () => {
             </div>
 
             {/* Template Selection */}
-            <div className="alphabet-knowledge-form-group">
+            <div className="alphabet-knowledge-step-section">
               <label className="alphabet-knowledge-form-label">
-                Step 1: Use a Pre-made Template (Recommended) or Create Your Own <span style={{ color: '#ef4444' }}>*</span>
+                Use Template (Optional)
               </label>
-
               <select
                 className="alphabet-knowledge-question-input"
                 value=""
                 onChange={(e) => applyTemplateToQuestion(pair.id, e.target.value)}
-                style={{
-                  marginBottom: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
               >
                 <option value="">-- Choose a pre-made template (recommended) --</option>
                 {safe(questionTemplates)
@@ -6845,20 +6846,10 @@ const renderAlphabetKnowledgeStep = () => {
             </div>
 
             {/* Question Type Selector */}
-            <div className="alphabet-knowledge-form-group" style={{ marginBottom: '24px' }}>
+            <div className="alphabet-knowledge-step-section">
               <label className="alphabet-knowledge-form-label">
-                Step 2: Choose Question Type <span style={{ color: '#ef4444' }}>*</span>
+                Question Type
               </label>
-              <div style={{
-                fontSize: '12px',
-                color: '#6b7280',
-                marginBottom: '8px'
-              }}>
-                {pair.sourceTemplateId
-                  ? "Question type is determined by your selected template."
-                  : "Select whether this question tests vowels (patinig) or consonants (katinig). This affects analysis accuracy."
-                }
-              </div>
               <select
                 className="alphabet-knowledge-question-input"
                 value={pair.questionType || 'patinig'}
@@ -6870,40 +6861,19 @@ const renderAlphabetKnowledgeStep = () => {
                 style={{
                   backgroundColor: pair.sourceTemplateId ? '#f3f4f6' : 'white',
                   cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer',
-                  opacity: pair.sourceTemplateId ? 0.7 : 1,
-                  marginBottom: '8px'
+                  opacity: pair.sourceTemplateId ? 0.7 : 1
                 }}
               >
-                <option value="patinig">Patinig (Vowels) - Tests A, E, I, O, U recognition</option>
-                <option value="katinig">Katinig (Consonants) - Tests consonant letter recognition</option>
+                <option value="patinig">Vowels (A, E, I, O, U)</option>
+                <option value="katinig">Consonants (B, C, D, etc.)</option>
               </select>
-              {pair.sourceTemplateId && (
-                <div style={{
-                  fontSize: '12px',
-                  color: '#6b7280',
-                  marginTop: '4px',
-                  fontStyle: 'italic'
-                }}>
-                  Question type is fixed by the selected template to ensure consistency.
-                </div>
-              )}
             </div>
 
             {/* Question Text */}
-            <div className="alphabet-knowledge-form-group" style={{ marginBottom: '24px' }}>
+            <div className="alphabet-knowledge-step-section">
               <label className="alphabet-knowledge-form-label">
-                Step 3: Write Your Question Text <span style={{ color: '#ef4444' }}>*</span>
+                Question Text <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <div style={{
-                fontSize: '12px',
-                color: '#6b7280',
-                marginBottom: '8px'
-              }}>
-                {pair.sourceTemplateId
-                  ? `Question Text: "${pair.questionText || 'Loading...'}" (from template)`
-                  : "Type the question you want to ask students (no numbers allowed, 5-200 characters)"
-                }
-              </div>
               <input
                 type="text"
                 className="alphabet-knowledge-question-input"
@@ -6942,17 +6912,6 @@ const renderAlphabetKnowledgeStep = () => {
                   {errors[`questionText_${pair.id}`]}
                 </div>
               )}
-              {pair.sourceTemplateId && (
-                <div style={{
-                  fontSize: '12px',
-                  color: '#6b7280',
-                  marginTop: '4px',
-                  fontStyle: 'italic'
-                }}>
-                  This field is protected because a template is being used. To edit, remove the template first.
-                </div>
-              )}
-              {/* Character counter */}
               {!pair.sourceTemplateId && (
                 <div style={{
                   fontSize: '11px',
@@ -6966,20 +6925,10 @@ const renderAlphabetKnowledgeStep = () => {
             </div>
 
             {/* Question Image */}
-            <div className="alphabet-knowledge-form-group" style={{ marginBottom: '24px' }}>
+            <div className="alphabet-knowledge-step-section">
               <label className="alphabet-knowledge-form-label">
-                Step 4: Add a Picture (Optional)
+                Add Picture (Optional)
               </label>
-              <div style={{
-                fontSize: '12px',
-                color: '#6b7280',
-                marginBottom: '12px'
-              }}>
-                {pair.sourceTemplateId
-                  ? "Image is provided by your selected template."
-                  : "Upload a picture to help students understand the question (like showing a big letter 'A')"
-                }
-              </div>
               <div className="alphabet-knowledge-image-section">
                 {pair.questionImage && (
                   <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -6988,7 +6937,6 @@ const renderAlphabetKnowledgeStep = () => {
                       alt="Question visual"
                       className="alphabet-knowledge-image-preview"
                     />
-                    {/* Only show remove button if not using a template */}
                     {!pair.sourceTemplateId && (
                       <button
                         type="button"
@@ -7033,18 +6981,8 @@ const renderAlphabetKnowledgeStep = () => {
                     cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <FaImage /> {pair.sourceTemplateId ? 'Image Protected by Template' : uploading ? 'Uploading...' : (pair.questionImage ? 'Change Image' : 'Upload Image')}
+                  <FaImage /> {pair.sourceTemplateId ? 'Image Protected' : uploading ? 'Uploading...' : (pair.questionImage ? 'Change Image' : 'Upload Image')}
                 </button>
-                {pair.sourceTemplateId && (
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#6b7280',
-                    marginTop: '4px',
-                    fontStyle: 'italic'
-                  }}>
-                    Image cannot be changed when using a template.
-                  </div>
-                )}
               </div>
               {errors.upload && (
                 <div className="literexia-error-message">{errors.upload}</div>
@@ -7054,14 +6992,8 @@ const renderAlphabetKnowledgeStep = () => {
             {/* Question Value */}
             <div className="alphabet-knowledge-step-section">
               <label className="alphabet-knowledge-form-label">
-                Step 5: Question Value (Word/Letter) <span style={{ color: '#ef4444' }}>*</span>
+                Question Value <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <div className="alphabet-knowledge-step-description">
-                {pair.sourceTemplateId
-                  ? `Question Value: "${pair.questionValue || 'Loading...'}" (from template)`
-                  : "Enter the specific word or letter for this question."
-                }
-              </div>
               <input
                 type="text"
                 className="alphabet-knowledge-question-input"
@@ -7072,7 +7004,7 @@ const renderAlphabetKnowledgeStep = () => {
                   updateQuestionChoicePair(pair.id, 'questionValue', lettersOnly);
                 }}
                 disabled={pair.sourceTemplateId}
-                placeholder={pair.sourceTemplateId ? "Value provided by template" : "Enter word or letter (e.g., CAT, DOG, A, a)"}
+                placeholder="Enter word or letter (e.g., CAT, DOG, A, a)"
                 maxLength="100"
                 style={{
                   opacity: pair.sourceTemplateId ? 0.5 : 1,
@@ -7080,32 +7012,21 @@ const renderAlphabetKnowledgeStep = () => {
                   backgroundColor: pair.sourceTemplateId ? '#f9fafb' : 'white'
                 }}
               />
-              {/* Character counter for question value */}
               {!pair.sourceTemplateId && (
                 <div style={{
-                  fontSize: '10px',
+                  fontSize: '11px',
                   color: '#9ca3af',
-                  marginTop: '4px'
+                  marginTop: '2px',
+                  textAlign: 'right'
                 }}>
                   {(pair.questionValue || '').length}/100 chars
                 </div>
               )}
-              {pair.sourceTemplateId && (
-                <div style={{
-                  fontSize: '12px',
-                  color: '#6b7280',
-                  marginTop: '4px',
-                  fontStyle: 'italic'
-                }}>
-                  Question Value is automatically set by the template and cannot be changed.
-                </div>
-              )}
-              {/* Error message for required Question Value */}
               {errors.questionValue && (
                 <div style={{
                   color: '#ef4444',
-                  fontSize: '11px',
-                  marginTop: '2px',
+                  fontSize: '12px',
+                  marginTop: '4px',
                   fontWeight: '500'
                 }}>
                   {errors.questionValue}
@@ -7116,8 +7037,8 @@ const renderAlphabetKnowledgeStep = () => {
             {/* Choices Section */}
             <div className="alphabet-knowledge-choices-section">
               <div className="alphabet-knowledge-choices-header">
-                <h4 className="alphabet-knowledge-choices-title">Step 6: Create Answer Choices <span style={{ color: '#ef4444' }}>*</span></h4>
-                <span className="alphabet-knowledge-choices-info">Exactly 3 choices required</span>
+                <h4 className="alphabet-knowledge-choices-title">Answer Choices <span style={{ color: '#ef4444' }}>*</span></h4>
+                <span className="alphabet-knowledge-choices-info">3 choices required</span>
               </div>
 
               {/* Render exactly 3 choices */}

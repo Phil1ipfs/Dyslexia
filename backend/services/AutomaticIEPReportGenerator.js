@@ -94,24 +94,24 @@ class AutomaticIEPReportGenerator {
   }
 
   /**
-   * Update existing IEP report with new data
+   * Update existing IEP report with new data (preserves teacher data)
    */
   static async updateExistingIEPReport(iepReport, categoryResult, student) {
     try {
-      console.log(`[IEP AUTO GEN] 🔄 Updating existing IEP report...`);
+      console.log(`[IEP AUTO GEN] 🔄 Updating existing IEP report (preserving teacher data)...`);
 
-      // Update basic information
+      // Update basic information ONLY - preserve all objectives and teacher data
       iepReport.readingLevel = categoryResult.readingLevel || student.readingLevel;
       iepReport.overallScore = categoryResult.overallScore || 0;
       iepReport.basedOnAssessmentId = categoryResult._id;
       iepReport.updatedAt = new Date();
 
-      // Regenerate objectives to include latest data
-      const updatedObjectives = await this.generateObjectivesFromCategoryResults(categoryResult, student.idNumber);
-      iepReport.objectives = updatedObjectives;
+      // ✅ PRESERVE TEACHER DATA: Don't regenerate objectives, just update overallScore
+      // This prevents duplicate intervention attempts and preserves teacher remarks
+      console.log(`[IEP AUTO GEN] 🔄 Preserving existing objectives and teacher data, only updating overallScore: ${iepReport.overallScore}`);
 
       const savedReport = await iepReport.save();
-      console.log(`[IEP AUTO GEN] ✅ IEP report updated with ${updatedObjectives.length} objectives`);
+      console.log(`[IEP AUTO GEN] ✅ IEP report updated (overallScore synced, teacher data preserved)`);
 
       return savedReport;
 
@@ -138,8 +138,8 @@ class AutomaticIEPReportGenerator {
           categoryName: category.categoryName,
           lesson: this.generateLessonName(category.categoryName),
 
-          // Assessment data
-          assessmentScore: category.score || 0,
+          // Assessment data (capped at 100 to meet validation requirements)
+          assessmentScore: Math.min(category.score || 0, 100),
           totalQuestions: category.totalQuestions || 0,
           correctAnswers: category.correctAnswers || 0,
           totalPossibleMatches: category.totalPossibleMatches || 0,
@@ -151,7 +151,7 @@ class AutomaticIEPReportGenerator {
           status: this.determineStatus(category),
           completed: category.isPassed || false,
           supportLevel: this.determineSupportLevel(category.score || 0),
-          score: category.score || 0,
+          score: Math.min(category.score || 0, 100),
           passingThreshold: category.passingThreshold || 75,
 
           // Intervention tracking
@@ -220,7 +220,7 @@ class AutomaticIEPReportGenerator {
 
       const interventionHistory = allInterventionResults.map((result, index) => ({
         attemptNumber: index + 1,
-        score: result.score || 0,
+        score: Math.min(result.score || 0, 100), // Cap at 100 for validation
         isPassed: result.isPassed || false,
         attemptedAt: result.assessmentDate || new Date(),
         reason: 'intervention_attempt',
@@ -236,9 +236,9 @@ class AutomaticIEPReportGenerator {
         interventionAttempts: allInterventionResults.length,
         interventionCompleted: true,
         interventionHistory: interventionHistory,
-        latestInterventionScore: latestInterventionResult.score || 0,
+        latestInterventionScore: Math.min(latestInterventionResult.score || 0, 100), // Cap at 100 for validation
         latestInterventionPassed: latestInterventionResult.isPassed || false,
-        interventionImprovement: (latestInterventionResult.score || 0) - (latestInterventionResult.previousScore || 0),
+        interventionImprovement: Math.max(-100, Math.min(100, (latestInterventionResult.score || 0) - (latestInterventionResult.previousScore || 0))), // Cap between -100 and +100
         interventionCreatedAt: latestInterventionResult.assessmentDate || new Date()
       };
 
