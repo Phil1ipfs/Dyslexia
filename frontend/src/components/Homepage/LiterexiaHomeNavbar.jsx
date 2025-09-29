@@ -31,7 +31,7 @@ function LiterexiaHomeNavbar() {
   }, []);
 
   const handleLoginClick = () => {
-    navigate("/login");
+    navigate("/choose-account");
   };
 
   const scrollToSection = (id) => {
