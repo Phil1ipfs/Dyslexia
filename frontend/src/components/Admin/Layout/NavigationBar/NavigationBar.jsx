@@ -1,13 +1,13 @@
 // src/components/Admin/Layout/NavigationBar/NavigationBar.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Users, 
-  FileCheck, 
-  ClipboardList, 
-  BarChart2, 
-  Inbox, 
+import {
+  Home,
+  Users,
+  FileCheck,
+  ClipboardList,
+  BarChart2,
+  Inbox,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -18,7 +18,8 @@ import {
   School,
   UserSquare2,
   PieChart,
-  Book
+  Book,
+  User
 } from 'lucide-react';
 import './NavigationBar.css';
 
@@ -124,6 +125,13 @@ const NavigationBar = ({ onLogout }) => {
         { id: 'pre-assessment', label: 'Pre Assessment', path: '/admin/student-assessments', icon: Book },
         { id: 'post-assessment', label: 'Post Assessment', path: '/admin/assessment-results-overview', icon: BarChart2 }
       ]
+    },
+    {
+      id: 'admin-profile',
+      label: 'Admin Profile',
+      icon: User,
+      path: '/admin/profile',
+      subItems: []
     },
     // {
     //   id: 'analytics',

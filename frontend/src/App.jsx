@@ -21,6 +21,7 @@ import Feedback from "./pages/Parents/Feedback";
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminProfile from "./pages/Admin/AdminProfile";
 import SubmissionsOverview from './pages/Admin/SubmissionsOverview';
 import StudentListPage from './pages/Admin/StudentListPage';
 import TeacherListPage from './pages/Admin/TeacherLists';
@@ -213,6 +214,7 @@ function App() {
           }
         >
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="profile" element={<AdminProfile />} />
           <Route path="submissions-overview" element={<SubmissionsOverview />} />
           <Route path="student-list" element={<StudentListPage />} />
           <Route path="teacher-list" element={<TeacherListPage />} />

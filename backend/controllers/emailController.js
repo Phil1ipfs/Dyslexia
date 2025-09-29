@@ -1,22 +1,24 @@
 const nodemailer = require('nodemailer');
 
-// Create a transporter using Gmail
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    }
-});
+// Dynamic transporter creation function
+const createTransporter = (adminEmail, adminEmailPassword) => {
+    // Use admin's email credentials if provided, otherwise fall back to system default
+    const emailUser = adminEmail || process.env.EMAIL_USER;
+    const emailPassword = adminEmailPassword || process.env.EMAIL_PASSWORD;
 
-// Verify transporter configuration
-transporter.verify(function(error, success) {
-    if (error) {
-        console.error('Email transporter verification failed:', error);
-    } else {
-        console.log('Email server is ready to send messages');
-    }
-});
+    console.log(`Creating transporter for: ${emailUser}`);
+
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: emailUser,
+            pass: emailPassword
+        }
+    });
+};
+
+// Default system transporter for fallback
+const systemTransporter = createTransporter();
 
 // HTML template for the credentials email
 const getEmailTemplate = (userType, email, password, senderName = 'Literexia Admin', senderEmail = '') => {
@@ -36,8 +38,8 @@ const getEmailTemplate = (userType, email, password, senderName = 'Literexia Adm
             <p style="color: #666;">If you have any questions about your account, please contact ${senderName} at ${senderEmail}.</p>
 
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
-                <p><strong>Note:</strong> This email was sent from our system account. To contact the administrator who created your account, please reply to this email or send a message to ${senderEmail}.</p>
                 <p>Account created by: ${senderName} (${senderEmail})</p>
+                <p>Best regards,<br>The Literexia Team</p>
             </div>
         </div>
     `;
@@ -52,7 +54,7 @@ const sendCredentials = async (req, res) => {
     });
 
     try {
-        const { email, password, userType, adminEmail, adminName } = req.body;
+        const { email, password, userType, adminEmail, adminName, adminEmailPassword } = req.body;
 
         if (!email || !password || !userType) {
             console.error('Missing required fields:', { email: !!email, password: !!password, userType: !!userType });
@@ -62,22 +64,36 @@ const sendCredentials = async (req, res) => {
             });
         }
 
-        // Use admin email if provided, otherwise fallback to default
+        // Use admin email and name if provided, otherwise fallback to default
         const senderEmail = adminEmail && adminEmail.trim() ? adminEmail.trim() : process.env.EMAIL_USER;
         const senderName = adminName && adminName.trim() ? adminName.trim() : 'Literexia Admin';
 
+        // Create dynamic transporter based on admin's credentials
+        const dynamicTransporter = createTransporter(senderEmail, adminEmailPassword);
+
+        // Verify transporter before sending
+        try {
+            await dynamicTransporter.verify();
+            console.log(`Email transporter verified for: ${senderEmail}`);
+        } catch (verifyError) {
+            console.error('Email transporter verification failed:', verifyError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to verify email configuration. Please check your email credentials.',
+                error: verifyError.message
+            });
+        }
+
         // Log email configuration (without sensitive data)
         console.log('Using email configuration:', {
-            from: `Literexia System <${process.env.EMAIL_USER}>`,
-            replyTo: `${senderName} <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: email,
             subject: `Your Literexia ${userType} Account Credentials`
         });
 
         // Prepare email options
         const mailOptions = {
-            from: `Literexia System <${process.env.EMAIL_USER}>`, // Use authenticated email as sender
-            replyTo: `${senderName} <${senderEmail}>`, // Admin's email for replies
+            from: `${senderName} <${senderEmail}>`, // Send directly from admin's email
             to: email,
             subject: `Your Literexia ${userType.charAt(0).toUpperCase() + userType.slice(1)} Account Credentials`,
             html: getEmailTemplate(userType, email, password, senderName, senderEmail)
@@ -85,7 +101,7 @@ const sendCredentials = async (req, res) => {
 
         // Send the email
         console.log('Attempting to send email...');
-        const info = await transporter.sendMail(mailOptions);
+        const info = await dynamicTransporter.sendMail(mailOptions);
         console.log('Email sent successfully:', info.messageId);
 
         res.status(200).json({
