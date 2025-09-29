@@ -1,0 +1,70 @@
+[
+  {
+    "_id": {
+      "$oid": "68491110988139e71b37ff03"
+    },
+    "studentId": 202533333,
+    "interventionAssessmentId": {
+      "$oid": "68da2f4bac4062854db90155"
+    },
+    "revisionNumber": 2,
+    "questionId": "int_phonological_awareness_001",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "S": "Ss"
+      },
+      {
+        "C": "Cc"
+      },
+      {
+        "R": "Rr"
+      }
+    ],
+    "correctMatches": 3,
+    "totalMatches": 3,
+    "isCorrect": true,
+    "responseTime": 8.2,
+    "answeredAt": {
+      "$date": "2025-09-29T11:00:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T11:00:00.200Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b37ff04"
+    },
+    "studentId": 202533333,
+    "interventionAssessmentId": {
+      "$oid": "68da2f4bac4062854db90155"
+    },
+    "revisionNumber": 2,
+    "questionId": "int_phonological_awareness_002",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "S": "Ss"
+      },
+      {
+        "A": "Aa"
+      },
+      {
+        "V": "Vv"
+      }
+    ],
+    "correctMatches": 3,
+    "totalMatches": 3,
+    "isCorrect": true,
+    "responseTime": 7.8,
+    "answeredAt": {
+      "$date": "2025-09-29T11:01:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T11:01:00.200Z"
+    }
+  }
+]

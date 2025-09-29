@@ -1,0 +1,396 @@
+[
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff01"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_001",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "Y",
+      "E",
+      "L",
+      "O"
+    ],
+    "isCorrect": true,
+    "responseTime": 8.5,
+    "answeredAt": {
+      "$date": "2025-09-29T12:00:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff02"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_002",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "A",
+      "R",
+      "W",
+      "A"
+    ],
+    "isCorrect": false,
+    "responseTime": 7.2,
+    "answeredAt": {
+      "$date": "2025-09-29T12:01:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:01:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff03"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_003",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "N",
+      "G",
+      "I",
+      "P",
+      "I",
+      "N"
+    ],
+    "isCorrect": true,
+    "responseTime": 12.1,
+    "answeredAt": {
+      "$date": "2025-09-29T12:02:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:02:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff04"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_004",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "E",
+      "R",
+      "P",
+      "L",
+      "A",
+      "N",
+      "O"
+    ],
+    "isCorrect": false,
+    "responseTime": 15.8,
+    "answeredAt": {
+      "$date": "2025-09-29T12:03:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:03:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff05"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_005",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "B",
+      "A",
+      "H",
+      "A",
+      "Y"
+    ],
+    "isCorrect": true,
+    "responseTime": 9.3,
+    "answeredAt": {
+      "$date": "2025-09-29T12:04:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:04:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff06"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_006",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "K",
+      "M",
+      "A",
+      "A",
+      "Y"
+    ],
+    "isCorrect": false,
+    "responseTime": 8.7,
+    "answeredAt": {
+      "$date": "2025-09-29T12:05:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:05:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff07"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_007",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "R",
+      "O",
+      "S",
+      "A",
+      "S"
+    ],
+    "isCorrect": true,
+    "responseTime": 10.4,
+    "answeredAt": {
+      "$date": "2025-09-29T12:06:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:06:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff08"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_008",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "P",
+      "L",
+      "A",
+      "A",
+      "K",
+      "A"
+    ],
+    "isCorrect": false,
+    "responseTime": 11.2,
+    "answeredAt": {
+      "$date": "2025-09-29T12:07:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:07:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff09"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_009",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "T"
+    ],
+    "isCorrect": true,
+    "responseTime": 6.5,
+    "answeredAt": {
+      "$date": "2025-09-29T12:08:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:08:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff10"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_010",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "A"
+    ],
+    "isCorrect": false,
+    "responseTime": 5.8,
+    "answeredAt": {
+      "$date": "2025-09-29T12:09:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:09:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff11"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_011",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "U"
+    ],
+    "isCorrect": true,
+    "responseTime": 4.9,
+    "answeredAt": {
+      "$date": "2025-09-29T12:10:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:10:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff12"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_012",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "B"
+    ],
+    "isCorrect": false,
+    "responseTime": 7.1,
+    "answeredAt": {
+      "$date": "2025-09-29T12:11:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:11:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff13"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_013",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "W"
+    ],
+    "isCorrect": false,
+    "responseTime": 6.8,
+    "answeredAt": {
+      "$date": "2025-09-29T12:12:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:12:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff14"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_014",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "M"
+    ],
+    "isCorrect": false,
+    "responseTime": 8.2,
+    "answeredAt": {
+      "$date": "2025-09-29T12:13:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:13:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b38ff15"
+    },
+    "studentId": 202533333,
+    "categoryId": {
+      "$oid": "69bcf37ce32d5718169f6ea0"
+    },
+    "questionId": "DC_015",
+    "category": "Decoding",
+    "questionType": "drag_drop",
+    "response": [
+      "H"
+    ],
+    "isCorrect": false,
+    "responseTime": 9.5,
+    "answeredAt": {
+      "$date": "2025-09-29T12:14:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "createdAt": {
+      "$date": "2025-09-29T12:14:00.000Z"
+    }
+  }
+]

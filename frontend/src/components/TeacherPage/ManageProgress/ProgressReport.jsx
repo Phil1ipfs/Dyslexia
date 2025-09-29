@@ -1073,7 +1073,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       <div className="student-progress-info">
         <FaInfoCircle className="student-progress-info-icon" />
         <div className="student-progress-info-text">
-          <h3>Post Assessment Progress Report</h3>
+          <h3>Post Assessment Progress</h3>
           <p>
             This report shows the student's progress based on their assessment
             completed on <strong>{assessmentDate}</strong>. Current reading level: <strong>{readingLevel}</strong>.

@@ -4,15 +4,11 @@
       "$oid": "68491110988139e71b35ff01"
     },
     "studentId": 202533333,
-    "interventionId": {
+    "interventionAssessmentId": {
       "$oid": "68da2c6c48229fd8eab32b02"
-    },
-    "prescriptiveAnalysisId": {
-      "$oid": "68da2c0448229fd8eab321cc"
     },
     "questionId": "int_alphabet_knowledge_001",
     "category": "Alphabet Knowledge",
-    "readingLevel": "At Grade Level",
     "response": [
       "1"
     ],
@@ -21,25 +17,22 @@
     "answeredAt": {
       "$date": "2025-09-29T07:00:00.000Z"
     },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 1,
     "createdAt": {
-      "$date": "2025-09-29T07:00:00.000Z"
-    },
-    "revisionNumber": 1
+      "$date": "2025-09-29T07:00:00.200Z"
+    }
   },
   {
     "_id": {
       "$oid": "68491110988139e71b35ff02"
     },
     "studentId": 202533333,
-    "interventionId": {
+    "interventionAssessmentId": {
       "$oid": "68da2c6c48229fd8eab32b02"
-    },
-    "prescriptiveAnalysisId": {
-      "$oid": "68da2c0448229fd8eab321cc"
     },
     "questionId": "int_alphabet_knowledge_002",
     "category": "Alphabet Knowledge",
-    "readingLevel": "At Grade Level",
     "response": [
       "2"
     ],
@@ -48,25 +41,22 @@
     "answeredAt": {
       "$date": "2025-09-29T07:01:00.000Z"
     },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 1,
     "createdAt": {
-      "$date": "2025-09-29T07:01:00.000Z"
-    },
-    "revisionNumber": 1
+      "$date": "2025-09-29T07:01:00.200Z"
+    }
   },
   {
     "_id": {
       "$oid": "68491110988139e71b35ff03"
     },
     "studentId": 202533333,
-    "interventionId": {
+    "interventionAssessmentId": {
       "$oid": "68da2c6c48229fd8eab32b02"
-    },
-    "prescriptiveAnalysisId": {
-      "$oid": "68da2c0448229fd8eab321cc"
     },
     "questionId": "int_alphabet_knowledge_003",
     "category": "Alphabet Knowledge",
-    "readingLevel": "At Grade Level",
     "response": [
       "3"
     ],
@@ -75,9 +65,10 @@
     "answeredAt": {
       "$date": "2025-09-29T07:02:00.000Z"
     },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 1,
     "createdAt": {
-      "$date": "2025-09-29T07:02:00.000Z"
-    },
-    "revisionNumber": 1
+      "$date": "2025-09-29T07:02:00.200Z"
+    }
   }
 ]
