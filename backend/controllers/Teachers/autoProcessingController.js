@@ -128,10 +128,11 @@ const fixInterventionSuccess = async (req, res) => {
 
           // If intervention score is higher and passed, update the category
           if (highestScore >= 75 && (!originalPassed || highestScore > originalScore)) {
-            console.log(`[MANUAL FIX] Updating ${category.categoryName}: ${originalScore}% → ${highestScore}%`);
+            console.log(`[MANUAL FIX] 🔒 PRESERVING original data for ${category.categoryName}: score=${originalScore}%, isPassed=${originalPassed}`);
+            console.log(`[MANUAL FIX] ✅ Intervention success (${highestScore}%) tracked in history only`);
 
-            categoryResults.categories[i].isPassed = true;
-            categoryResults.categories[i].score = highestScore;
+            // ❌ REMOVED: categoryResults.categories[i].isPassed = true;  // PRESERVE original isPassed
+            // ❌ REMOVED: categoryResults.categories[i].score = highestScore;  // PRESERVE original score
             categoryResults.categories[i].interventionRequired = false;
             categoryResults.categories[i].interventionCompleted = true;
 
@@ -154,9 +155,11 @@ const fixInterventionSuccess = async (req, res) => {
       const passedCategories = categoryResults.categories.filter(cat => cat.isPassed === true);
       categoryResults.completedCategories = passedCategories.length;
 
+      // ✅ FIX: Use CategoryResultsService.calculateOverallStats for correct calculation
+      const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
+      const correctStats = CategoryResultsService.calculateOverallStats(categoryResults.categories);
       const totalCategories = categoryResults.categories.length;
-      const overallScore = Math.round((passedCategories.length / totalCategories) * 100);
-      categoryResults.overallScore = overallScore;
+      categoryResults.overallScore = correctStats.overallScore;
       categoryResults.allCategoriesPassed = passedCategories.length === totalCategories;
 
       categoryResults.updatedAt = new Date();
@@ -187,9 +190,81 @@ const fixInterventionSuccess = async (req, res) => {
   }
 };
 
+/**
+ * Fast reprocess student - fixes counting issues and regenerates category results
+ * POST /api/auto-processing/fast-reprocess/:studentId
+ */
+const fastReprocessStudent = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    console.log(`[FAST REPROCESS] 🚀 Fast reprocessing student ${studentId}`);
+
+    const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
+    const User = require('../../models/userModel');
+
+    // Get student info
+    const student = await User.findOne({ idNumber: parseInt(studentId) });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: `Student ${studentId} not found`
+      });
+    }
+
+    console.log(`[FAST REPROCESS] Found student: ${student.firstName} ${student.lastName}, Reading Level: ${student.readingLevel}`);
+
+    // Clear existing category results to force regeneration
+    const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
+    await CategoryResult.deleteMany({ studentId: parseInt(studentId) });
+    console.log(`[FAST REPROCESS] ✅ Cleared existing category results for fresh generation`);
+
+    // Clear existing prescriptive analysis to force regeneration
+    const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+    await PrescriptiveAnalysis.deleteMany({ studentId: parseInt(studentId) });
+    console.log(`[FAST REPROCESS] ✅ Cleared existing prescriptive analysis for fresh generation`);
+
+    // Regenerate category results from all responses
+    console.log(`[FAST REPROCESS] 🔄 Regenerating category results from student responses...`);
+    const categoryResult = await CategoryResultsService.generateCategoryResultsFromResponses(
+      parseInt(studentId),
+      student.readingLevel
+    );
+
+    console.log(`[FAST REPROCESS] ✅ Successfully regenerated category results`);
+
+    res.status(200).json({
+      success: true,
+      message: `Fast reprocessing completed for student ${studentId}`,
+      data: {
+        studentId: parseInt(studentId),
+        studentName: `${student.firstName} ${student.lastName}`,
+        readingLevel: student.readingLevel,
+        categoryResult: categoryResult,
+        categories: categoryResult?.categories?.map(cat => ({
+          name: cat.categoryName,
+          totalQuestions: cat.totalQuestions,
+          correctAnswers: cat.correctAnswers,
+          score: cat.score,
+          isPassed: cat.isPassed
+        })) || [],
+        processingTimestamp: new Date()
+      }
+    });
+
+  } catch (error) {
+    console.error(`[FAST REPROCESS] ❌ Error reprocessing student ${req.params.studentId}:`, error);
+    res.status(500).json({
+      success: false,
+      message: `Error reprocessing student ${req.params.studentId}`,
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   processAllCompleteAssessments,
   processSpecificStudent,
   getProcessingStatus,
-  fixInterventionSuccess
+  fixInterventionSuccess,
+  fastReprocessStudent
 };

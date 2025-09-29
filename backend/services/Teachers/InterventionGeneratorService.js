@@ -169,7 +169,7 @@ class InterventionGeneratorService {
       // Update category_results to link with this intervention (currentInterventionId)
       try {
         console.log(`[INTERVENTION GENERATOR] Updating category_results to link with intervention ${intervention._id} for category: ${category}`);
-        await this.updateCategoryResultInterventionId(analysis.studentId, category, intervention._id);
+        await this.updateCategoryResultInterventionId(analysis.studentId, category, intervention._id, intervention.readingLevel);
         console.log(`[INTERVENTION GENERATOR] ✅ Successfully linked category_results with intervention ${intervention._id}`);
       } catch (linkError) {
         // Don't fail the intervention creation if category_results linking fails
@@ -1567,6 +1567,21 @@ class InterventionGeneratorService {
         throw new Error(`Intervention assessment not found: ${interventionId}`);
       }
 
+      // ✅ DUPLICATE PREVENTION: Check if intervention results already exist for this revision
+      const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+      const existingResults = await InterventionResults.findOne({
+        interventionAssessmentId: interventionId,
+        revisionNumber: intervention.revisionNumber || 1
+      });
+
+      if (existingResults) {
+        console.log(`[INTERVENTION GENERATOR] ⚠️ INTERVENTION RESULTS ALREADY EXIST for revision ${intervention.revisionNumber || 1}`);
+        console.log(`[INTERVENTION GENERATOR] 📊 Existing result: score=${existingResults.score}, passed=${existingResults.isPassed}, created=${existingResults.createdAt}`);
+        return existingResults; // Return existing results instead of creating duplicates
+      }
+
+      console.log(`[INTERVENTION GENERATOR] ✅ NO EXISTING RESULTS FOUND - PROCEEDING WITH NEW RESULT CREATION`);
+
       // CRITICAL: Validate intervention completeness before creating results
       console.log(`[INTERVENTION GENERATOR] ✅ VALIDATING INTERVENTION COMPLETENESS BEFORE CREATING RESULTS`);
       const CategoryResultsService = require('./CategoryResultsService');
@@ -1795,6 +1810,20 @@ class InterventionGeneratorService {
 
       await interventionResults.save();
       console.log(`[INTERVENTION GENERATOR] 🎯 intervention_results saved successfully - ID: ${interventionResults._id}`);
+
+      // ✅ CRITICAL FIX: Link intervention results back to intervention assessment
+      try {
+        console.log(`[INTERVENTION GENERATOR] 🔗 LINKING intervention results to intervention assessment...`);
+        const InterventionResultsAnalysisService = require('./InterventionResultsAnalysisService');
+        await InterventionResultsAnalysisService.linkInterventionResults(
+          interventionId,
+          interventionResults._id
+        );
+        console.log(`[INTERVENTION GENERATOR] ✅ Successfully linked intervention results to assessment`);
+      } catch (linkError) {
+        console.error('[INTERVENTION GENERATOR] ❌ Failed to link intervention results to assessment:', linkError);
+        // Don't throw - intervention results are already saved, linking is secondary
+      }
 
       // CRITICAL: Update category_results with intervention attempt
       try {
@@ -2447,18 +2476,20 @@ class InterventionGeneratorService {
    * @param {number} studentId - Student ID
    * @param {string} category - Category name
    * @param {string} interventionId - Intervention assessment ID
+   * @param {string} readingLevel - Reading level to target specific category_results record
    */
-  async updateCategoryResultInterventionId(studentId, category, interventionId) {
-    console.log(`[INTERVENTION GENERATOR] Updating category_results currentInterventionId for student ${studentId}, category: ${category}`);
+  async updateCategoryResultInterventionId(studentId, category, interventionId, readingLevel) {
+    console.log(`[INTERVENTION GENERATOR] Updating category_results currentInterventionId for student ${studentId}, category: ${category}, reading level: ${readingLevel}`);
 
-    // Find the category_results document that contains this category
+    // ✅ CRITICAL FIX: Find the category_results document for the SPECIFIC reading level only
     const categoryResults = await CategoryResult.find({
       studentId: studentId,
+      readingLevel: readingLevel,           // ✅ Target specific reading level
       'categories.categoryName': category
     });
 
     if (!categoryResults || categoryResults.length === 0) {
-      throw new Error(`No category_results found for student ${studentId} and category ${category}`);
+      throw new Error(`No category_results found for student ${studentId}, category ${category}, reading level ${readingLevel}`);
     }
 
     // Update the currentInterventionId for the specific category across all matching documents

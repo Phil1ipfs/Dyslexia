@@ -114,7 +114,7 @@ const interventionTechniqueSchema = new mongoose.Schema({
   technique: { type: String, required: true },
   description: { type: String, required: true },
   duration: { type: String, required: true },
-  materials: { type: String, required: true },
+  materials: { type: mongoose.Schema.Types.Mixed, required: true },
   progressCriteria: { type: String, required: true },
   researchBasis: { type: String, required: true }
 }, { _id: false });
@@ -503,7 +503,7 @@ const prescriptiveAnalysisSchema = new mongoose.Schema({
       interventionPrescription: {
         primaryApproach: {
           type: String,
-          enum: ['multisensory_structured', 'phonics_based', 'whole_language_support', 'balanced_literacy', 'orton_gillingham'],
+          enum: ['multisensory_structured', 'phonics_based', 'whole_language_support', 'balanced_literacy', 'orton_gillingham', 'systematic_explicit_instruction'],
           required: true
         },
         specificTechniques: [interventionTechniqueSchema],
@@ -602,8 +602,15 @@ prescriptiveAnalysisSchema.pre('save', function(next) {
 
 // Indexes for efficient querying
 prescriptiveAnalysisSchema.index({ studentId: 1, assessmentType: 1 });
-prescriptiveAnalysisSchema.index({ studentId: 1, categoryId: 1 }, { sparse: true });
+
+// ✅ FIXED FOR MULTIPLE READING LEVELS: Include readingLevel in all indexes
+// This allows students to have prescriptive analysis for same category at different reading levels
+prescriptiveAnalysisSchema.index({ studentId: 1, readingLevel: 1, assessmentType: 1 });
+prescriptiveAnalysisSchema.index({ studentId: 1, categoryId: 1, readingLevel: 1, createdAt: 1 }, { sparse: true });
 prescriptiveAnalysisSchema.index({ categoryResultId: 1 }, { sparse: true });
+
+// 🛡️ SAFETY: Index to prevent ACTUAL duplicates (same categoryResultId)
+prescriptiveAnalysisSchema.index({ categoryResultId: 1 }, { unique: true, sparse: true });
 
 // Static method to find by category result ID
 prescriptiveAnalysisSchema.statics.findByCategoryResult = function(categoryResultId) {

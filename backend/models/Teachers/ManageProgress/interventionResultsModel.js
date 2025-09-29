@@ -322,26 +322,65 @@ interventionResultsSchema.index({ 'interventionEffectiveness.overallEffectivenes
 
 // Automatically trigger category_results update when intervention passes
 interventionResultsSchema.post('save', async function(doc) {
+  console.log(`[INTERVENTION RESULTS] 🔍 POST-SAVE HOOK TRIGGERED for intervention result ${doc._id}`);
+  console.log(`[INTERVENTION RESULTS] 🔍 Student: ${doc.studentId}, Category: ${doc.category}, Reading Level: ${doc.readingLevel}`);
+  console.log(`[INTERVENTION RESULTS] 🔍 Score: ${doc.score}%, Passed: ${doc.isPassed}, Threshold: ${doc.passThreshold}%`);
+  console.log(`[INTERVENTION RESULTS] 🔍 Revision Number: ${doc.revisionNumber}`);
+  console.log(`[INTERVENTION RESULTS] 🔍 Should trigger update? ${doc.isPassed && doc.score >= doc.passThreshold}`);
+
   if (doc.isPassed && doc.score >= doc.passThreshold) {
     try {
       const CategoryResultsService = require('../../../services/Teachers/CategoryResultsService');
 
-      console.log(`[INTERVENTION RESULTS] ✅ Intervention passed - triggering category_results update for student ${doc.studentId}, category ${doc.category}`);
+      // 🛡️ FINAL SAFETY CHECK: Verify student's current reading level
+      // This prevents race conditions where student progresses between intervention creation and completion
+      const User = require('../../userModel');
+      const currentUser = await User.findOne({ idNumber: doc.studentId });
+      const currentReadingLevel = currentUser ? currentUser.readingLevel : doc.readingLevel;
+
+      if (currentReadingLevel !== doc.readingLevel) {
+        console.warn(`[INTERVENTION RESULTS] ⚠️ READING LEVEL MISMATCH DETECTED:`);
+        console.warn(`   Intervention created at: ${doc.readingLevel}`);
+        console.warn(`   Student current level: ${currentReadingLevel}`);
+        console.warn(`   Using current reading level to prevent cross-level contamination`);
+      }
+
+      console.log(`[INTERVENTION RESULTS] ✅ Intervention passed - triggering category_results update for student ${doc.studentId}, category ${doc.category}, reading level ${currentReadingLevel}`);
 
       const updateResult = await CategoryResultsService.updateCategoryFromIntervention(
         doc.studentId,
         doc.category,
         doc.score,
-        doc._id
+        doc._id,
+        currentReadingLevel  // 🛡️ SAFETY: Use current reading level, not stale intervention reading level
       );
+
+      console.log(`[INTERVENTION RESULTS] 🔍 Update result:`, JSON.stringify(updateResult, null, 2));
 
       if (updateResult.success) {
         console.log(`[INTERVENTION RESULTS] ✅ Successfully updated category_results for ${doc.category}`);
+
+        // 🧹 AUTOMATIC CLEANUP: Remove any cross-level contamination after successful intervention update
+        try {
+          console.log(`[INTERVENTION RESULTS] 🧹 Running automatic contamination cleanup for student ${doc.studentId}`);
+          const CategoryResultsService = require('../../../services/Teachers/CategoryResultsService');
+          const cleanupResult = await CategoryResultsService.cleanupCrossLevelContamination(doc.studentId);
+
+          if (cleanupResult.success && cleanupResult.cleanupActions.length > 0) {
+            console.log(`[INTERVENTION RESULTS] ✅ Automatic cleanup completed: ${cleanupResult.cleanupActions.length} contaminated attempts removed`);
+          } else {
+            console.log(`[INTERVENTION RESULTS] ✅ Automatic cleanup completed: No contamination found`);
+          }
+        } catch (cleanupError) {
+          console.error(`[INTERVENTION RESULTS] ⚠️ Automatic cleanup failed (non-critical):`, cleanupError.message);
+          // Don't fail the intervention processing if cleanup fails
+        }
       } else {
         console.error(`[INTERVENTION RESULTS] ❌ Failed to update category_results:`, updateResult.error);
       }
     } catch (error) {
       console.error(`[INTERVENTION RESULTS] ❌ Error triggering category_results update:`, error);
+      console.error(`[INTERVENTION RESULTS] ❌ Error stack:`, error.stack);
     }
   } else {
     console.log(`[INTERVENTION RESULTS] ℹ️ Intervention failed (${doc.score}%) - preparing revision guidance`);

@@ -3,19 +3,32 @@ import axios from 'axios';
 
 class IEPService {
   
-  // Get IEP report for a student
-  static async getIEPReport(studentId, academicYear = null) {
+  // Get IEP report for a student - Enhanced for reading level filtering
+  static async getIEPReport(studentId, academicYear = null, readingLevel = null) {
     try {
-      console.log(`[IEPService] Fetching IEP report for student: ${studentId}`);
-      
+      console.log(`[IEPService] Fetching IEP report for student: ${studentId}`, {
+        academicYear,
+        readingLevel
+      });
+
       const params = {};
       if (academicYear) {
         params.academicYear = academicYear;
       }
-      
+
+      // ✅ CRITICAL FIX: Pass reading level to get correct IEP
+      if (readingLevel) {
+        params.readingLevel = readingLevel;
+        console.log(`[IEPService] ✅ Filtering by reading level: ${readingLevel}`);
+      }
+
       const response = await api.get(`/api/iep/student/${studentId}`, { params });
-      
-      console.log('[IEPService] IEP report fetched successfully:', response.data);
+
+      console.log('[IEPService] IEP report fetched successfully:', {
+        success: response.data.success,
+        readingLevel: response.data.data?.readingLevel,
+        objectiveCount: response.data.data?.objectives?.length || 0
+      });
       return response.data;
       
     } catch (error) {

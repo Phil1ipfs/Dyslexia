@@ -209,6 +209,25 @@ const iepReportSchema = new mongoose.Schema({
     type: String,
     default: () => new Date().getFullYear().toString()
   },
+  // ✅ NEW: Reading level progression tracking fields
+  progressionFrom: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  progressionDate: {
+    type: Date,
+    default: null
+  },
+  completedAt: {
+    type: Date,
+    default: null
+  },
+  completionReason: {
+    type: String,
+    trim: true,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -267,6 +286,7 @@ iepReportSchema.methods.generateObjectivesFromCategoryResults = function(categor
       score: category.score || 0,
       passingThreshold: category.passingThreshold || 75,
       remarks: '',
+      mainAssessmentRemarks: '', // ✅ FIX: Include mainAssessmentRemarks field
 
       // Assessment data fields
       assessmentScore: category.score || 0,

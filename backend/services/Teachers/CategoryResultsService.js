@@ -28,6 +28,22 @@ class CategoryResultsService {
       // Step 3: Repair ALL incomplete category records
       await this.repairAllIncompleteCategoryRecords();
 
+      // Step 4: Fix existing overall scores that don't include intervention results
+      await this.fixExistingOverallScores();
+
+      // 🔧 FORCE FIX: Handle stubborn records that don't update properly
+      console.log('[FORCE FIX] 🔧 Running force fix for specific problematic students...');
+      const problematicStudents = [202533333]; // Students with known score calculation issues
+
+      for (const studentId of problematicStudents) {
+        const forceResult = await this.forceFixStudentOverallScore(studentId);
+        if (forceResult.success) {
+          console.log(`[FORCE FIX] ✅ Student ${studentId}: ${forceResult.oldScore}% → ${forceResult.newScore}%`);
+        } else {
+          console.log(`[FORCE FIX] ❌ Student ${studentId}: ${forceResult.error}`);
+        }
+      }
+
       console.log('[AUTO-FIX] ✅ Comprehensive category repair completed successfully');
 
     } catch (error) {
@@ -268,18 +284,43 @@ class CategoryResultsService {
           await this.createPlaceholderCategoryRecord(studentId, readingLevel, requiredCategories);
           repairedCount++;
         } else {
-          // Check if all required categories are present
-          const existingResult = existingResults[0]; // Take the first (should be only one)
-          const existingCategoryNames = existingResult.categories.map(cat => cat.categoryName);
-          const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
+          // 🎯 SMART RECORD SELECTION: Only repair records that match current reading level
+          const currentLevelRecord = existingResults.find(result => result.readingLevel === readingLevel);
 
-          if (missingCategories.length > 0) {
-            console.log(`[COMPREHENSIVE REPAIR]   🔧 INCOMPLETE RECORD - Missing ${missingCategories.length} categories: ${missingCategories.join(', ')}`);
-            await this.addMissingCategoriesToRecord(existingResult, missingCategories, readingLevel);
+          if (!currentLevelRecord) {
+            console.log(`[COMPREHENSIVE REPAIR]   ❌ NO CURRENT LEVEL RECORD - Found ${existingResults.length} historical records but none for ${readingLevel}`);
+            console.log(`[COMPREHENSIVE REPAIR]   📚 Historical levels: ${existingResults.map(r => r.readingLevel).join(', ')}`);
+            console.log(`[COMPREHENSIVE REPAIR]   ➕ Creating new record for current level: ${readingLevel}`);
+            await this.createPlaceholderCategoryRecord(studentId, readingLevel, requiredCategories);
             repairedCount++;
           } else {
-            console.log(`[COMPREHENSIVE REPAIR]   ✅ COMPLETE RECORD - All ${requiredCategories.length} categories present`);
-            alreadyCompleteCount++;
+            // 🚫 HISTORICAL RECORD PROTECTION: Skip completed historical records
+            if (currentLevelRecord.readingLevelUpdated === true) {
+              console.log(`[COMPREHENSIVE REPAIR]   🚫 HISTORICAL RECORD - Cannot modify completed record (readingLevelUpdated=true)`);
+              console.log(`[COMPREHENSIVE REPAIR]   📚 Record: ${currentLevelRecord.readingLevel} level, completed on ${currentLevelRecord.updatedAt}`);
+              alreadyCompleteCount++;
+              continue;
+            }
+
+            if (currentLevelRecord.allCategoriesPassed === true) {
+              console.log(`[COMPREHENSIVE REPAIR]   🚫 PROGRESSION COMPLETED - Cannot modify record (allCategoriesPassed=true)`);
+              console.log(`[COMPREHENSIVE REPAIR]   ✅ Record has completed its level progression`);
+              alreadyCompleteCount++;
+              continue;
+            }
+
+            // Check if all required categories are present in current level record
+            const existingCategoryNames = currentLevelRecord.categories.map(cat => cat.categoryName);
+            const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
+
+            if (missingCategories.length > 0) {
+              console.log(`[COMPREHENSIVE REPAIR]   🔧 INCOMPLETE CURRENT RECORD - Missing ${missingCategories.length} categories: ${missingCategories.join(', ')}`);
+              await this.addMissingCategoriesToRecord(currentLevelRecord, missingCategories, readingLevel);
+              repairedCount++;
+            } else {
+              console.log(`[COMPREHENSIVE REPAIR]   ✅ COMPLETE CURRENT RECORD - All ${requiredCategories.length} categories present`);
+              alreadyCompleteCount++;
+            }
           }
         }
       }
@@ -356,7 +397,30 @@ class CategoryResultsService {
    */
   static async addMissingCategoriesToRecord(existingResult, missingCategories, readingLevel) {
     try {
+      // 🚫 CRITICAL VALIDATION: Never modify historical records
+      if (existingResult.readingLevelUpdated === true) {
+        console.log(`[MISSING CATEGORIES] 🚫 HISTORICAL RECORD PROTECTION: Cannot modify completed record with readingLevelUpdated=true`);
+        console.log(`[MISSING CATEGORIES] 📚 Historical record: ${existingResult.readingLevel} level, completed on ${existingResult.updatedAt}`);
+        console.log(`[MISSING CATEGORIES] ✅ Skipping modification - historical record must remain intact`);
+        return; // Exit early without modification
+      }
+
+      // 🚫 READING LEVEL MISMATCH PROTECTION: Never modify records from different reading levels
+      if (existingResult.readingLevel !== readingLevel) {
+        console.log(`[MISSING CATEGORIES] 🚫 READING LEVEL MISMATCH: Record level (${existingResult.readingLevel}) ≠ Current level (${readingLevel})`);
+        console.log(`[MISSING CATEGORIES] ✅ This is a historical record from previous level - skipping modification`);
+        return; // Exit early without modification
+      }
+
+      // 🚫 PROGRESSION PROTECTION: Never modify records that have completed progression
+      if (existingResult.allCategoriesPassed === true) {
+        console.log(`[MISSING CATEGORIES] 🚫 PROGRESSION COMPLETED: Record shows allCategoriesPassed=true`);
+        console.log(`[MISSING CATEGORIES] ✅ This record has completed its level progression - skipping modification`);
+        return; // Exit early without modification
+      }
+
       console.log(`[MISSING CATEGORIES] ➕ Adding ${missingCategories.length} missing categories to record ${existingResult._id}`);
+      console.log(`[MISSING CATEGORIES] ✅ Validation passed - safe to modify current level record`);
 
       for (const categoryName of missingCategories) {
         // Get correct question count from main_assessment
@@ -605,8 +669,23 @@ class CategoryResultsService {
         // Don't fail the category result creation if analytics fails
       }
 
-      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK
+      // 🎯 AUTOMATIC IEP REPORT UPDATE - Sync overallScore with category results
+      try {
+        console.log(`[CATEGORY RESULTS] Triggering automatic IEP report update for student ${savedResult.studentId}`);
+
+        const AutomaticIEPReportGenerator = require('../AutomaticIEPReportGenerator');
+        await AutomaticIEPReportGenerator.generateOrUpdateIEPReport(savedResult.toObject(), 'category_results_updated');
+
+        console.log(`[CATEGORY RESULTS] ✅ IEP report automatically updated with latest overallScore`);
+      } catch (iepError) {
+        console.error('[CATEGORY RESULTS] ❌ Error updating IEP report:', iepError);
+        // Don't fail the category result creation if IEP update fails
+      }
+
+      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK - DISABLED (Teacher-triggered only)
       // Check if student is now eligible for reading level progression after category completion
+      // DISABLED: Progression now requires manual teacher approval via IEP dashboard button
+      /*
       try {
         console.log(`[CATEGORY RESULTS] 🔍 Checking reading level progression eligibility after category completion`);
 
@@ -632,6 +711,8 @@ class CategoryResultsService {
         console.error('[CATEGORY RESULTS] ❌ Error in automatic reading level progression check:', progressionError);
         // Don't fail the category result creation if progression check fails
       }
+      */
+      console.log(`[CATEGORY RESULTS] ℹ️ Automatic progression disabled - teacher must trigger via IEP dashboard`);
 
       return savedResult.toObject();
 
@@ -682,8 +763,10 @@ class CategoryResultsService {
         updateData.totalCategories = updateData.categories.length;
         updateData.allCategoriesPassed = overallStats.passedCategories === updateData.categories.length;
 
-        // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK
+        // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK - DISABLED (Teacher-triggered only)
         // Check for reading level progression using the comprehensive ReadingLevelProgressionService
+        // DISABLED: Progression now requires manual teacher approval via IEP dashboard button
+        /*
         if (updateData.allCategoriesPassed && !existingResult.allCategoriesPassed) {
           console.log(`[CATEGORY RESULTS] ✅ Student ${existingResult.studentId} passed all categories for ${existingResult.readingLevel} - triggering progression check`);
 
@@ -708,6 +791,10 @@ class CategoryResultsService {
           }
         } else if (updateData.allCategoriesPassed) {
           console.log(`[CATEGORY RESULTS] ℹ️ All categories already passed - skipping duplicate progression check`);
+        }
+        */
+        if (updateData.allCategoriesPassed && !existingResult.allCategoriesPassed) {
+          console.log(`[CATEGORY RESULTS] ℹ️ Student ${existingResult.studentId} completed all categories for ${existingResult.readingLevel} - teacher can trigger progression via IEP dashboard`);
         }
       }
 
@@ -734,6 +821,19 @@ class CategoryResultsService {
         } catch (analyticsError) {
           console.error('[CATEGORY RESULTS] Error regenerating prescriptive analysis:', analyticsError);
         }
+      }
+
+      // 🎯 AUTOMATIC IEP REPORT UPDATE - Sync overallScore with updated category results
+      try {
+        console.log(`[CATEGORY RESULTS] Triggering automatic IEP report update for student ${updatedResult.studentId} (update)`);
+
+        const AutomaticIEPReportGenerator = require('../AutomaticIEPReportGenerator');
+        await AutomaticIEPReportGenerator.generateOrUpdateIEPReport(updatedResult.toObject(), 'category_results_updated');
+
+        console.log(`[CATEGORY RESULTS] ✅ IEP report automatically updated with latest overallScore (update)`);
+      } catch (iepError) {
+        console.error('[CATEGORY RESULTS] ❌ Error updating IEP report (update):', iepError);
+        // Don't fail the category result update if IEP update fails
       }
 
       return updatedResult.toObject();
@@ -1069,9 +1169,12 @@ class CategoryResultsService {
 
       console.log(`[CATEGORY RESULTS] ✅ PROCEEDING WITH CATEGORY-BY-CATEGORY RECORD CREATION`);
 
-      // Get all student responses
+      // Get student responses FILTERED BY READING LEVEL
       const StudentResponse = require('../../models/Teachers/ManageProgress/studentResponseModel');
-      const query = { studentId: parseInt(studentId) };
+      const query = {
+        studentId: parseInt(studentId),
+        readingLevel: readingLevel  // ✅ CRITICAL FIX: Only get responses for current reading level
+      };
       if (category) {
         query.category = category;
       }
@@ -1080,7 +1183,7 @@ class CategoryResultsService {
         .sort({ answeredAt: 1 })
         .lean();
 
-      console.log(`[CATEGORY RESULTS] Found ${responses.length} responses for student ${studentId}`);
+      console.log(`[CATEGORY RESULTS] Found ${responses.length} responses for student ${studentId} at reading level ${readingLevel}`);
 
       // DEBUG: Log what categories we actually found
       const foundCategories = [...new Set(responses.map(r => r.category))];
@@ -1162,20 +1265,29 @@ class CategoryResultsService {
 
         // Handle different question types
         if (categoryName === 'Phonological Awareness') {
-          // For PA, count total matches and correct matches
+          // ✅ CLAUDE.md FIX: Phonological Awareness should be scored by COMPLETELY CORRECT QUESTIONS, not partial matches
+          // Each question must be 100% correct to count (all matches within question correct)
           categoryResponses.forEach(response => {
             if (response.totalMatches) {
               totalMatches += response.totalMatches;
               correctMatches += response.correctMatches || 0;
+
+              // ✅ CRITICAL FIX: Count question as correct ONLY if ALL matches within question are correct
+              const questionPercentage = response.totalMatches > 0 ?
+                (response.correctMatches / response.totalMatches) * 100 : 0;
+
+              if (questionPercentage === 100) {
+                correctAnswers++; // Only count questions with ALL matches correct
+              }
             } else {
               // Fallback for older data structure
-              totalQuestions++;
               if (response.isCorrect) correctAnswers++;
             }
           });
 
-          if (totalMatches > 0) {
-            const score = Math.round((correctMatches / totalMatches) * 100);
+          // ✅ FIXED SCORING: Use CORRECT QUESTIONS (not partial matches) for Phonological Awareness score
+          if (categoryResponses.length > 0) {
+            const score = Math.round((correctAnswers / categoryResponses.length) * 100);
             categories.push({
               categoryName: categoryName,
               totalQuestions: categoryResponses.length,
@@ -1204,12 +1316,14 @@ class CategoryResultsService {
               })
             });
           } else {
-            // Fallback calculation
+            // Fallback calculation - NO FALLBACKS: Use actual student response data only
             const score = Math.round((correctAnswers / totalQuestions) * 100);
             categories.push({
               categoryName: categoryName,
               totalQuestions: totalQuestions,
               correctAnswers: correctAnswers,
+              totalPossibleMatches: 0, // ✅ FIX: Set to 0 when no match data from student responses
+              correctMatches: 0, // ✅ FIX: Set to 0 when no match data from student responses
               score: score,
               isPassed: score >= 75,
               isCompleted: isComplete, // ✅ FIX: Use actual completeness status
@@ -1272,10 +1386,54 @@ class CategoryResultsService {
       const existingResults = await this.getCategoryResults(parseInt(studentId));
 
       if (existingResults && existingResults.length > 0) {
-        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORD FOUND - UPDATING WITH INTERVENTION PRESERVATION`);
+        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORDS FOUND - CHECKING IF MODIFICATION IS ALLOWED`);
+        console.log(`[CATEGORY RESULTS] 📊 Found ${existingResults.length} existing records for student ${studentId}`);
 
-        // 🎯 CRITICAL FIX: Detect and repair incomplete existing records
-        const existingResult = existingResults[0]; // Get the first (most recent) record
+        // 🎯 SMART RECORD SELECTION: Find record that matches current reading level
+        const currentLevelRecord = existingResults.find(result => result.readingLevel === readingLevel);
+        const hasHistoricalRecords = existingResults.some(result => result.readingLevel !== readingLevel);
+
+        if (hasHistoricalRecords) {
+          const historicalLevels = existingResults
+            .filter(result => result.readingLevel !== readingLevel)
+            .map(result => result.readingLevel);
+          console.log(`[CATEGORY RESULTS] 📚 Historical records detected for levels: [${historicalLevels.join(', ')}]`);
+          console.log(`[CATEGORY RESULTS] 🚫 HISTORICAL PROTECTION: These records will not be modified`);
+        }
+
+        if (!currentLevelRecord) {
+          console.log(`[CATEGORY RESULTS] ❌ NO CURRENT LEVEL RECORD - Found historical records but none for ${readingLevel}`);
+          console.log(`[CATEGORY RESULTS] ➕ Creating new record for current level: ${readingLevel}`);
+          // Fall through to create new record
+        } else {
+          console.log(`[CATEGORY RESULTS] ✅ CURRENT LEVEL RECORD FOUND - Checking modification permissions`);
+          const existingResult = currentLevelRecord;
+
+          // ✅ CRITICAL VALIDATION: Check if this is a completed historical record
+          if (existingResult.readingLevelUpdated === true) {
+            console.log(`[CATEGORY RESULTS] 🚫 HISTORICAL RECORD DETECTED - Cannot modify completed record with readingLevelUpdated=true`);
+            console.log(`[CATEGORY RESULTS] 📚 Historical record: ${existingResult.readingLevel} level, completed on ${existingResult.updatedAt}`);
+            console.log(`[CATEGORY RESULTS] ✅ Skipping modification - historical record must remain intact`);
+            return existingResult; // Return the historical record without modification
+          }
+
+          // ✅ PROGRESSION PROTECTION: Check if progression is completed
+          if (existingResult.allCategoriesPassed === true) {
+            console.log(`[CATEGORY RESULTS] 🚫 PROGRESSION COMPLETED - Cannot modify record with allCategoriesPassed=true`);
+            console.log(`[CATEGORY RESULTS] ✅ This record has completed its level progression - skipping modification`);
+            return existingResult; // Return the completed record without modification
+          }
+
+          // ✅ CRITICAL VALIDATION: Double-check reading levels match
+          if (existingResult.readingLevel !== readingLevel) {
+            console.log(`[CATEGORY RESULTS] 🚫 READING LEVEL MISMATCH - Record level: ${existingResult.readingLevel}, Current level: ${readingLevel}`);
+            console.log(`[CATEGORY RESULTS] ✅ This indicates a progression occurred - old record should not be modified`);
+            return existingResult; // Return the existing record without modification
+          }
+
+          console.log(`[CATEGORY RESULTS] ✅ VALIDATION PASSED - Safe to modify current level record`);
+
+          // 🎯 SAFE TO MODIFY: Detect and repair incomplete existing records (only for current level)
         const requiredCategories = this.getCategoriesForReadingLevel(readingLevel);
         const existingCategoryNames = existingResult.categories.map(c => c.categoryName);
         const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
@@ -1398,6 +1556,7 @@ class CategoryResultsService {
         console.log(`[CATEGORY RESULTS] Categories: ${updatedResult.categories.map(c => `${c.categoryName} (${c.totalQuestions}Q, ${c.interventionHistory?.length || 0} interventions)`).join(', ')}`);
 
         return updatedResult;
+        }
       }
 
       // No existing record found - create new one
@@ -1524,8 +1683,173 @@ class CategoryResultsService {
   }
 
   /**
-   * Calculate overall statistics from categories
-   * ✅ FIX: Updated to properly detect categories that pass without intervention
+   * ✅ FIX EXISTING OVERALL SCORES: Update records with incorrect overall scores
+   * This specifically fixes records that have intervention successes but wrong overall scores
+   */
+  static async fixExistingOverallScores() {
+    try {
+      console.log('[OVERALL SCORE FIX] 🔧 Fixing existing records with incorrect overall scores...');
+
+      // Find all category results that might have incorrect overall scores
+      const allCategoryResults = await CategoryResult.find({});
+      let fixedCount = 0;
+      let checkedCount = 0;
+
+      for (const categoryResult of allCategoryResults) {
+        checkedCount++;
+        const studentId = categoryResult.studentId;
+
+        // ✅ CRITICAL FIX: Clean invalid intervention history entries before processing
+        this.cleanInvalidInterventionHistory(categoryResult);
+
+        // Calculate what the overall score SHOULD be using our new logic
+        const correctStats = this.calculateOverallStats(categoryResult.categories);
+        const currentScore = categoryResult.overallScore || 0;
+        const correctScore = correctStats.overallScore;
+
+        if (Math.abs(currentScore - correctScore) > 1) { // Allow 1% rounding difference
+          console.log(`[OVERALL SCORE FIX] Student ${studentId}: Current ${currentScore}% → Correct ${correctScore}%`);
+
+          // Update the record with correct overall score
+          categoryResult.overallScore = correctScore;
+          categoryResult.completedCategories = correctStats.passedCategories;
+          categoryResult.allCategoriesPassed = correctStats.passedCategories === categoryResult.categories.length;
+          categoryResult.updatedAt = new Date();
+
+          await categoryResult.save();
+          fixedCount++;
+
+          console.log(`[OVERALL SCORE FIX] ✅ Fixed student ${studentId}: ${currentScore}% → ${correctScore}%`);
+        }
+      }
+
+      console.log(`[OVERALL SCORE FIX] ✅ Complete: ${fixedCount} fixed, ${checkedCount - fixedCount} already correct`);
+      return { fixedCount, checkedCount };
+
+    } catch (error) {
+      console.error('[OVERALL SCORE FIX] ❌ Error fixing overall scores:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🔧 CRITICAL FIX: Clean invalid intervention history entries that are missing required fields
+   */
+  static cleanInvalidInterventionHistory(categoryResult) {
+    if (!categoryResult.categories) return;
+
+    categoryResult.categories.forEach((category, categoryIndex) => {
+      if (category.interventionHistory && category.interventionHistory.length > 0) {
+        // Filter out invalid intervention history entries
+        const validHistory = category.interventionHistory.filter((historyEntry, historyIndex) => {
+          // Check if all required fields are present
+          const isValid = (
+            typeof historyEntry.attemptNumber === 'number' &&
+            historyEntry.interventionId &&
+            historyEntry.interventionResultId &&
+            typeof historyEntry.score === 'number' &&
+            typeof historyEntry.isPassed === 'boolean' &&
+            historyEntry.attemptedAt &&
+            historyEntry.completedAt
+          );
+
+          if (!isValid) {
+            console.log(`[VALIDATION FIX] 🧹 Removing invalid intervention history entry for ${category.categoryName}:`, {
+              attemptNumber: historyEntry.attemptNumber,
+              hasInterventionId: !!historyEntry.interventionId,
+              hasInterventionResultId: !!historyEntry.interventionResultId,
+              hasScore: typeof historyEntry.score === 'number',
+              hasIsPassed: typeof historyEntry.isPassed === 'boolean',
+              hasAttemptedAt: !!historyEntry.attemptedAt,
+              hasCompletedAt: !!historyEntry.completedAt
+            });
+          }
+
+          return isValid;
+        });
+
+        // Update the category with only valid intervention history entries
+        if (validHistory.length !== category.interventionHistory.length) {
+          console.log(`[VALIDATION FIX] 📋 Cleaned ${category.categoryName}: ${category.interventionHistory.length} → ${validHistory.length} valid entries`);
+          categoryResult.categories[categoryIndex].interventionHistory = validHistory;
+        }
+      }
+    });
+  }
+
+  /**
+   * 🔧 FORCE FIX: Manually update specific student's overall score
+   * This method forces a direct MongoDB update to bypass any save issues
+   */
+  static async forceFixStudentOverallScore(studentId) {
+    try {
+      console.log(`[FORCE FIX] 🔧 Force fixing overall score for student ${studentId}...`);
+
+      // Get the student's category result
+      const categoryResult = await CategoryResult.findOne({ studentId: studentId });
+      if (!categoryResult) {
+        console.log(`[FORCE FIX] ❌ No category result found for student ${studentId}`);
+        return { success: false, error: 'No category result found' };
+      }
+
+      console.log(`[FORCE FIX] 📊 Current overall score: ${categoryResult.overallScore || 0}%`);
+
+      // Calculate correct score using our working logic
+      const correctStats = this.calculateOverallStats(categoryResult.categories);
+      const correctScore = correctStats.overallScore;
+
+      console.log(`[FORCE FIX] 📊 Calculated correct score: ${correctScore}%`);
+
+      // 🔧 PRESERVE ORIGINAL isPassed VALUES - Do not update category isPassed flags
+      const updatedCategories = categoryResult.categories.map(cat => {
+        // Keep original isPassed value - do not modify based on intervention success
+        console.log(`[FORCE FIX] 🔒 Preserving original isPassed for ${cat.categoryName}: ${cat.isPassed}`);
+        
+        return {
+          ...cat
+          // isPassed field is preserved as-is, no changes made
+        };
+      });
+
+      // Force update using direct MongoDB updateOne (bypasses Mongoose middleware)
+      const updateResult = await CategoryResult.updateOne(
+        { studentId: studentId },
+        {
+          $set: {
+            categories: updatedCategories,
+            overallScore: correctScore,
+            completedCategories: correctStats.passedCategories,
+            allCategoriesPassed: correctStats.passedCategories === categoryResult.categories.length,
+            updatedAt: new Date()
+          }
+        }
+      );
+
+      console.log(`[FORCE FIX] 📊 MongoDB updateOne result:`, updateResult);
+
+      // Verify the update worked
+      const verifyResult = await CategoryResult.findOne({ studentId: studentId });
+      const actualScore = verifyResult?.overallScore || 0;
+
+      console.log(`[FORCE FIX] ✅ Verification: Overall score is now ${actualScore}%`);
+
+      if (actualScore === correctScore) {
+        console.log(`[FORCE FIX] ✅ SUCCESS: Student ${studentId} overall score fixed: ${actualScore}%`);
+        return { success: true, oldScore: categoryResult.overallScore, newScore: actualScore };
+      } else {
+        console.log(`[FORCE FIX] ❌ FAILED: Score not updated correctly`);
+        return { success: false, error: 'Score not updated correctly' };
+      }
+
+    } catch (error) {
+      console.error(`[FORCE FIX] ❌ Error force fixing student ${studentId}:`, error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Calculate overall statistics using simple average with intervention scores
+   * ✅ FIX: Uses intervention scores when intervention passed
    *
    * @param {Array} categories - Array of category data
    * @returns {Object} - Overall statistics
@@ -1564,40 +1888,50 @@ class CategoryResultsService {
 
     let overallScore = 0;
 
-    if (effectivelyCompletedCategories.length > 0) {
-      // Calculate effective score for each COMPLETED category (use intervention if higher)
-      const effectiveScores = effectivelyCompletedCategories.map(cat => {
-        let effectiveScore = cat.score || 0;
+    // 🔧 CRITICAL FIX: Calculate scores for ALL categories using BEST available score
+    // For completed categories, use intervention score if it's higher than original
+    // For incomplete categories, use original score
+    const allScores = categories.map(cat => {
+      const mainAssessmentPassed = (cat.score || 0) >= 75;
+      const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
 
-        // Check if category has intervention history with passed attempts
-        if (cat.interventionHistory && cat.interventionHistory.length > 0) {
-          // Find the highest scoring passed intervention
-          const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
-          if (passedInterventions.length > 0) {
-            const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
+      let finalScore = cat.score || 0;
+      let scoreSource = 'original';
 
-            // Use intervention score if higher than original
-            if (highestInterventionScore > effectiveScore) {
-              console.log(`[OVERALL STATS] Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${effectiveScore}%)`);
-              effectiveScore = highestInterventionScore;
-            }
-          }
-        }
-
-        return effectiveScore;
+      console.log(`[OVERALL STATS] DEBUG ${cat.categoryName}:`, {
+        originalScore: cat.score,
+        mainAssessmentPassed,
+        interventionHistory: cat.interventionHistory ? cat.interventionHistory.map(i => ({ score: i.score, isPassed: i.isPassed })) : [],
+        hasSuccessfulIntervention
       });
 
-      // ✅ CRITICAL FIX: Include completed category scores, divided by TOTAL categories for reading level
-      // This properly reflects partial completion across all reading levels
-      const totalScore = effectiveScores.reduce((sum, score) => sum + score, 0);
-      overallScore = Math.round(totalScore / categories.length);
+      // 🔧 NEW LOGIC: Always use the best available score
+      if (hasSuccessfulIntervention) {
+        const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
+        const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
+        
+        // Use intervention score if it's higher than original OR if original didn't pass
+        if (highestInterventionScore > finalScore || !mainAssessmentPassed) {
+          finalScore = highestInterventionScore;
+          scoreSource = 'intervention';
+          console.log(`[OVERALL STATS] ✅ Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${cat.score}%)`);
+        } else {
+          console.log(`[OVERALL STATS] ⚪ Using original score for ${cat.categoryName}: ${finalScore}% (intervention available but lower: ${highestInterventionScore}%)`);
+        }
+      } else {
+        console.log(`[OVERALL STATS] ⚪ Using original score for ${cat.categoryName}: ${finalScore}%`);
+      }
 
-      console.log(`[OVERALL STATS] ✅ COMPLETION-AWARE CALCULATION: ${overallScore}% (${effectivelyCompletedCategories.length} completed out of ${categories.length} total)`);
-      console.log(`[OVERALL STATS] Completed scores: [${effectiveScores.join(', ')}]`);
-      console.log(`[OVERALL STATS] Completed: ${effectivelyCompletedCategories.length}, Incomplete: ${incompleteCategories.length}, Total: ${categories.length}`);
-    } else {
-      console.log(`[OVERALL STATS] No completed categories - overall score remains 0%`);
-    }
+      console.log(`[OVERALL STATS] 📊 Final score for ${cat.categoryName}: ${finalScore}% (${scoreSource})`);
+      return finalScore;
+    });
+
+    // Simple average of all category scores
+    const totalScore = allScores.reduce((sum, score) => sum + score, 0);
+    overallScore = Math.round(totalScore / categories.length);
+
+    console.log(`[OVERALL STATS] ✅ ENHANCED CALCULATION: ${overallScore}% average of [${allScores.join(', ')}]`);
+    console.log(`[OVERALL STATS] Passed: ${effectivelyCompletedCategories.length}, Failed: ${incompleteCategories.length}, Total: ${categories.length}`);
 
     const interventionRequired = incompleteCategories.length > 0;
 
@@ -2142,58 +2476,97 @@ class CategoryResultsService {
    * @param {string} category - Category name
    * @param {number} interventionScore - Score from intervention
    * @param {ObjectId} interventionResultId - ID of intervention result
+   * @param {string} readingLevel - Reading level to filter category_results
    * @returns {Object} Update result
    */
-  static async updateCategoryFromIntervention(studentId, category, interventionScore, interventionResultId) {
+  static async updateCategoryFromIntervention(studentId, category, interventionScore, interventionResultId, readingLevel = null) {
     try {
-      console.log(`[INTERVENTION UPDATE] Updating category_results for student ${studentId}, category ${category} - marking as passed via intervention (original score preserved)`);
+      console.log(`[INTERVENTION UPDATE] 🔍 STARTING UPDATE for student ${studentId}, category ${category}, reading level: ${readingLevel} - marking as passed via intervention`);
 
-      // Find the category result that needs updating
-      const categoryResult = await CategoryResult.findOne({
+      // 🎯 FIX: Find the category result that needs updating WITH reading level filtering
+      let categoryResultQuery = {
         studentId: parseInt(studentId),
         'categories.categoryName': category
-      });
+      };
+
+      // ✅ CRITICAL FIX: Add reading level filtering to prevent cross-level contamination
+      if (readingLevel) {
+        categoryResultQuery.readingLevel = readingLevel;
+        console.log(`[INTERVENTION UPDATE] 🎯 Filtering by reading level: ${readingLevel}`);
+      } else {
+        console.warn(`[INTERVENTION UPDATE] ⚠️ No reading level provided - searching all reading levels (may cause cross-level contamination)`);
+      }
+
+      console.log(`[INTERVENTION UPDATE] 🔍 Query being executed:`, JSON.stringify(categoryResultQuery, null, 2));
+
+      const categoryResult = await CategoryResult.findOne(categoryResultQuery);
+
+      console.log(`[INTERVENTION UPDATE] 🔍 Query result found:`, categoryResult ? 'YES' : 'NO');
+      if (categoryResult) {
+        console.log(`[INTERVENTION UPDATE] 🔍 Found record ID: ${categoryResult._id}`);
+        console.log(`[INTERVENTION UPDATE] 🔍 Found record reading level: ${categoryResult.readingLevel}`);
+        console.log(`[INTERVENTION UPDATE] 🔍 Found record categories:`, categoryResult.categories.map(cat => ({
+          name: cat.categoryName,
+          score: cat.score,
+          passed: cat.isPassed,
+          interventionAttempts: cat.interventionHistory ? cat.interventionHistory.length : 0
+        })));
+      }
 
       if (!categoryResult) {
-        throw new Error(`Category result not found for student ${studentId}, category ${category}`);
+        console.error(`[INTERVENTION UPDATE] ❌ Category result not found for student ${studentId}, category ${category}, reading level ${readingLevel}`);
+
+        // Let's also check what records DO exist for this student
+        const allRecords = await CategoryResult.find({ studentId: parseInt(studentId) });
+        console.log(`[INTERVENTION UPDATE] 🔍 All records for student ${studentId}:`, allRecords.map(record => ({
+          id: record._id,
+          readingLevel: record.readingLevel,
+          categories: record.categories.map(cat => cat.categoryName)
+        })));
+
+        // 🛡️ CROSS-LEVEL CONTAMINATION PREVENTION:
+        // NO FALLBACK LOGIC - This was causing interventions to be saved to wrong reading levels!
+        // If the exact reading level + category combination doesn't exist, the intervention
+        // belongs to a reading level that doesn't have this category yet, which means
+        // the category_results record needs to be created properly first.
+
+        console.error(`[INTERVENTION UPDATE] 🚨 STRICT MODE: No fallback logic - preventing cross-level contamination`);
+        console.error(`[INTERVENTION UPDATE] 📋 Possible causes:`);
+        console.error(`   1. Student just progressed reading levels and category_results not created yet`);
+        console.error(`   2. Race condition between progression and intervention completion`);
+        console.error(`   3. Data integrity issue - missing category_results record`);
+        console.error(`[INTERVENTION UPDATE] 🔧 Solution: Ensure category_results exists for current reading level before intervention`);
+
+        throw new Error(`STRICT MODE: Category result not found for student ${studentId}, category ${category}, reading level ${readingLevel}. No fallback to prevent cross-level contamination.`);
       }
 
-      // Find the specific category within the result
-      const categoryIndex = categoryResult.categories.findIndex(
-        cat => cat.categoryName === category
+      // Use helper method to perform the actual update
+      const updateResult = await this.performCategoryUpdateLogic(
+        categoryResult,
+        category,
+        interventionScore,
+        interventionResultId,
+        parseInt(studentId),
+        null // No special note for normal updates
       );
 
-      if (categoryIndex === -1) {
-        throw new Error(`Category ${category} not found in results for student ${studentId}`);
-      }
+      // Return success result for the calling hook
+      const successResult = {
+        success: true,
+        studentId: studentId,
+        category: category,
+        originalScore: updateResult.originalScore,
+        interventionScore: interventionScore,
+        newOverallScore: updateResult.overallScore,
+        isPassed: updateResult.categoryPassed,
+        categoryUpdated: true,
+        attemptNumber: updateResult.attemptNumber
+      };
 
-      // Update the category with intervention success
-      // ✅ PRESERVE ORIGINAL ASSESSMENT DATA - Do NOT overwrite isPassed or score
-      console.log(`[INTERVENTION UPDATE] 🔒 PRESERVING original assessment data:`);
-      console.log(`[INTERVENTION UPDATE] 🔒 - Original score: ${categoryResult.categories[categoryIndex].score}% (PRESERVED)`);
-      console.log(`[INTERVENTION UPDATE] 🔒 - Original isPassed: ${categoryResult.categories[categoryIndex].isPassed} (PRESERVED)`);
-      
-      // ✅ ONLY update intervention status flags - DO NOT touch original assessment results
-      categoryResult.categories[categoryIndex].interventionRequired = false;
-      categoryResult.categories[categoryIndex].interventionCompleted = true;
-      categoryResult.categories[categoryIndex].interventionResultId = interventionResultId;
-      categoryResult.categories[categoryIndex].lastUpdated = new Date();
-      
-      // ❌ REMOVED: Do NOT overwrite original isPassed or score
-      // ❌ categoryResult.categories[categoryIndex].isPassed = true;  // REMOVED - preserves original false
-      
-      console.log(`[INTERVENTION UPDATE] ✅ Category completion status updated without overwriting original assessment data`);
-
-      // Update overall category result metadata
-      categoryResult.updatedAt = new Date();
-
-      // Save the updated category result
-      await categoryResult.save();
-
-      console.log(`[INTERVENTION UPDATE] Successfully updated category_results for ${category}`);
-
-      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK AFTER INTERVENTION SUCCESS
+      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK AFTER INTERVENTION SUCCESS - DISABLED (Teacher-triggered only)
       // Check if intervention success now qualifies student for reading level progression
+      // DISABLED: Progression now requires manual teacher approval via IEP dashboard button
+      /*
       const student = await User.findOne({ idNumber: studentId });
       if (student) {
         try {
@@ -2223,14 +2596,10 @@ class CategoryResultsService {
           // Don't fail the intervention update if progression fails
         }
       }
+      */
+      console.log(`[INTERVENTION UPDATE] ℹ️ Intervention success for ${category} - teacher can trigger progression via IEP dashboard`);
 
-      return {
-        success: true,
-        message: `Category ${category} updated to passed status`,
-        score: interventionScore,
-        categoryResult: categoryResult._id,
-        progressionChecked: true
-      };
+      return successResult;
 
     } catch (error) {
       console.error('[INTERVENTION UPDATE] Error updating category from intervention:', error);
@@ -2240,6 +2609,247 @@ class CategoryResultsService {
         reason: 'Failed to update category_results from intervention success'
       };
     }
+  }
+
+  /**
+   * Clean up cross-level contamination in intervention history
+   * Removes intervention attempts that were incorrectly saved to wrong reading level records
+   */
+  static async cleanupCrossLevelContamination(studentId) {
+    try {
+      console.log(`[CONTAMINATION CLEANUP] 🧹 Starting cleanup for student ${studentId}`);
+
+      // Get all category_results for this student
+      const allCategoryResults = await CategoryResult.find({
+        studentId: parseInt(studentId)
+      }).sort({ createdAt: 1 });
+
+      console.log(`[CONTAMINATION CLEANUP] Found ${allCategoryResults.length} category result records`);
+
+      let cleanupActions = [];
+
+      // Check each record for contaminated intervention attempts
+      for (let recordIndex = 0; recordIndex < allCategoryResults.length; recordIndex++) {
+        const currentRecord = allCategoryResults[recordIndex];
+
+        console.log(`[CONTAMINATION CLEANUP] 🔍 Checking ${currentRecord.readingLevel} record`);
+
+        for (let categoryIndex = 0; categoryIndex < currentRecord.categories.length; categoryIndex++) {
+          const category = currentRecord.categories[categoryIndex];
+
+          if (category.interventionHistory && category.interventionHistory.length > 0) {
+            console.log(`[CONTAMINATION CLEANUP] Found ${category.interventionHistory.length} attempts in ${currentRecord.readingLevel} - ${category.categoryName}`);
+
+            // Check each intervention attempt
+            for (let attemptIndex = category.interventionHistory.length - 1; attemptIndex >= 0; attemptIndex--) {
+              const attempt = category.interventionHistory[attemptIndex];
+
+              console.log(`[CONTAMINATION CLEANUP] 🔍 Checking attempt ${attempt.attemptNumber} in ${currentRecord.readingLevel} - ${category.categoryName}`);
+              console.log(`[CONTAMINATION CLEANUP] Attempt details: interventionResultId=${attempt.interventionResultId}`);
+
+              // Check if this intervention result belongs to the correct reading level
+              const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+              const interventionResult = await InterventionResults.findById(attempt.interventionResultId);
+
+              if (interventionResult) {
+                const correctReadingLevel = interventionResult.readingLevel;
+                console.log(`[CONTAMINATION CLEANUP] Intervention result found: reading level ${correctReadingLevel}, current record: ${currentRecord.readingLevel}`);
+
+                if (currentRecord.readingLevel !== correctReadingLevel) {
+                  console.log(`[CONTAMINATION CLEANUP] 🚨 CONTAMINATION DETECTED: Attempt belongs to ${correctReadingLevel} but is in ${currentRecord.readingLevel} record`);
+
+                  // Check if the correct reading level record exists
+                  const correctRecord = allCategoryResults.find(record => record.readingLevel === correctReadingLevel);
+                  if (correctRecord) {
+                    const correctCategory = correctRecord.categories.find(cat => cat.categoryName === category.categoryName);
+
+                    // Check if this attempt should be moved or removed
+                    const hasAttemptInCorrectRecord = correctCategory && correctCategory.interventionHistory.some(correctAttempt =>
+                      correctAttempt.interventionResultId.toString() === attempt.interventionResultId.toString()
+                    );
+
+                    if (hasAttemptInCorrectRecord) {
+                      console.log(`[CONTAMINATION CLEANUP] 🗑️ REMOVING duplicate contaminated attempt from ${currentRecord.readingLevel} record (already exists in correct ${correctReadingLevel} record)`);
+                    } else {
+                      console.log(`[CONTAMINATION CLEANUP] 🔄 MOVING contaminated attempt from ${currentRecord.readingLevel} to ${correctReadingLevel} record`);
+
+                      // Add attempt to correct record
+                      if (correctCategory) {
+                        const newAttemptNumber = correctCategory.interventionHistory.length + 1;
+                        const movedAttempt = {
+                          ...attempt,
+                          attemptNumber: newAttemptNumber
+                        };
+                        correctCategory.interventionHistory.push(movedAttempt);
+                        correctCategory.interventionAttempts = correctCategory.interventionHistory.length;
+
+                        // Mark correct record for saving
+                        cleanupActions.push({
+                          action: 'moved_contaminated_attempt',
+                          fromRecord: currentRecord.readingLevel,
+                          toRecord: correctReadingLevel,
+                          category: category.categoryName,
+                          interventionResultId: attempt.interventionResultId
+                        });
+                      }
+                    }
+
+                    // Remove this attempt from current (wrong) record
+                    currentRecord.categories[categoryIndex].interventionHistory.splice(attemptIndex, 1);
+
+                    // Recalculate attempt numbers in current record
+                    currentRecord.categories[categoryIndex].interventionHistory.forEach((remainingAttempt, index) => {
+                      remainingAttempt.attemptNumber = index + 1;
+                    });
+
+                    // Update intervention attempts count
+                    currentRecord.categories[categoryIndex].interventionAttempts = currentRecord.categories[categoryIndex].interventionHistory.length;
+
+                    console.log(`[CONTAMINATION CLEANUP] ✅ Removed contaminated attempt from ${currentRecord.readingLevel}, remaining attempts: ${currentRecord.categories[categoryIndex].interventionHistory.length}`);
+                  } else {
+                    console.log(`[CONTAMINATION CLEANUP] ⚠️ Correct reading level record (${correctReadingLevel}) not found - keeping attempt in current record`);
+                  }
+                } else {
+                  console.log(`[CONTAMINATION CLEANUP] ✅ Attempt is in correct reading level record`);
+                }
+              } else {
+                console.log(`[CONTAMINATION CLEANUP] ⚠️ Intervention result ${attempt.interventionResultId} not found in database`);
+              }
+            }
+          }
+        }
+
+        // Save the cleaned record
+        if (cleanupActions.some(action => action.fromRecord === currentRecord.readingLevel)) {
+          await currentRecord.save();
+          console.log(`[CONTAMINATION CLEANUP] 💾 Saved cleaned ${currentRecord.readingLevel} record`);
+        }
+      }
+
+      console.log(`[CONTAMINATION CLEANUP] 🎉 Cleanup complete. Actions taken:`, cleanupActions.length);
+      return {
+        success: true,
+        studentId: studentId,
+        cleanupActions: cleanupActions,
+        message: `Cleaned up ${cleanupActions.length} contaminated intervention attempts`
+      };
+
+    } catch (error) {
+      console.error('[CONTAMINATION CLEANUP] ❌ Error during cleanup:', error);
+      return {
+        success: false,
+        error: error.message,
+        studentId: studentId
+      };
+    }
+  }
+
+  /**
+   * Helper method to perform the actual category update logic
+   * Extracted for reuse in both normal and fallback scenarios
+   */
+  static async performCategoryUpdateLogic(categoryResult, category, interventionScore, interventionResultId, studentId, specialNote = null) {
+    // Find the specific category within the result
+    const categoryIndex = categoryResult.categories.findIndex(
+      cat => cat.categoryName === category
+    );
+
+    if (categoryIndex === -1) {
+      throw new Error(`Category ${category} not found in results for student ${studentId}`);
+    }
+
+    const originalScore = categoryResult.categories[categoryIndex].score;
+    const originalIsPassed = categoryResult.categories[categoryIndex].isPassed;
+
+    console.log(`[INTERVENTION UPDATE] Original assessment: ${originalScore}% (passed: ${originalIsPassed})`);
+    console.log(`[INTERVENTION UPDATE] Intervention result: ${interventionScore}% (passed: ${interventionScore >= 75})`);
+
+    if (specialNote) {
+      console.log(`[INTERVENTION UPDATE] 🚨 SPECIAL NOTE: ${specialNote}`);
+    }
+
+    // ✅ ADD INTERVENTION TO HISTORY
+    if (!categoryResult.categories[categoryIndex].interventionHistory) {
+      categoryResult.categories[categoryIndex].interventionHistory = [];
+    }
+
+    // 🔍 CLEAN INTERVENTION ASSESSMENT ID LOOKUP - ROOT CAUSE FIXED
+    let interventionAssessmentId = null;
+    try {
+      const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+      const interventionResult = await InterventionResults.findById(interventionResultId);
+      if (interventionResult && interventionResult.interventionAssessmentId) {
+        interventionAssessmentId = interventionResult.interventionAssessmentId;
+        console.log(`[INTERVENTION UPDATE] ✅ Found interventionAssessmentId: ${interventionAssessmentId}`);
+      } else {
+        console.error(`[INTERVENTION UPDATE] 🚨 CRITICAL: No interventionAssessmentId found for interventionResultId: ${interventionResultId}`);
+        throw new Error(`Invalid intervention_results record missing required interventionAssessmentId: ${interventionResultId}`);
+      }
+    } catch (fetchError) {
+      console.error(`[INTERVENTION UPDATE] 🚨 CRITICAL ERROR: Failed to fetch interventionAssessmentId:`, fetchError.message);
+      throw fetchError; // Let it fail properly instead of using fallbacks
+    }
+
+    const attemptNumber = categoryResult.categories[categoryIndex].interventionHistory.length + 1;
+    const interventionEntry = {
+      attemptNumber: attemptNumber,
+      interventionId: interventionAssessmentId, // 🛡️ GUARANTEED non-null interventionId
+      interventionResultId: interventionResultId,
+      score: interventionScore,
+      isPassed: interventionScore >= 75,
+      attemptedAt: new Date(),
+      completedAt: new Date()
+    };
+
+    // Add special note if this is a fallback update
+    if (specialNote) {
+      interventionEntry.updateNote = specialNote;
+    }
+
+    categoryResult.categories[categoryIndex].interventionHistory.push(interventionEntry);
+
+    // ✅ UPDATE INTERVENTION STATUS ONLY - PRESERVE ORIGINAL ASSESSMENT DATA
+    if (interventionScore >= 75) {
+      // ✅ ONLY update intervention-related fields, NOT original assessment data
+      categoryResult.categories[categoryIndex].interventionRequired = false;
+      categoryResult.categories[categoryIndex].interventionCompleted = true;
+
+      // 🔒 PRESERVE ORIGINAL DATA: Original score and isPassed remain unchanged
+      console.log(`[INTERVENTION UPDATE] 🔒 PRESERVING original assessment: score=${originalScore}%, isPassed=${categoryResult.categories[categoryIndex].isPassed}`);
+      console.log(`[INTERVENTION UPDATE] ✅ Intervention passed (${interventionScore}%) - tracked in history only`);
+      console.log(`[INTERVENTION UPDATE] 📊 Category completion determined by: original pass OR intervention success`);
+    } else {
+      console.log(`[INTERVENTION UPDATE] ❌ Intervention failed (${interventionScore}% < 75%)`);
+      console.log(`[INTERVENTION UPDATE] 🔒 PRESERVING original assessment: score=${originalScore}%, isPassed=${categoryResult.categories[categoryIndex].isPassed}`);
+    }
+
+    categoryResult.categories[categoryIndex].interventionResultId = interventionResultId;
+    categoryResult.categories[categoryIndex].lastUpdated = new Date();
+
+    // ✅ RECALCULATE OVERALL SCORE AFTER INTERVENTION UPDATE
+    const overallStats = this.calculateOverallStats(categoryResult.categories);
+    categoryResult.overallScore = overallStats.overallScore;
+    categoryResult.completedCategories = overallStats.passedCategories;
+    categoryResult.allCategoriesPassed = overallStats.passedCategories === categoryResult.categories.length;
+
+    console.log(`[INTERVENTION UPDATE] 🔄 Recalculated overall score: ${overallStats.overallScore}% (${overallStats.passedCategories}/${categoryResult.categories.length} categories passed)`);
+
+    // Update overall category result metadata
+    categoryResult.updatedAt = new Date();
+
+    // Save the updated category result
+    await categoryResult.save();
+
+    console.log(`[INTERVENTION UPDATE] Successfully updated category_results for ${category}`);
+
+    return {
+      attemptNumber: attemptNumber,
+      categoryPassed: interventionScore >= 75,
+      originalScore: originalScore,
+      newScore: categoryResult.categories[categoryIndex].score,
+      overallScore: overallStats.overallScore,
+      allCategoriesPassed: overallStats.passedCategories === categoryResult.categories.length
+    };
   }
 
   /**

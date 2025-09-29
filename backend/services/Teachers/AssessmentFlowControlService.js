@@ -187,15 +187,23 @@ class AssessmentFlowControlService {
         if (categoryData) {
           // Check if category has been completed
           const completed = categoryData.isCompleted === true;
-          const passed = categoryData.isPassed === true && categoryData.score >= 75;
+
+          // ✅ FIXED: Check original pass OR intervention success (without modifying original data)
+          const originalPassed = categoryData.isPassed === true && categoryData.score >= 75;
+          const hasSuccessfulIntervention = categoryData.interventionHistory &&
+            categoryData.interventionHistory.some(intervention => intervention.isPassed === true);
+          const passed = originalPassed || hasSuccessfulIntervention;
 
           return {
             completed: completed,
-            passed: passed,
-            score: categoryData.score || 0,
+            passed: passed,  // Now correctly includes intervention success
+            score: categoryData.score || 0,  // Always shows original score
             status: !completed ? 'in_progress' : (passed ? 'passed' : 'failed'),
             interventionRequired: categoryData.interventionRequired || false,
-            interventionCompleted: categoryData.interventionCompleted || false
+            interventionCompleted: categoryData.interventionCompleted || false,
+            // Additional info for transparency
+            originalPassed: originalPassed,
+            interventionPassed: hasSuccessfulIntervention
           };
         }
       }

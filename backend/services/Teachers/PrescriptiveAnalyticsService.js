@@ -3275,7 +3275,7 @@ class PrescriptiveAnalyticsService {
     const scoreRatio = score / 100;
 
     // If the BKT mastery is way higher than the actual performance, adjust it
-    const maxReasonableMastery = scoreRatio + 0.15; // Allow 15% optimism above actual score
+    const maxReasonableMastery = Math.min(1.0, scoreRatio + 0.15); // Allow 15% optimism above actual score, but cap at 1.0
     const minReasonableMastery = Math.max(0.05, scoreRatio - 0.1); // Don't go below 5% or too far below score
 
     console.log(`[BKT ADJUSTMENT] Score: ${score}%, ScoreRatio: ${scoreRatio}, BKT: ${bktMastery}, MaxReasonable: ${maxReasonableMastery}, MinReasonable: ${minReasonableMastery}`);
@@ -3283,11 +3283,11 @@ class PrescriptiveAnalyticsService {
     // If BKT is reasonable, use it. Otherwise, constrain it.
     if (bktMastery >= minReasonableMastery && bktMastery <= maxReasonableMastery) {
       console.log(`[BKT ADJUSTMENT] BKT is reasonable, using original: ${bktMastery}`);
-      return Math.round(bktMastery * 1000) / 1000; // Keep original if reasonable
+      return Math.round(Math.min(1.0, bktMastery) * 1000) / 1000; // Keep original if reasonable, but cap at 1.0
     }
 
     // Adjust BKT to be more realistic based on actual performance
-    const adjustedMastery = Math.max(minReasonableMastery, Math.min(maxReasonableMastery, scoreRatio + 0.1));
+    const adjustedMastery = Math.max(minReasonableMastery, Math.min(maxReasonableMastery, Math.min(1.0, scoreRatio + 0.1)));
     console.log(`[BKT ADJUSTMENT] BKT unreasonable, adjusting to: ${adjustedMastery}`);
 
     return Math.round(adjustedMastery * 1000) / 1000;

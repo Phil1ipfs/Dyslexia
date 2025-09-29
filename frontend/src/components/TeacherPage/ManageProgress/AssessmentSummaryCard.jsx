@@ -128,8 +128,8 @@ const AssessmentSummaryCard = ({ assessmentData, student }) => {
   let assessmentDate;
   
   if (isPostAssessment) {
-    // For post-assessment, use assessmentDate from category_results
-    assessmentDate = assessmentData.assessmentDate;
+    // For post-assessment, use createdAt from category_results (when the assessment was first created)
+    assessmentDate = assessmentData.createdAt;
   } else {
     // For pre-assessment, use lastAssessmentDate from users table
     assessmentDate = student?.lastAssessmentDate;
@@ -182,6 +182,22 @@ const AssessmentSummaryCard = ({ assessmentData, student }) => {
             </div>
           </div>
         </div>
+        
+        {isPostAssessment && assessmentData.updatedAt && (
+          <div className="unique-literexia-assessment-item">
+            <div className="unique-literexia-item-icon unique-calendar-icon">
+              <FaCalendarAlt />
+            </div>
+            <div className="unique-literexia-item-content">
+              <div className="unique-literexia-item-label">
+                Last Updated
+              </div>
+              <div className="unique-literexia-item-value unique-date-value">
+                {formatDate(assessmentData.updatedAt)}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -407,13 +407,15 @@ class AutoProcessingService {
   }
 
   /**
-   * Run automatic progression validation as part of periodic processing
-   * This ensures all students who should have progressed are properly handled
+   * ❌ DISABLED: Run automatic progression validation as part of periodic processing
+   * DISABLED: This was causing automatic progression without teacher approval
    */
   static async runPeriodicProgressionValidation() {
     try {
-      console.log('[AUTO PROCESSOR] 🔄 Running periodic progression validation...');
+      console.log('[AUTO PROCESSOR] ⚠️ AUTOMATIC PROGRESSION DISABLED - Teacher-triggered only via IEP dashboard');
 
+      // ❌ DISABLED: This was causing automatic progression without teacher approval
+      /*
       const AutomaticProgressionValidationService = require('../AutomaticProgressionValidationService');
       const results = await AutomaticProgressionValidationService.detectStuckProgressions();
 
@@ -424,6 +426,9 @@ class AutoProcessingService {
       }
 
       return results;
+      */
+
+      return { success: true, progressionsFixed: 0, stuckFound: 0, disabled: true };
 
     } catch (error) {
       console.error('[AUTO PROCESSOR] ❌ Error in progression validation:', error.message);

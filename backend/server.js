@@ -7,8 +7,12 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const s3Client = require('./config/s3');
+const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// Create HTTP server for WebSocket integration
+const server = http.createServer(app);
 
 // Check for AWS environment variables
 if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_REGION) {
@@ -513,8 +517,8 @@ connectDB().then(async (connected) => {
     // Load dashboard routes
     try {
       const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
-      app.use('/api/dashboard', dashboardRoutes);
-      console.log('✅ Loaded dashboard routes');
+      app.use('/api/teachers/dashboard', dashboardRoutes);
+      console.log('✅ Loaded dashboard routes at /api/teachers/dashboard/*');
     } catch (error) {
       console.warn('⚠️ Could not load dashboard routes:', error.message);
     }
@@ -1104,6 +1108,61 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load cleanup routes:', error.message);
     }
 
+    // Load data migration routes
+    try {
+      const dataMigrationRoutes = require('./routes/dataMigrationRoutes');
+      app.use('/api/data-migration', dataMigrationRoutes);
+      console.log('✅ Loaded data migration routes at /api/data-migration/*');
+
+    } catch (error) {
+      console.warn('⚠️ Could not load data migration routes:', error.message);
+    }
+
+    // Load mobile-optimized category results routes
+    try {
+      const categoryResultsMobileRoutes = require('./routes/mobile/categoryResultsMobileRoutes');
+      app.use('/api/mobile/category-results', categoryResultsMobileRoutes);
+      console.log('✅ Loaded mobile-optimized category results routes at /api/mobile/category-results/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load mobile category results routes:', error.message);
+    }
+
+    // Load mobile-optimized student response routes
+    try {
+      const studentResponseMobileRoutes = require('./routes/mobile/studentResponseMobileRoutes');
+      app.use('/api/mobile/student-responses', studentResponseMobileRoutes);
+      console.log('✅ Loaded mobile-optimized student response routes at /api/mobile/student-responses/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load mobile student response routes:', error.message);
+    }
+
+    // Load comprehensive optimization routes
+    try {
+      const comprehensiveOptimizationRoutes = require('./routes/mobile/comprehensiveOptimizationRoutes');
+      app.use('/api/mobile/comprehensive', comprehensiveOptimizationRoutes);
+      console.log('✅ Loaded comprehensive optimization routes at /api/mobile/comprehensive/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load comprehensive optimization routes:', error.message);
+    }
+
+    // Load intervention results mobile routes
+    try {
+      const interventionResultsMobileRoutes = require('./routes/mobile/interventionResultsMobileRoutes');
+      app.use('/api/mobile/intervention-results', interventionResultsMobileRoutes);
+      console.log('✅ Loaded intervention results mobile routes at /api/mobile/intervention-results/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load intervention results mobile routes:', error.message);
+    }
+
+    // Initialize WebSocket service for real-time updates
+    try {
+      const WebSocketService = require('./services/mobile/WebSocketService');
+      WebSocketService.initialize(server);
+      console.log('✅ WebSocket service initialized for real-time mobile updates');
+    } catch (error) {
+      console.warn('⚠️ Could not initialize WebSocket service:', error.message);
+    }
+
 
     // 404 handler
     app.use((req, res) => {
@@ -1124,9 +1183,9 @@ connectDB().then(async (connected) => {
   }
 });
 
-// Start the server
-app.listen(PORT, async () => {
-  console.log(`\n✅ Server is running on port ${PORT}`);
+// Start the server with WebSocket support
+server.listen(PORT, async () => {
+  console.log(`\n✅ Server is running on port ${PORT} - Data Integrity Fixes Applied`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`API URL: http://localhost:${PORT}`);
 
@@ -1140,7 +1199,9 @@ app.listen(PORT, async () => {
     console.warn('⚠️ Could not run automatic data fix:', error.message);
   }
 
-  // Run complete automatic progression validation
+  // ❌ DISABLED: Run complete automatic progression validation
+  // DISABLED: This was causing automatic progression without teacher approval
+  /*
   try {
     const AutomaticProgressionValidationService = require('./services/AutomaticProgressionValidationService');
     console.log('🔄 Starting automatic progression validation...');
@@ -1149,6 +1210,8 @@ app.listen(PORT, async () => {
   } catch (error) {
     console.warn('⚠️ Could not run automatic progression validation:', error.message);
   }
+  */
+  console.log('⚠️ AUTOMATIC PROGRESSION DISABLED - Teacher-triggered only via IEP dashboard');
 
   // Start automatic processing of complete assessments
   try {
@@ -1225,5 +1288,27 @@ app.listen(PORT, async () => {
     console.log('🎯 Category results fix service auto-started - will check and fix category statistics every 5 minutes');
   } catch (error) {
     console.warn('⚠️ Could not start category results fix service:', error.message);
+  }
+
+  // Start automatic data processor (generates missing category_results)
+  try {
+    const AutomaticDataProcessor = require('./services/AutomaticDataProcessor');
+
+    console.log('🤖 Starting automatic data processing...');
+    await AutomaticDataProcessor.initializeAutoProcessing();
+    console.log('✅ Automatic data processor initialized - will process missing category_results');
+  } catch (error) {
+    console.warn('⚠️ Could not start automatic data processor:', error.message);
+  }
+
+  // Start automatic IEP report generator
+  try {
+    const AutomaticIEPReportGenerator = require('./services/AutomaticIEPReportGenerator');
+
+    console.log('📋 Starting automatic IEP report generation...');
+    await AutomaticIEPReportGenerator.initializeAutoGeneration();
+    console.log('✅ Automatic IEP report generator initialized - will generate IEP reports from assessments and interventions');
+  } catch (error) {
+    console.warn('⚠️ Could not start automatic IEP report generator:', error.message);
   }
 });

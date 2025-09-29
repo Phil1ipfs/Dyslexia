@@ -96,32 +96,14 @@ class CategoryResultsFixService {
 
       const totalCategories = categoryResult.categories.length;
       
-      // Calculate overall score based on total possible points across all categories
-      // CRITICAL FIX: Use original assessment scores only, count completion via intervention separately
-      let totalPointsEarned = 0;
-      let totalPossiblePoints = 0;
+      // ✅ FIXED: Use CategoryResultsService.calculateOverallStats for correct calculation
+      // This method properly factors in intervention success when calculating overall score
+      const CategoryResultsService = require('./CategoryResultsService');
+      const correctStats = CategoryResultsService.calculateOverallStats(categoryResult.categories);
+      const expectedOverallScore = correctStats.overallScore;
 
-      for (const category of categoryResult.categories) {
-        // Each category has a maximum of 100 points (100%)
-        totalPossiblePoints += 100;
-
-        // CRITICAL FIX: Count category as contributing points if passed originally OR completed via intervention
-        const passedOriginally = category.isPassed === true;
-        const completedViaIntervention = category.interventionCompleted === true;
-        const effectivelyCompleted = passedOriginally || completedViaIntervention;
-
-        if (effectivelyCompleted) {
-          // ✅ ALWAYS use original assessment score - DO NOT use intervention scores for overall calculation
-          const originalScore = category.score || 0;
-          totalPointsEarned += originalScore;
-
-          console.log(`[CATEGORY FIX] 📊 ${category.categoryName}: original=${category.isPassed}, intervention=${category.interventionCompleted}, contributing=${originalScore}%`);
-        } else {
-          console.log(`[CATEGORY FIX] 📊 ${category.categoryName}: not completed, contributing=0%`);
-        }
-      }
-      
-      const expectedOverallScore = totalPossiblePoints > 0 ? Math.round((totalPointsEarned / totalPossiblePoints) * 100) : 0;
+      console.log(`[CATEGORY FIX] 📊 Using CategoryResultsService.calculateOverallStats for accurate score calculation`);
+      console.log(`[CATEGORY FIX] 📊 Correct overall score calculation: ${expectedOverallScore}%`);
       const currentOverallScore = categoryResult.overallScore || 0;
 
       // Check if fix is needed
