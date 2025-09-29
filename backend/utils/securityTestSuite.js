@@ -13,7 +13,7 @@ const cssInjectionTestCases = {
 
     // CSS behavior attacks
     'behavior: url(xss.htc);',
-    'behavior: url("javascript:alert(\\'XSS\\')");',
+    'behavior: url("javascript:alert(\'XSS\')");',
     '-ms-behavior: url(evil.htc);',
 
     // CSS binding attacks
