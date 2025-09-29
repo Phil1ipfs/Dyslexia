@@ -63,6 +63,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "terser": "^5.19.2",
     "vite": "^6.3.6"
   }
 }
