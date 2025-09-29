@@ -344,7 +344,7 @@
   font-weight: 500;
 }
 
-/* ===== EMAIL CONFIGURATION ===== */
+/* ===== CHECKBOX LABEL ===== */
 .admin-profile__checkbox-label {
   display: flex;
   align-items: center;
@@ -368,54 +368,20 @@
   cursor: pointer;
 }
 
-.admin-profile__email-config {
+/* ===== CHANGE PASSWORD SECTION ===== */
+.admin-profile__section--password {
+  max-width: 100%;
+  margin: 0;
+  padding: 3rem 2.5rem;
+}
+
+.admin-profile__password-config {
   margin-top: 1.5rem;
   padding: 1.5rem;
   background: #f7f9fc;
   border-radius: 0.5rem;
   border: 1px solid #eaeff8;
   animation: adminProfileSlideDown 0.3s ease;
-}
-
-.admin-profile__password-input {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.admin-profile__password-input input {
-  padding-right: 3rem;
-}
-
-.admin-profile__password-toggle {
-  position: absolute;
-  right: 0.75rem;
-  background: none;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: all 0.3s ease;
-}
-
-.admin-profile__password-toggle:hover {
-  color: #3B4F81;
-  background: rgba(59, 79, 129, 0.1);
-}
-
-.admin-profile__help-text {
-  color: #6b7280;
-  font-size: 0.8rem;
-  margin-top: 0.5rem;
-  line-height: 1.4;
-}
-
-/* ===== CHANGE PASSWORD SECTION ===== */
-.admin-profile__section--password {
-  max-width: 100%;
-  margin: 0;
-  padding: 3rem 2.5rem;
 }
 
 .admin-profile__section--password .admin-profile__form-grid {

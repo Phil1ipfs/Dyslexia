@@ -29,10 +29,7 @@ const AdminProfile = () => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const [emailSettings, setEmailSettings] = useState({
-    emailPassword: '',
-    useCustomEmail: false
-  });
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
 
   const [validationErrors, setValidationErrors] = useState({});
   const [loading, setLoading] = useState(true);
@@ -73,16 +70,32 @@ const AdminProfile = () => {
           civilStatus: data.data.civilStatus || '',
           profileImageUrl: data.data.profileImageUrl || ''
         });
+
+        // Clear any previous error messages on successful load
+        setMessage({ type: '', text: '' });
       } else {
-        setMessage({ type: 'error', text: 'Failed to load profile data' });
+        // Handle authentication or permission errors gracefully
+        if (response.status === 401 || response.status === 403) {
+          setMessage({ type: 'error', text: 'Session expired. Please refresh the page and try again.' });
+        } else {
+          setMessage({ type: 'error', text: data.message || 'Failed to load profile data' });
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      setMessage({ type: 'error', text: 'Error loading profile' });
+      // Handle network errors or server issues
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setMessage({ type: 'error', text: 'Network error. Please check your connection and try again.' });
+      } else {
+        setMessage({ type: 'error', text: 'Error loading profile. Please refresh the page and try again.' });
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Alias for consistency with other calls
+  const fetchProfile = fetchAdminProfile;
 
   const validateForm = () => {
     const errors = {};
@@ -115,6 +128,12 @@ const AdminProfile = () => {
       if (!contactResult.isValid) errors.contact = contactResult.errors;
     }
 
+    // Validate date of birth (18+ age requirement for admin)
+    if (profileData.dateOfBirth) {
+      const birthdateResult = adminValidation.validateBirthdate(profileData.dateOfBirth, 'admin');
+      if (!birthdateResult.isValid) errors.dateOfBirth = birthdateResult.errors;
+    }
+
     // Validate address
     if (profileData.address) {
       const addressResult = adminValidation.validateText(profileData.address, 'Address', false, 200);
@@ -126,15 +145,48 @@ const AdminProfile = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setProfileData(prev => ({
-      ...prev,
+    const updatedData = {
+      ...profileData,
       [field]: value
-    }));
+    };
 
-    // Real-time validation
+    setProfileData(updatedData);
+
+    // Real-time validation for the specific field
+    const errors = {};
+
+    // Validate the specific field that changed
+    if (field === 'firstName') {
+      const result = adminValidation.validateName(value, 'First Name');
+      if (!result.isValid) errors.firstName = result.errors;
+    } else if (field === 'lastName') {
+      const result = adminValidation.validateName(value, 'Last Name');
+      if (!result.isValid) errors.lastName = result.errors;
+    } else if (field === 'middleName' && value && value.trim()) {
+      const result = adminValidation.validateName(value, 'Middle Name', true);
+      if (!result.isValid) errors.middleName = result.errors;
+    } else if (field === 'email') {
+      const result = adminValidation.validateEmail(value);
+      if (!result.isValid) {
+        errors.email = result.errors;
+      } else if (result.warning) {
+        errors.email = [result.warning];
+      }
+    } else if (field === 'contact' && value) {
+      const result = adminValidation.validateContactNumber(value);
+      if (!result.isValid) errors.contact = result.errors;
+    } else if (field === 'address' && value) {
+      const result = adminValidation.validateText(value, 'Address', false, 200);
+      if (!result.isValid) errors.address = result.errors;
+    } else if (field === 'dateOfBirth' && value) {
+      const result = adminValidation.validateBirthdate(value, 'admin');
+      if (!result.isValid) errors.dateOfBirth = result.errors;
+    }
+
+    // Update validation errors for the specific field
     setValidationErrors(prev => ({
       ...prev,
-      [field]: null
+      [field]: errors[field] || null
     }));
   };
 
@@ -145,11 +197,23 @@ const AdminProfile = () => {
     }));
   };
 
-  const handleEmailSettingsChange = (field, value) => {
-    setEmailSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
+
+  const handlePasswordSectionToggle = (checked) => {
+    setShowPasswordSection(checked);
+    // Clear password data when hiding the section
+    if (!checked) {
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setValidationErrors(prev => ({
+        ...prev,
+        currentPassword: null,
+        newPassword: null,
+        confirmPassword: null
+      }));
+    }
   };
 
   const validatePassword = () => {
@@ -263,6 +327,9 @@ const AdminProfile = () => {
         delete newErrors.newPassword;
         delete newErrors.confirmPassword;
         setValidationErrors(newErrors);
+
+        // Refresh profile data from server to ensure consistency
+        await fetchProfile();
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to change password' });
       }
@@ -390,6 +457,9 @@ const AdminProfile = () => {
           currentUser.user.email = profileData.email;
           localStorage.setItem('user', JSON.stringify(currentUser));
         }
+
+        // Refresh profile data from server to ensure consistency
+        await fetchProfile();
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to update profile' });
       }
@@ -536,12 +606,17 @@ const AdminProfile = () => {
             </div>
 
             <div className="admin-profile__form-group">
-              <label>Date of Birth</label>
+              <label>
+                Date of Birth
+                <span className="admin-profile__required-asterisk">*</span>
+              </label>
               <input
                 type="date"
                 value={profileData.dateOfBirth}
                 onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                className={validationErrors.dateOfBirth ? 'admin-profile__input--error' : ''}
               />
+              {renderValidationErrors('dateOfBirth')}
             </div>
 
             <div className="admin-profile__form-group">
@@ -609,53 +684,7 @@ const AdminProfile = () => {
           </div>
         </div>
 
-        {/* Email Settings */}
-        <div className="admin-profile__section">
-          <h2>
-            <Settings className="admin-profile__section-icon" />
-            Email Configuration
-          </h2>
-          <p className="admin-profile__section-description">
-            Configure your Gmail settings to send emails from your account when creating user credentials.
-          </p>
 
-          <div className="admin-profile__form-group">
-            <label className="admin-profile__checkbox-label">
-              <input
-                type="checkbox"
-                checked={emailSettings.useCustomEmail}
-                onChange={(e) => handleEmailSettingsChange('useCustomEmail', e.target.checked)}
-              />
-              Use my email account for sending credentials
-            </label>
-          </div>
-
-          {emailSettings.useCustomEmail && (
-            <div className="admin-profile__email-config">
-              <div className="admin-profile__form-group">
-                <label>Gmail App Password</label>
-                <div className="admin-profile__password-input">
-                  <input
-                    type={showEmailPassword ? 'text' : 'password'}
-                    value={emailSettings.emailPassword}
-                    onChange={(e) => handleEmailSettingsChange('emailPassword', e.target.value)}
-                    placeholder="Enter Gmail app password (xxxx xxxx xxxx xxxx)"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowEmailPassword(!showEmailPassword)}
-                    className="admin-profile__password-toggle"
-                  >
-                    {showEmailPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                <small className="admin-profile__help-text">
-                  Generate an app password in your Gmail account: Settings → Security → 2-step verification → App passwords
-                </small>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Change Password */}
         <div className="admin-profile__section admin-profile__section--password">
@@ -667,6 +696,19 @@ const AdminProfile = () => {
             Update your account password for security purposes.
           </p>
 
+          <div className="admin-profile__form-group">
+            <label className="admin-profile__checkbox-label">
+              <input
+                type="checkbox"
+                checked={showPasswordSection}
+                onChange={(e) => handlePasswordSectionToggle(e.target.checked)}
+              />
+              I want to change my password
+            </label>
+          </div>
+
+          {showPasswordSection && (
+            <div className="admin-profile__password-config">
           <div className="admin-profile__form-grid">
             <div className="admin-profile__password-field">
               <label>Current Password *</label>
@@ -755,13 +797,15 @@ const AdminProfile = () => {
               {saving ? 'Changing...' : 'Change Password'}
             </button>
           </div>
+            </div>
+          )}
         </div>
 
         {/* Save Button */}
         <div className="admin-profile__actions">
           <button
             onClick={handleSave}
-            disabled={saving || Object.keys(validationErrors).length > 0}
+            disabled={saving}
             className="admin-profile__save-btn"
           >
             <Save size={16} />
