@@ -5,7 +5,8 @@ const {
   processAllCompleteAssessments,
   processSpecificStudent,
   getProcessingStatus,
-  fixInterventionSuccess
+  fixInterventionSuccess,
+  fastReprocessStudent
 } = require('../../controllers/Teachers/autoProcessingController');
 
 // Manual trigger to process all complete assessments
@@ -39,6 +40,11 @@ router.post('/fix-intervention-success/:studentId',
 // TEMPORARY: Fix intervention success without auth (for urgent fixes)
 router.post('/fix-intervention-success-temp/:studentId',
   fixInterventionSuccess
+);
+
+// Fast reprocess student with immediate response (no auth for faster testing)
+router.post('/fast-reprocess/:studentId',
+  fastReprocessStudent
 );
 
 module.exports = router;

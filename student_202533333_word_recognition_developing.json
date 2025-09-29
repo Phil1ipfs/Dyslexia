@@ -288,7 +288,7 @@
     "response": [
       "MESA"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 31.2,
     "answeredAt": {
       "$date": "2025-09-16T08:38:00.000Z"
@@ -311,7 +311,7 @@
     "response": [
       "SUSI"
     ],
-    "isCorrect": true,
+    "isCorrect": false,
     "responseTime": 29.8,
     "answeredAt": {
       "$date": "2025-09-16T08:39:00.000Z"
