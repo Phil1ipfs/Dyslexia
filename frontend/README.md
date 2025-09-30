@@ -70,3 +70,29 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
 
 
+I can't read the JWT_SECRET directly (which is good for security).       
+  You need to SSH into the production server and add the JWT_SECRET to     
+  the .env file:
+
+  # SSH into EC2
+  ssh -i "your-key.pem" ubuntu@18.139.217.179
+
+  # Navigate to backend directory
+  cd backend
+
+  # Edit .env file
+  nano .env
+
+  # Add this line (use the same JWT_SECRET from your local 
+  backend/.env):
+  JWT_SECRET=your_jwt_secret_value_here
+
+  # Save and exit (Ctrl+X, then Y, then Enter)
+
+  # Restart PM2
+  pm2 restart all
+
+  Once you add the JWT_SECRET and restart PM2, the "Server
+  configuration error" should be resolved and the endpoint should work     
+  properly.
+  
