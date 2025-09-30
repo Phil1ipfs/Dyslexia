@@ -614,7 +614,7 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
           const inputType = field === 'dateOfBirth' ? 'date' : field === 'email' ? 'email' : field === 'contact' ? 'tel' : 'text';
 
           return (
-            <div key={field} className={`admin-parent-form-group ${hasValidationError ? 'has-error' : ''}`}>
+            <div key={field} className={`admin-parent-form-group ${field === 'address' ? 'full-width' : ''} ${hasValidationError ? 'has-error' : ''}`}>
               <label className={isRequired ? "admin-parent-required" : "admin-parent-optional"}>
                 {getFieldLabel(field)} {!isRequired ? '(Optional)' : ''}
               </label>
@@ -853,6 +853,7 @@ const ParentListPage = () => {
   const [newCredentials, setNewCredentials] = useState(null);
   const [error, setError] = useState(null);
   const [viewModalChildren, setViewModalChildren] = useState([]);
+  const [allStudents, setAllStudents] = useState([]); // For displaying children names in table
 
   // Fetch parents from database
   useEffect(() => {
@@ -882,6 +883,53 @@ const ParentListPage = () => {
 
     fetchParents();
   }, []);
+
+  // Fetch all students for displaying children names in table
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
+        if (response.data.success) {
+          setAllStudents(response.data.data);
+        } else {
+          console.error("Error fetching students:", response.data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching students data:", error);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  // Helper function to get children names for a parent
+  const getChildrenNames = (parent) => {
+    if (!parent.children || parent.children.length === 0) {
+      return <span className="admin-parent-no-children">No children linked</span>;
+    }
+
+    const childrenNames = parent.children
+      .map(childId => {
+        const student = allStudents.find(s => s._id === childId);
+        return student ? `${student.firstName} ${student.lastName}` : null;
+      })
+      .filter(Boolean); // Remove null values
+
+    if (childrenNames.length === 0) {
+      return <span className="admin-parent-no-children">Children not found</span>;
+    }
+
+    return (
+      <div className="admin-parent-children-list">
+        <span className="admin-parent-children-count">
+          {childrenNames.length} {childrenNames.length === 1 ? 'child' : 'children'}:
+        </span>
+        <div className="admin-parent-children-names">
+          {childrenNames.join(', ')}
+        </div>
+      </div>
+    );
+  };
 
   // Filter and search functionality
   useEffect(() => {
@@ -1102,6 +1150,7 @@ const ParentListPage = () => {
                 <th>Parent Name</th>
                 <th>Email</th>
                 <th>Address</th>
+                <th>Children</th>
                 <th>View Profile</th>
                 <th>Actions</th>
               </tr>
@@ -1109,6 +1158,7 @@ const ParentListPage = () => {
             <tbody>
               {[1, 2, 3].map((_, index) => (
                 <tr key={index}>
+                  <td><div className="admin-parent-skeleton-text"></div></td>
                   <td><div className="admin-parent-skeleton-text"></div></td>
                   <td><div className="admin-parent-skeleton-text"></div></td>
                   <td><div className="admin-parent-skeleton-text"></div></td>
@@ -1189,6 +1239,7 @@ const ParentListPage = () => {
               <th>Parent Name</th>
               <th>Email</th>
               <th>Address</th>
+              <th>Children</th>
               <th>View Profile</th>
               <th>Actions</th>
             </tr>
@@ -1199,8 +1250,11 @@ const ParentListPage = () => {
                 <td className="admin-parent-name">{`${parent.firstName} ${parent.lastName}`}</td>
                 <td>{parent.email}</td>
                 <td>{parent.address}</td>
+                <td className="admin-parent-children-cell">
+                  {getChildrenNames(parent)}
+                </td>
                 <td>
-                  <button 
+                  <button
                     className="admin-parent-view-btn"
                     onClick={() => handleViewProfile(parent)}
                   >

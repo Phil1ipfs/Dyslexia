@@ -556,7 +556,7 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
           const inputType = field === 'dob' ? 'date' : field === 'email' ? 'email' : field === 'contact' ? 'tel' : 'text';
 
           return (
-            <div key={field} className={`admin-teacher-form-group ${hasValidationError ? 'has-error' : ''}`}>
+            <div key={field} className={`admin-teacher-form-group ${field === 'address' ? 'full-width' : ''} ${hasValidationError ? 'has-error' : ''}`}>
               <label className={isRequired ? "admin-teacher-required" : "admin-teacher-optional"}>
                 {getFieldLabel(field)} {!isRequired ? '(Optional)' : ''}
               </label>
