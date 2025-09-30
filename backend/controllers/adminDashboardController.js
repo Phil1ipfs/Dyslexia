@@ -67,7 +67,11 @@ const getDashboardStats = async (req, res) => {
  */
 const getPrescriptiveAnalysis = async (req, res) => {
     try {
+        console.log('[ADMIN CONTROLLER] ========================================');
         console.log('[ADMIN CONTROLLER] Starting prescriptive analysis request...');
+        console.log('[ADMIN CONTROLLER] User from req.user:', req.user);
+        console.log('[ADMIN CONTROLLER] Headers:', req.headers);
+        console.log('[ADMIN CONTROLLER] ========================================');
 
         // Get comprehensive prescriptive analysis
         const analysisResult = await AdminPrescriptiveAnalysisService.getComprehensivePrescriptiveAnalysis();

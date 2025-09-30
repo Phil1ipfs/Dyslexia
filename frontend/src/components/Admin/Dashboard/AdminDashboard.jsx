@@ -172,7 +172,23 @@ const AdminDashboard = () => {
       setPrescriptiveLoading(true);
       setPrescriptiveError(null);
 
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      // Get token from multiple possible locations (same as NavigationBar)
+      let token = localStorage.getItem('authToken') ||
+                  localStorage.getItem('token');
+
+      if (!token) {
+        // Try getting from user object (where authService stores it)
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          try {
+            const parsed = JSON.parse(userData);
+            token = parsed.token;
+          } catch (e) {
+            console.error('Error parsing user data:', e);
+          }
+        }
+      }
+
       if (!token) {
         throw new Error('No auth token found');
       }
