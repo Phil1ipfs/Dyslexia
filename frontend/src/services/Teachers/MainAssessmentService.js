@@ -17,8 +17,8 @@ class MainAssessmentService {
    */
   checkApiAvailability = async () => {
     try {
-      // Try ping without auth headers first
-      await axios.get('/api/main-assessment/ping');
+      // Use the working main-assessment endpoint to check availability
+      await axios.get('/api/main-assessment?limit=1', this.getAuthHeaders());
       this.apiInitialized = true;
       console.log('Main Assessment API is available');
       return true;
@@ -37,7 +37,7 @@ class MainAssessmentService {
           return true;
         }
       }
-      
+
       console.warn('Main Assessment API might not be fully set up yet:', error.message);
       this.apiInitialized = false;
       return false;
