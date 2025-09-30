@@ -492,9 +492,9 @@ const StudentAssessmentResults = () => {
               const question = questionDetails.sentenceQuestions[index];
               const questionText = question ? question.questionText : `Question ${index + 1}`;
               return `Q${index + 1}: ${answer}`;
-            }).join(', ');
+            }).join('\n');
           } else if (Array.isArray(response)) {
-            return response.map((answer, index) => `Q${index + 1}: ${answer}`).join(', ');
+            return response.map((answer, index) => `Q${index + 1}: ${answer}`).join('\n');
           }
           return String(response);
 
