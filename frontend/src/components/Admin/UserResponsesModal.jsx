@@ -499,26 +499,6 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
 
   const categories = [...new Set(userResponses.map(response => response.category))];
 
-  // Group responses by category for better organization
-  const groupedResponses = filteredResponses.reduce((acc, response) => {
-    const category = response.category;
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(response);
-    return acc;
-  }, {});
-
-  // Calculate category statistics
-  const getCategoryStats = (responses) => {
-    const total = responses.length;
-    const correct = responses.filter(r => r.isCorrect).length;
-    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-    const avgTime = total > 0 ? responses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / total : 0;
-    
-    return { total, correct, accuracy, avgTime };
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -574,100 +554,62 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
                 </div>
               </div>
 
-              {/* Category Summary Cards */}
-              {selectedCategory === 'all' && (
-                <div className="user-responses__category-summary">
-                  <h3>Category Performance Overview</h3>
-                  <div className="user-responses__summary-grid">
-                    {Object.entries(groupedResponses).map(([category, responses]) => {
-                      const stats = getCategoryStats(responses);
-                      return (
-                        <div key={category} className="user-responses__summary-card">
-                          <div className="user-responses__summary-header">
-                            <div className="user-responses__category-badge" style={{ backgroundColor: getCategoryColor(category) }}>
-                              {getCategoryIcon(category)}
-                              <span>{category}</span>
-                            </div>
-                          </div>
-                          <div className="user-responses__summary-stats">
-                            <div className="user-responses__stat-item">
-                              <span className="user-responses__stat-label">Total</span>
-                              <span className="user-responses__stat-value">{stats.total}</span>
-                            </div>
-                            <div className="user-responses__stat-item">
-                              <span className="user-responses__stat-label">Accuracy</span>
-                              <span className={`user-responses__stat-value user-responses__stat-value--${stats.accuracy >= 75 ? 'good' : stats.accuracy >= 60 ? 'warning' : 'poor'}`}>
-                                {stats.accuracy}%
-                              </span>
-                            </div>
-                            <div className="user-responses__stat-item">
-                              <span className="user-responses__stat-label">Avg Time</span>
-                              <span className="user-responses__stat-value">{formatResponseTime(stats.avgTime)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Responses List - Grouped by Category */}
+              {/* Responses List */}
               <div className="user-responses__list">
-                {Object.entries(groupedResponses).map(([category, responses]) => (
-                  <div key={category} className="user-responses__category-section">
-                    <div className="user-responses__category-header">
-                      <div className="user-responses__category-title">
-                        <div className="user-responses__category-badge" style={{ backgroundColor: getCategoryColor(category) }}>
-                          {getCategoryIcon(category)}
-                          <span>{category}</span>
+                {filteredResponses.map((response, index) => {
+                  const isExpanded = expandedQuestions[response.questionId];
+                  
+                  return (
+                    <div key={response._id || index} className="user-responses__response-card">
+                      <div 
+                        className="user-responses__response-header"
+                        onClick={() => toggleQuestionExpansion(response.questionId)}
+                      >
+                        <div className="user-responses__response-info">
+                          <div className="user-responses__category-badge" style={{ backgroundColor: getCategoryColor(response.category) }}>
+                            {getCategoryIcon(response.category)}
+                            <span>{response.category}</span>
+                          </div>
+                          <div className="user-responses__question-info">
+                            <span className="user-responses__question-id">{response.questionId}</span>
+                            <span className="user-responses__question-type">{response.questionType}</span>
+                          </div>
                         </div>
-                        <span className="user-responses__category-count">{responses.length} items</span>
+                        
+                        <div className="user-responses__response-meta">
+                          <div className={`user-responses__correctness ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                            {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                            <span>{response.isCorrect ? 'Correct' : 'Incorrect'}</span>
+                          </div>
+                          <div className="user-responses__time">
+                            <Clock size={14} />
+                            <span>{formatResponseTime(response.responseTime)}</span>
+                          </div>
+                          <div className="user-responses__expand-icon">
+                            {isExpanded ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="user-responses__category-responses">
-                      {responses.map((response, index) => (
-                        <div key={response._id || index} className="user-responses__response-card">
-                          <div className="user-responses__response-header">
-                            <div className="user-responses__response-info">
-                              <div className="user-responses__question-info">
-                                <span className="user-responses__question-id">{response.questionId}</span>
-                                <span className="user-responses__question-type">{response.questionType}</span>
-                              </div>
-                            </div>
-                            
-                            <div className="user-responses__response-meta">
-                              <div className={`user-responses__correctness ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                                {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                                <span>{response.isCorrect ? 'Correct' : 'Incorrect'}</span>
-                              </div>
-                              <div className="user-responses__time">
-                                <Clock size={14} />
-                                <span>{formatResponseTime(response.responseTime)}</span>
-                              </div>
-                            </div>
-                          </div>
 
-                          <div className="user-responses__response-details">
-                            <div className="user-responses__response-metadata">
-                              <div className="user-responses__metadata-item">
-                                <span className="user-responses__metadata-label">Answered At:</span>
-                                <span className="user-responses__metadata-value">{formatDate(response.answeredAt)}</span>
-                              </div>
-                              <div className="user-responses__metadata-item">
-                                <span className="user-responses__metadata-label">Response Time:</span>
-                                <span className="user-responses__metadata-value">{formatResponseTime(response.responseTime)}</span>
-                              </div>
+                      {isExpanded && (
+                        <div className="user-responses__response-details">
+                          <div className="user-responses__response-metadata">
+                            <div className="user-responses__metadata-item">
+                              <span className="user-responses__metadata-label">Answered At:</span>
+                              <span className="user-responses__metadata-value">{formatDate(response.answeredAt)}</span>
                             </div>
-                            
-                            {renderResponseContent(response)}
+                            <div className="user-responses__metadata-item">
+                              <span className="user-responses__metadata-label">Response Time:</span>
+                              <span className="user-responses__metadata-value">{formatResponseTime(response.responseTime)}</span>
+                            </div>
                           </div>
+                          
+                          {renderResponseContent(response)}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
