@@ -247,39 +247,43 @@ const StudentAssessmentResults = () => {
       const categoryData = student?.categoryScores?.find(cat => cat.categoryName === category);
       const finalResult = getFinalCategoryResult(categoryData);
 
+      // Debug logging
+      console.log(`[DEBUG] Category: ${category}`);
+      console.log(`[DEBUG] Category data:`, categoryData);
+      console.log(`[DEBUG] Final result:`, finalResult);
+
       if (finalResult.hasIntervention) {
         try {
-          // Get ALL intervention responses for this student and category
-          const interventionResponse = await axios.get(
-            `http://localhost:5001/api/admin/intervention-responses/${studentId}/${category}`
-          );
+          // Determine target revision number
+          let targetRevisionNumber = null;
+          if (finalResult.passedAttemptNumber) {
+            targetRevisionNumber = finalResult.passedAttemptNumber;
+          } else if (finalResult.bestInterventionAttempt) {
+            targetRevisionNumber = finalResult.bestInterventionAttempt;
+          }
 
-          if (interventionResponse.data.success) {
-            const allInterventionResponses = (interventionResponse.data.data || []).map(item => {
-              const { correctMatches, totalMatches, matches, ...rest } = item || {};
-              return { ...rest, responseType: 'intervention' };
-            });
+          if (targetRevisionNumber) {
+            // Get intervention responses using the correct API endpoint with query parameters
+            const interventionResponse = await axios.get(
+              `http://localhost:5001/api/intervention-responses`, {
+                params: {
+                  studentId: studentId,
+                  category: category,
+                  revisionNumber: targetRevisionNumber
+                }
+              }
+            );
 
-            // Filter responses by the correct revision number
-            let targetRevisionNumber = null;
-            if (finalResult.passedAttemptNumber) {
-              // Use the passed attempt number as revision number
-              targetRevisionNumber = finalResult.passedAttemptNumber;
-            } else if (finalResult.bestInterventionAttempt) {
-              // Use the best attempt number as revision number
-              targetRevisionNumber = finalResult.bestInterventionAttempt;
-            }
+            if (interventionResponse.data.success) {
+              const allInterventionResponses = (interventionResponse.data.data || []).map(item => {
+                const { correctMatches, totalMatches, matches, ...rest } = item || {};
+                return { ...rest, responseType: 'intervention' };
+              });
 
-            if (targetRevisionNumber) {
-              // Filter by revision number and get most recent responses for each question
-              const targetRevisionResponses = allInterventionResponses.filter(response =>
-                response.revisionNumber === targetRevisionNumber
-              );
-
-              if (targetRevisionResponses.length > 0) {
+              if (allInterventionResponses.length > 0) {
                 // Group by questionId and get the most recent response for each question
                 const responsesByQuestion = {};
-                targetRevisionResponses.forEach(response => {
+                allInterventionResponses.forEach(response => {
                   const questionId = response.questionId;
                   if (!responsesByQuestion[questionId] ||
                       new Date(response.answeredAt) > new Date(responsesByQuestion[questionId].answeredAt)) {
@@ -293,15 +297,20 @@ const StudentAssessmentResults = () => {
 
                 // Convert to array and sort by question ID
                 interventionResponses = Object.values(responsesByQuestion).sort((a, b) => {
-                  const aNum = parseInt(a.questionId.split('_').pop());
-                  const bNum = parseInt(b.questionId.split('_').pop());
+                  // Handle different question ID formats
+                  const aMatch = a.questionId.match(/(\d+)$/);
+                  const bMatch = b.questionId.match(/(\d+)$/);
+                  const aNum = aMatch ? parseInt(aMatch[1]) : 0;
+                  const bNum = bMatch ? parseInt(bMatch[1]) : 0;
                   return aNum - bNum;
                 });
+
+                console.log(`[DEBUG] Found ${interventionResponses.length} intervention responses for ${category} revision ${targetRevisionNumber}`);
               }
             }
           }
         } catch (interventionError) {
-          console.warn(`Error fetching intervention responses for ${category}:`, interventionError);
+          console.error(`Error fetching intervention responses for ${category}:`, interventionError);
         }
       }
 
