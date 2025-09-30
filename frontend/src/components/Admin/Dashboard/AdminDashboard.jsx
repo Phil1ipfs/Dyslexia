@@ -617,10 +617,15 @@ const AdminDashboard = () => {
                         <span>Overall Accuracy:</span>
                           <span className="metric-value">{Math.round(analysis.overallAccuracy || 0)}%</span>
                       </div>
-                      <div className="metric-row">
-                        <span>Avg Response Time:</span>
-                          <span className="metric-value">{analysis.averageResponseTime || 0}s</span>
-                      </div>
+                        <div className="metric-row">
+                          <span>Avg Response Time:</span>
+                          <span className="metric-value">
+                            {analysis.averageResponseTime ? 
+                              `${parseFloat(analysis.averageResponseTime).toFixed(1)}s` : 
+                              '0s'
+                            }
+                          </span>
+                        </div>
                       <div className="metric-row">
                         <span>Intervention Needed:</span>
                         <span className={analysis.interventionNeeded ? 'text-warning' : 'text-success'}>

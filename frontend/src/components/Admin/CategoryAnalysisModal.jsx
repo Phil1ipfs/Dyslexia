@@ -101,7 +101,12 @@ const CategoryAnalysisModal = ({
                 <Clock size={16} />
                 <div className="metric-content">
                   <span className="metric-label">Avg Response Time</span>
-                  <span className="metric-value">{analysis.performance?.averageResponseTime || 0}s</span>
+                  <span className="metric-value">
+                    {analysis.performance?.averageResponseTime ? 
+                      `${parseFloat(analysis.performance.averageResponseTime).toFixed(1)}s` : 
+                      '0s'
+                    }
+                  </span>
                 </div>
               </div>
 
