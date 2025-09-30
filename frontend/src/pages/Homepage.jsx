@@ -1,5 +1,5 @@
 // src/pages/Homepage.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import "../css/Homepage.css";
 import "../css/Teachers/responsive.css";
 
@@ -37,8 +37,6 @@ import methodLion from "../assets/icons/Homepage/sealion.png";
 import starIcon from "../assets/icons/Homepage/star.png";
 
 function Homepage() {
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
-
   // Add scroll reveal animation effect
   useEffect(() => {
     const revealElements = document.querySelectorAll('.reveal');
@@ -100,118 +98,12 @@ function Homepage() {
         <div className="hero-content">
           <h2>Learn to Read in Filipino</h2>
           <p>
-            Make reading fun! With Literexia, children learn through vibrant songs,
-            colorful stories, and engaging activities in Filipino—especially designed
+            Make reading fun! With Literexia, children learn through vibrant songs, 
+            colorful stories, and engaging activities in Filipino—especially designed 
             for children with dyslexia.
           </p>
-
-          {/* Download Button with Animation */}
-          <div className="download-button-wrapper">
-            <button
-              className="download-app-button"
-              onClick={() => setShowDownloadModal(true)}
-            >
-              <div className="button-content">
-                <svg
-                  className="download-icon"
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M19.35 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14C0 17.31 2.69 20 6 20H19C21.76 20 24 17.76 24 15C24 12.36 21.95 10.22 19.35 10.04ZM17 13L12 18L7 13H10V9H14V13H17Z"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span className="button-text">Download App</span>
-              </div>
-              <div className="button-shine"></div>
-            </button>
-          </div>
         </div>
       </section>
-
-      {/* Download Modal - Enhanced */}
-      {showDownloadModal && (
-        <div className="download-modal-overlay animate-fade-in" onClick={() => setShowDownloadModal(false)}>
-          <div className="download-modal-content animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            {/* Close X Button */}
-            <button
-              className="modal-close-x"
-              onClick={() => setShowDownloadModal(false)}
-              aria-label="Close modal"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-              </svg>
-            </button>
-
-            {/* Icon Header */}
-            <div className="modal-icon-wrapper">
-              <div className="modal-icon-circle">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M19.35 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14C0 17.31 2.69 20 6 20H19C21.76 20 24 17.76 24 15C24 12.36 21.95 10.22 19.35 10.04ZM17 13L12 18L7 13H10V9H14V13H17Z"
-                    fill="#FFCC00"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            <h2 className="download-modal-title">Download Literexia</h2>
-            <p className="download-modal-subtitle">Scan the QR code to download the app</p>
-
-            {/* QR Code Container with Animation */}
-            <div className="qr-code-container animate-fade-in-up">
-              <div className="qr-code-wrapper">
-                {/* Corner decorations */}
-                <div className="qr-corner qr-corner-tl"></div>
-                <div className="qr-corner qr-corner-tr"></div>
-                <div className="qr-corner qr-corner-bl"></div>
-                <div className="qr-corner qr-corner-br"></div>
-
-                {/* You'll need to replace this with your actual QR code image */}
-                <div className="qr-code-placeholder">
-                  <svg width="220" height="220" viewBox="0 0 220 220">
-                    <rect width="220" height="220" fill="white" rx="8"/>
-                    <text x="110" y="110" textAnchor="middle" fill="#1F315D" fontSize="14" fontWeight="500">
-                      Place QR Code Here
-                    </text>
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="download-modal-divider">
-              <span>or download directly</span>
-            </div>
-
-            {/* Download Button - Enhanced */}
-            <a
-              href="YOUR_APK_DOWNLOAD_LINK"
-              className="download-modal-button"
-              download
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path
-                  d="M19.35 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14C0 17.31 2.69 20 6 20H19C21.76 20 24 17.76 24 15C24 12.36 21.95 10.22 19.35 10.04ZM17 13L12 18L7 13H10V9H14V13H17Z"
-                  fill="currentColor"
-                />
-              </svg>
-              <span>Download for Android</span>
-              <div className="button-arrow">→</div>
-            </a>
-
-          </div>
-        </div>
-      )}
 
       {/* ---- ABOUT SECTION ---- */}
       <section className="about-section reveal" id="about">
