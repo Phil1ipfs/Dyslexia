@@ -172,25 +172,23 @@ const AdminDashboard = () => {
       setPrescriptiveLoading(true);
       setPrescriptiveError(null);
 
-      // Get token from multiple possible locations (same as NavigationBar)
-      let token = localStorage.getItem('authToken') ||
-                  localStorage.getItem('token');
+      // Get token from user object (where authService stores it)
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        throw new Error('No authentication data found. Please login again.');
+      }
 
-      if (!token) {
-        // Try getting from user object (where authService stores it)
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          try {
-            const parsed = JSON.parse(userData);
-            token = parsed.token;
-          } catch (e) {
-            console.error('Error parsing user data:', e);
-          }
-        }
+      let token;
+      try {
+        const parsed = JSON.parse(userData);
+        token = parsed.token;
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        throw new Error('Invalid authentication data. Please login again.');
       }
 
       if (!token) {
-        throw new Error('No auth token found');
+        throw new Error('No auth token found. Please login again.');
       }
 
       console.log('[ADMIN DASHBOARD] Fetching prescriptive analysis...');
