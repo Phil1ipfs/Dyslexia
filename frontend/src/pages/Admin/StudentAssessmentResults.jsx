@@ -76,33 +76,68 @@ const StudentAssessmentResults = () => {
     if (!questionDetails) return 'Not available';
 
     try {
-      // For multiple choice questions (choiceOptions)
-      if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
-        const correctOption = questionDetails.choiceOptions.find(option => option.isCorrect);
-        return correctOption ? correctOption.optionText : 'Not found';
-      }
+      switch (category) {
+        case 'Alphabet Knowledge':
+          // For Alphabet Knowledge, find the correct option text
+          if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            const correctOption = questionDetails.choiceOptions.find(option => option.isCorrect);
+            return correctOption ? correctOption.optionText : 'Not found';
+          }
+          return 'Not found';
 
-      // For drag and drop questions (correctSequence)
-      if (questionDetails.correctSequence && Array.isArray(questionDetails.correctSequence)) {
-        return questionDetails.correctSequence.join(', ');
-      }
+        case 'Phonological Awareness':
+          // For Phonological Awareness, use correctPairs
+          if (questionDetails.questionSet?.correctPairs && Array.isArray(questionDetails.questionSet.correctPairs)) {
+            return questionDetails.questionSet.correctPairs.map(pair => {
+              if (typeof pair === 'object') {
+                return Object.entries(pair).map(([audio, match]) => `${audio} → ${match}`).join(', ');
+              }
+              return pair;
+            }).join(', ');
+          }
+          return 'Not found';
 
-      // For fill in the blank questions (correctAnswer)
-      if (questionDetails.correctAnswer && Array.isArray(questionDetails.correctAnswer)) {
-        return questionDetails.correctAnswer.join(', ');
-      }
+        case 'Decoding':
+          // For Decoding, use displaySequence and correctSequence
+          if (questionDetails.displaySequence && Array.isArray(questionDetails.displaySequence) &&
+              questionDetails.correctSequence && Array.isArray(questionDetails.correctSequence)) {
+            return `Display: ${questionDetails.displaySequence.join('')}, Correct: ${questionDetails.correctSequence.join('')}`;
+          } else if (questionDetails.correctSequence && Array.isArray(questionDetails.correctSequence)) {
+            return questionDetails.correctSequence.join('');
+          }
+          return 'Not found';
 
-      // For Reading Comprehension (sentenceQuestions)
-      if (category === 'Reading Comprehension' && questionDetails.sentenceQuestions && Array.isArray(questionDetails.sentenceQuestions)) {
-        return questionDetails.sentenceQuestions.map(sq => sq.sentenceCorrectAnswer).join(', ');
-      }
+        case 'Word Recognition':
+          // For Word Recognition, use displayWord and correctAnswer
+          if (questionDetails.displayWord && questionDetails.correctAnswer) {
+            const correctAnswerText = Array.isArray(questionDetails.correctAnswer) ?
+              questionDetails.correctAnswer.join(', ') : questionDetails.correctAnswer;
+            return `"${questionDetails.displayWord}" → ${correctAnswerText}`;
+          } else if (questionDetails.correctAnswer) {
+            return Array.isArray(questionDetails.correctAnswer) ?
+              questionDetails.correctAnswer.join(', ') : questionDetails.correctAnswer;
+          }
+          return 'Not found';
 
-      // For single value questions
-      if (questionDetails.questionValue) {
-        return questionDetails.questionValue;
-      }
+        case 'Reading Comprehension':
+          // For Reading Comprehension, don't show correct answer since it's in sentence questions
+          return null; // Will not display "Correct Answer" section
 
-      return 'Correct answer not available';
+        default:
+          // Fallback for other categories
+          if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            const correctOption = questionDetails.choiceOptions.find(option => option.isCorrect);
+            return correctOption ? correctOption.optionText : 'Not found';
+          }
+          if (questionDetails.correctSequence && Array.isArray(questionDetails.correctSequence)) {
+            return questionDetails.correctSequence.join(', ');
+          }
+          if (questionDetails.correctAnswer) {
+            return Array.isArray(questionDetails.correctAnswer) ?
+              questionDetails.correctAnswer.join(', ') : questionDetails.correctAnswer;
+          }
+          return 'Not found';
+      }
     } catch (error) {
       console.error('Error extracting correct answer:', error);
       return 'Error extracting answer';
@@ -114,30 +149,332 @@ const StudentAssessmentResults = () => {
     if (!questionDetails) return [];
 
     try {
-      // For multiple choice questions
-      if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
-        return questionDetails.choiceOptions.map(option => option.optionText);
-      }
+      switch (category) {
+        case 'Alphabet Knowledge':
+          // For Alphabet Knowledge, use choiceOptions
+          if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            return questionDetails.choiceOptions.map(option => option.optionText);
+          }
+          break;
 
-      // For drag and drop questions
-      if (questionDetails.dragElements && Array.isArray(questionDetails.dragElements)) {
-        return questionDetails.dragElements;
-      }
+        case 'Phonological Awareness':
+          // For Phonological Awareness, use matchingOptions from questionSet
+          if (questionDetails.questionSet?.matchingOptions && Array.isArray(questionDetails.questionSet.matchingOptions)) {
+            return questionDetails.questionSet.matchingOptions;
+          }
+          break;
 
-      // For fill in the blank questions
-      if (questionDetails.blankOptions && Array.isArray(questionDetails.blankOptions)) {
-        return questionDetails.blankOptions;
-      }
+        case 'Decoding':
+          // For Decoding, use dragElements
+          if (questionDetails.dragElements && Array.isArray(questionDetails.dragElements)) {
+            return questionDetails.dragElements;
+          }
+          break;
 
-      // For Reading Comprehension
-      if (category === 'Reading Comprehension' && questionDetails.sentenceQuestions && Array.isArray(questionDetails.sentenceQuestions)) {
-        return questionDetails.sentenceQuestions.map(sq => sq.sentenceOptionAnswers || []).flat();
+        case 'Word Recognition':
+          // For Word Recognition, use blankOptions
+          if (questionDetails.blankOptions && Array.isArray(questionDetails.blankOptions)) {
+            return questionDetails.blankOptions;
+          }
+          break;
+
+        case 'Reading Comprehension':
+          // For Reading Comprehension, use sentence question options
+          if (questionDetails.sentenceQuestions && Array.isArray(questionDetails.sentenceQuestions)) {
+            return questionDetails.sentenceQuestions.map(sq => sq.sentenceOptionAnswers || []).flat();
+          }
+          break;
+
+        default:
+          // Fallback to original logic
+          if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            return questionDetails.choiceOptions.map(option => option.optionText);
+          }
+          if (questionDetails.dragElements && Array.isArray(questionDetails.dragElements)) {
+            return questionDetails.dragElements;
+          }
+          if (questionDetails.blankOptions && Array.isArray(questionDetails.blankOptions)) {
+            return questionDetails.blankOptions;
+          }
+          break;
       }
 
       return [];
     } catch (error) {
       console.error('Error extracting options:', error);
       return [];
+    }
+  };
+
+  // Helper function to format intervention student responses
+  const formatInterventionResponse = (response, questionDetails, category) => {
+    if (!response) return '';
+
+    try {
+      switch (category) {
+        case 'Alphabet Knowledge':
+          // For Alphabet Knowledge, convert option numbers to option text
+          if (questionDetails?.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            if (Array.isArray(response)) {
+              return response.map(optionId => {
+                const option = questionDetails.choiceOptions.find(opt => opt.optionId === optionId);
+                return option ? option.optionText : optionId;
+              }).join(', ');
+            } else {
+              const option = questionDetails.choiceOptions.find(opt => opt.optionId === response);
+              return option ? option.optionText : response;
+            }
+          }
+          return Array.isArray(response) ? response.join(', ') : response;
+
+        case 'Phonological Awareness':
+          // For Phonological Awareness, format matching pairs
+          if (Array.isArray(response)) {
+            return response.map(item => {
+              if (typeof item === 'object' && item !== null) {
+                return Object.entries(item).map(([audio, match]) => `${audio} → ${match}`).join(', ');
+              }
+              return String(item);
+            }).join(', ');
+          }
+          return String(response);
+
+        case 'Decoding':
+          // For Decoding, join sequence elements
+          if (Array.isArray(response)) {
+            return response.filter(item => item && item.trim() !== '').join('');
+          }
+          return String(response);
+
+        case 'Word Recognition':
+          // For Word Recognition, format array responses
+          if (Array.isArray(response)) {
+            return response.filter(item => item && item.trim() !== '').join(', ');
+          }
+          return String(response);
+
+        case 'Reading Comprehension':
+          // For Reading Comprehension, format sentence answers
+          if (Array.isArray(response)) {
+            return response.map((answer, index) => `Q${index + 1}: ${answer}`).join(', ');
+          }
+          return String(response);
+
+        default:
+          // Default formatting
+          if (Array.isArray(response)) {
+            return response.filter(item => item && String(item).trim() !== '').join(', ');
+          }
+          return String(response);
+      }
+    } catch (error) {
+      console.error('Error formatting intervention response:', error);
+      return Array.isArray(response) ? response.join(', ') : String(response);
+    }
+  };
+
+  // Helper function to extract correct answer from main assessment question details
+  const getCorrectAnswerFromMainQuestion = (questionDetails, category) => {
+    if (!questionDetails) return 'Not available';
+
+    try {
+      switch (category) {
+        case 'Alphabet Knowledge':
+          // For Alphabet Knowledge, find the correct option text
+          if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            const correctOption = questionDetails.choiceOptions.find(option => option.isCorrect);
+            return correctOption ? correctOption.optionText : 'Not found';
+          }
+          return 'Not found';
+
+        case 'Phonological Awareness':
+          // For Phonological Awareness, use correctPairs from questionSet
+          if (questionDetails.questionSet && Array.isArray(questionDetails.questionSet) && questionDetails.questionSet[0]?.correctPairs) {
+            return questionDetails.questionSet[0].correctPairs.map(pair => {
+              if (typeof pair === 'object') {
+                return Object.entries(pair).map(([audio, match]) => `${audio} → ${match}`).join(', ');
+              }
+              return pair;
+            }).join(', ');
+          }
+          return 'Not found';
+
+        case 'Decoding':
+          // For Decoding, use displaySequence and correctSequence
+          if (questionDetails.displaySequence && Array.isArray(questionDetails.displaySequence) &&
+              questionDetails.correctSequence && Array.isArray(questionDetails.correctSequence)) {
+            return `Display: ${questionDetails.displaySequence.join('')}, Correct: ${questionDetails.correctSequence.join('')}`;
+          } else if (questionDetails.correctSequence && Array.isArray(questionDetails.correctSequence)) {
+            return questionDetails.correctSequence.join('');
+          }
+          return 'Not found';
+
+        case 'Word Recognition':
+          // For Word Recognition, use displayWord and correctAnswer
+          if (questionDetails.displayWord && questionDetails.correctAnswer) {
+            const correctAnswerText = Array.isArray(questionDetails.correctAnswer) ?
+              questionDetails.correctAnswer.join(', ') : questionDetails.correctAnswer;
+            return `"${questionDetails.displayWord}" → ${correctAnswerText}`;
+          } else if (questionDetails.correctAnswer) {
+            return Array.isArray(questionDetails.correctAnswer) ?
+              questionDetails.correctAnswer.join(', ') : questionDetails.correctAnswer;
+          }
+          return 'Not found';
+
+        case 'Reading Comprehension':
+          // For Reading Comprehension, don't show correct answer since it's in sentence questions
+          return null; // Will not display "Correct Answer" section
+
+        default:
+          return 'Not found';
+      }
+    } catch (error) {
+      console.error('Error extracting correct answer from main question:', error);
+      return 'Error extracting answer';
+    }
+  };
+
+  // Helper function to extract options from main assessment question details
+  const getOptionsFromMainQuestion = (questionDetails, category) => {
+    if (!questionDetails) return [];
+
+    try {
+      switch (category) {
+        case 'Alphabet Knowledge':
+          // For Alphabet Knowledge, use choiceOptions
+          if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            return questionDetails.choiceOptions.map(option => option.optionText);
+          }
+          break;
+
+        case 'Phonological Awareness':
+          // For Phonological Awareness, use matchingOptions from questionSet
+          if (questionDetails.questionSet && Array.isArray(questionDetails.questionSet) && questionDetails.questionSet[0]?.matchingOptions) {
+            return questionDetails.questionSet[0].matchingOptions;
+          }
+          break;
+
+        case 'Decoding':
+          // For Decoding, use dragElements
+          if (questionDetails.dragElements && Array.isArray(questionDetails.dragElements)) {
+            return questionDetails.dragElements;
+          }
+          break;
+
+        case 'Word Recognition':
+          // For Word Recognition, use blankOptions
+          if (questionDetails.blankOptions && Array.isArray(questionDetails.blankOptions)) {
+            return questionDetails.blankOptions;
+          }
+          break;
+
+        case 'Reading Comprehension':
+          // For Reading Comprehension, use sentence question options
+          if (questionDetails.sentenceQuestions && Array.isArray(questionDetails.sentenceQuestions)) {
+            return questionDetails.sentenceQuestions.map(sq => sq.sentenceOptionAnswers || []).flat();
+          }
+          break;
+
+        default:
+          // Fallback logic
+          if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            return questionDetails.choiceOptions.map(option => option.optionText);
+          }
+          if (questionDetails.dragElements && Array.isArray(questionDetails.dragElements)) {
+            return questionDetails.dragElements;
+          }
+          if (questionDetails.blankOptions && Array.isArray(questionDetails.blankOptions)) {
+            return questionDetails.blankOptions;
+          }
+          break;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error extracting options from main question:', error);
+      return [];
+    }
+  };
+
+  // Helper function to format main assessment student responses
+  const formatMainAssessmentResponse = (response, questionDetails, category) => {
+    if (!response) return '';
+
+    try {
+      switch (category) {
+        case 'Alphabet Knowledge':
+          // For Alphabet Knowledge, convert option numbers to option text
+          console.log('[DEBUG] Alphabet Knowledge formatting:', {
+            response,
+            questionDetails,
+            choiceOptions: questionDetails?.choiceOptions
+          });
+          
+          if (questionDetails?.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+            if (Array.isArray(response)) {
+              return response.map(optionId => {
+                const option = questionDetails.choiceOptions.find(opt => opt.optionId === optionId);
+                console.log('[DEBUG] Finding option for ID:', optionId, 'Found:', option);
+                return option ? option.optionText : optionId;
+              }).join(', ');
+            } else {
+              const option = questionDetails.choiceOptions.find(opt => opt.optionId === response);
+              console.log('[DEBUG] Finding option for ID:', response, 'Found:', option);
+              return option ? option.optionText : response;
+            }
+          }
+          console.log('[DEBUG] No choiceOptions found, returning raw response:', response);
+          return Array.isArray(response) ? response.join(', ') : response;
+
+        case 'Phonological Awareness':
+          // For Phonological Awareness, format matching pairs
+          if (Array.isArray(response)) {
+            return response.map(item => {
+              if (typeof item === 'object' && item !== null) {
+                return Object.entries(item).map(([audio, match]) => `${audio} → ${match}`).join(', ');
+              }
+              return String(item);
+            }).join(', ');
+          }
+          return String(response);
+
+        case 'Decoding':
+          // For Decoding, join sequence elements
+          if (Array.isArray(response)) {
+            return response.filter(item => item && item.trim() !== '').join('');
+          }
+          return String(response);
+
+        case 'Word Recognition':
+          // For Word Recognition, format array responses
+          if (Array.isArray(response)) {
+            return response.filter(item => item && item.trim() !== '').join(', ');
+          }
+          return String(response);
+
+        case 'Reading Comprehension':
+          // For Reading Comprehension, format sentence answers with question context
+          if (Array.isArray(response) && questionDetails?.sentenceQuestions) {
+            return response.map((answer, index) => {
+              const question = questionDetails.sentenceQuestions[index];
+              const questionText = question ? question.questionText : `Question ${index + 1}`;
+              return `${questionText}: "${answer}"`;
+            }).join(' | ');
+          } else if (Array.isArray(response)) {
+            return response.map((answer, index) => `Q${index + 1}: ${answer}`).join(', ');
+          }
+          return String(response);
+
+        default:
+          // Default formatting
+          if (Array.isArray(response)) {
+            return response.filter(item => item && String(item).trim() !== '').join(', ');
+          }
+          return String(response);
+      }
+    } catch (error) {
+      console.error('Error formatting main assessment response:', error);
+      return Array.isArray(response) ? response.join(', ') : String(response);
     }
   };
 
@@ -241,10 +578,10 @@ const StudentAssessmentResults = () => {
   const fetchQuestionResponses = async (studentId, category) => {
     try {
       setLoadingResponses(prev => ({ ...prev, [category]: true }));
-
+      
       // Fetch main assessment responses (BEFORE INTERVENTION)
       const mainResponse = await axios.get(`http://localhost:5001/api/admin/student-responses/${studentId}/${category}`);
-
+      
       let mainAssessmentResponses = [];
       if (mainResponse.data.success) {
         const allResponses = (mainResponse.data.data || []).map(item => {
@@ -310,6 +647,69 @@ const StudentAssessmentResults = () => {
         }
       }
 
+      // Fetch main assessment questions for the category to enhance responses with question details
+      let mainAssessment = null;
+      try {
+        const mainAssessmentDetailsResponse = await axios.get(
+          `http://localhost:5001/api/main-assessment`,
+          {
+            params: {
+              category: category,
+              readingLevel: student?.readingLevel || 'High Emerging'
+            },
+            timeout: 10000
+          }
+        );
+
+        mainAssessment = mainAssessmentDetailsResponse.data?.data?.[0];
+        console.log(`[DEBUG] Main Assessment for ${category}:`, mainAssessment ? 'Found' : 'Not found');
+        if (mainAssessment) {
+          console.log(`[DEBUG] Main Assessment questions count:`, mainAssessment.questions?.length || 0);
+        }
+      } catch (error) {
+        console.error(`[DEBUG] Error fetching main assessment for ${category}:`, error);
+      }
+
+      // Enhance main assessment responses with question details
+      if (mainAssessment && mainAssessmentResponses.length > 0) {
+        mainAssessmentResponses = mainAssessmentResponses.map(response => {
+          const questionDetails = mainAssessment?.questions?.find(q => q.questionId === response.questionId);
+          
+          console.log('[DEBUG] Enhancing response:', {
+            questionId: response.questionId,
+            response: response.response,
+            foundQuestionDetails: !!questionDetails,
+            choiceOptions: questionDetails?.choiceOptions
+          });
+
+          return {
+            ...response,
+            questionDetails: questionDetails ? {
+              question: questionDetails.questionText,
+              questionType: questionDetails.questionType,
+              questionImage: questionDetails.questionImage,
+              questionValue: questionDetails.questionValue,
+              correctAnswer: getCorrectAnswerFromMainQuestion(questionDetails, category),
+              options: getOptionsFromMainQuestion(questionDetails, category),
+              // Special handling for different question types
+              questionSet: questionDetails.questionSet,
+              choiceOptions: questionDetails.choiceOptions,
+              dragElements: questionDetails.dragElements,
+              correctSequence: questionDetails.correctSequence,
+              displaySequence: questionDetails.displaySequence,
+              blankOptions: questionDetails.blankOptions,
+              displayWord: questionDetails.displayWord,
+              // Reading Comprehension special handling
+              storyTitle: questionDetails.storyTitle,
+              passages: questionDetails.passages || [],
+              sentenceQuestions: questionDetails.sentenceQuestions || []
+            } : null
+          };
+        });
+
+        console.log(`[DEBUG] Enhanced ${mainAssessmentResponses.length} main assessment responses with question details`);
+      }
+
       // Fetch intervention responses (AFTER INTERVENTION)
       let interventionResponses = [];
 
@@ -360,8 +760,9 @@ const StudentAssessmentResults = () => {
               const interventionAssessment = interventionResponse.data.interventionAssessment;
               const interventionResult = interventionResponse.data.interventionResult;
 
-              console.log(`[DEBUG] Intervention Assessment:`, interventionAssessment);
-              console.log(`[DEBUG] Intervention Result:`, interventionResult);
+              console.log(`[DEBUG] Intervention Assessment for ${category}:`, interventionAssessment);
+              console.log(`[DEBUG] Intervention Result for ${category}:`, interventionResult);
+              console.log(`[DEBUG] Intervention Assessment Questions:`, interventionAssessment?.questions);
 
               if (allInterventionResponses.length > 0) {
                 // Group by questionId and get the most recent response for each question
@@ -382,6 +783,9 @@ const StudentAssessmentResults = () => {
                 interventionResponses = Object.values(responsesByQuestion).map(response => {
                   // Find matching question from intervention assessment
                   const questionDetails = interventionAssessment?.questions?.find(q => q.questionId === response.questionId);
+
+                  console.log(`[DEBUG] Matching question for ${response.questionId}:`, questionDetails);
+                  console.log(`[DEBUG] Available question IDs in intervention:`, interventionAssessment?.questions?.map(q => q.questionId));
 
                   let enhancedResponse = {
                     ...response,
@@ -404,6 +808,7 @@ const StudentAssessmentResults = () => {
                     interventionPassed: interventionResult?.isPassed
                   };
 
+                  console.log(`[DEBUG] Enhanced response:`, enhancedResponse);
                   return enhancedResponse;
                 }).sort((a, b) => {
                   // Handle different question ID formats
@@ -424,8 +829,8 @@ const StudentAssessmentResults = () => {
       }
 
       // Combine both response types
-      setQuestionResponses(prev => ({
-        ...prev,
+        setQuestionResponses(prev => ({
+          ...prev,
         [category]: {
           mainAssessment: mainAssessmentResponses,
           intervention: interventionResponses,
@@ -625,20 +1030,20 @@ const StudentAssessmentResults = () => {
             ? student.categoryScores.map((cat, idx) => {
                 const finalResult = getFinalCategoryResult(cat);
                 return (
-                  <div key={cat.categoryName || idx} className="student-assessment__category-card" onClick={() => openCategoryModal(cat)}>
-                    <div className="student-assessment__category-header">
-                      <h3>{cat.categoryName || `Category ${idx + 1}`}</h3>
-                      <button 
-                        className="student-assessment__toggle-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCategoryModal(cat);
-                        }}
-                      >
-                        <ChevronDown size={18} />
-                      </button>
-                    </div>
-                    <div className="student-assessment__category-score">
+                <div key={cat.categoryName || idx} className="student-assessment__category-card" onClick={() => openCategoryModal(cat)}>
+                  <div className="student-assessment__category-header">
+                    <h3>{cat.categoryName || `Category ${idx + 1}`}</h3>
+                    <button 
+                      className="student-assessment__toggle-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openCategoryModal(cat);
+                      }}
+                    >
+                      <ChevronDown size={18} />
+                    </button>
+                  </div>
+                  <div className="student-assessment__category-score">
                       <div className={`student-assessment__score-circle student-assessment__score--${finalResult.isPassed ? 'passed' : finalResult.finalScore >= 50 ? 'partial' : 'failed'}`}>
                         {finalResult.finalScore}%
                         {finalResult.hasIntervention && (
@@ -649,11 +1054,11 @@ const StudentAssessmentResults = () => {
                             {finalResult.isPassed ? "✓" : "⏳"}
                           </span>
                         )}
-                      </div>
-                      <div className="student-assessment__score-details">
+                    </div>
+                    <div className="student-assessment__score-details">
                         {finalResult.hasIntervention ? (
                           <>
-                            <p className="student-assessment__correct-count">
+                      <p className="student-assessment__correct-count">
                               <strong>Before Intervention:</strong> {finalResult.initialCorrectAnswers} out of {finalResult.initialTotalQuestions} correct ({finalResult.initialScore}%)
                             </p>
                             <p className="student-assessment__correct-count">
@@ -684,16 +1089,16 @@ const StudentAssessmentResults = () => {
                         <span className={`student-assessment__status-badge ${finalResult.isPassed ? 'passed' : 'failed'}`}>
                           {finalResult.isPassed ? <CheckCircle size={14} /> : <XCircle size={14} />}
                           {finalResult.isPassed ? 'Passed' : 'Needs Improvement'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="student-assessment__progress-bar">
-                      <div 
-                        className="student-assessment__progress-fill" 
-                        style={{ width: `${finalResult.finalScore}%` }}
-                      ></div>
+                      </span>
                     </div>
                   </div>
+                  <div className="student-assessment__progress-bar">
+                    <div 
+                      className="student-assessment__progress-fill" 
+                        style={{ width: `${finalResult.finalScore}%` }}
+                    ></div>
+                  </div>
+                </div>
                 );
               })
             : null}
@@ -726,50 +1131,102 @@ const StudentAssessmentResults = () => {
                       <h5 className="student-assessment__response-section-title">
                         📝 Main Assessment Results (BEFORE INTERVENTION)
                       </h5>
-                      <div className="student-assessment__questions-list">
+                  <div className="student-assessment__questions-list">
                         {questionResponses[selectedCategory.categoryName]?.mainAssessment &&
                          questionResponses[selectedCategory.categoryName].mainAssessment.length > 0 ? (
                           questionResponses[selectedCategory.categoryName].mainAssessment.map((response, index) => (
-                            <div
-                              key={`main_${response._id || index}`}
-                              className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'}`}
-                            >
-                              <div className="student-assessment__question-header">
-                                <span className="student-assessment__question-number">Q{index + 1}</span>
-                                <span className="student-assessment__question-id">{response.questionId}</span>
-                                <div className={`student-assessment__question-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                                  {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                                  {response.isCorrect ? 'Correct' : 'Incorrect'}
-                                </div>
+                        <div 
+                              key={`main_${selectedCategory.categoryName}_${response.questionId}_${index}`}
+                          className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'}`}
+                        >
+                          <div className="student-assessment__question-header">
+                            <span className="student-assessment__question-number">Q{index + 1}</span>
+                            <span className="student-assessment__question-id">{response.questionId}</span>
+                            <div className={`student-assessment__question-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                              {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                              {response.isCorrect ? 'Correct' : 'Incorrect'}
+                            </div>
+                          </div>
+                          
+                          {response.questionDetails && (
+                            <div className="student-assessment__question-content">
+                              <div className="student-assessment__question-text">
+                                    <strong>Main Assessment Question:</strong> {response.questionDetails.question || 'Question text not available'}
                               </div>
 
-                              {response.questionDetails && (
-                                <div className="student-assessment__question-content">
-                                  <div className="student-assessment__question-text">
-                                    <strong>Question:</strong> {response.questionDetails.question || 'Question text not available'}
-                                  </div>
-                                  {response.questionDetails.image && (
+                                  {/* Special handling for Reading Comprehension - show story title and passages */}
+                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.storyTitle && (
+                                    <div className="student-assessment__story-info">
+                                      <strong>Story Title:</strong> {response.questionDetails.storyTitle}
+                                    </div>
+                                  )}
+
+                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
+                                    <div className="student-assessment__passages">
+                                      <strong>Story Passages:</strong>
+                                      <div className="student-assessment__passages-list">
+                                        {response.questionDetails.passages.map((passage, passageIndex) => (
+                                          <div key={passageIndex} className="student-assessment__passage-item">
+                                            <div className="student-assessment__passage-text">
+                                              <strong>Page {passage.pageNumber}:</strong> {passage.pageText}
+                                            </div>
+                                            {passage.pageImage && (
+                                              <div className="student-assessment__passage-image">
+                                                <img
+                                                  src={passage.pageImage}
+                                                  alt={`Page ${passage.pageNumber} illustration`}
+                                                  style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
+                                                />
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {response.questionDetails.questionImage && (
                                     <div className="student-assessment__question-image">
                                       <img
-                                        src={response.questionDetails.image}
+                                        src={response.questionDetails.questionImage}
                                         alt="Question illustration"
                                         style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
                                       />
                                     </div>
                                   )}
-                                  {selectedCategory?.categoryName !== 'Phonological Awareness' && (
+
+                                  {response.questionDetails.questionValue && (
+                                    <div className="student-assessment__question-value">
+                                      <strong>Question Value:</strong> {response.questionDetails.questionValue}
+                                    </div>
+                                  )}
+
+                                  {/* Show correct answer for non-Phonological Awareness and non-Reading Comprehension */}
+                                  {selectedCategory?.categoryName !== 'Phonological Awareness' && response.questionDetails.correctAnswer !== null && (
                                     <div className="student-assessment__correct-answer">
                                       <strong>Correct Answer:</strong> {response.questionDetails.correctAnswer || 'Correct answer not available'}
                                     </div>
                                   )}
-                                  {response.questionDetails.questionType === 'fill_blank' && response.questionDetails.options && response.questionDetails.options.length > 0 && (
-                                    <div className="student-assessment__blank-options">
-                                      <strong>Blank Options:</strong>
-                                      <div className="student-assessment__blank-options-list">
+
+                                  {/* Special handling for Phonological Awareness correct pairs */}
+                                  {selectedCategory?.categoryName === 'Phonological Awareness' && response.questionDetails.correctAnswer && (
+                                    <div className="student-assessment__pa-correct-pairs">
+                                      <strong>Correct Audio-Letter Pairs:</strong>
+                                      <div className="student-assessment__correct-pairs-list">
+                                        {response.questionDetails.correctAnswer}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Show options/choices */}
+                                  {response.questionDetails.options && response.questionDetails.options.length > 0 && (
+                                    <div className="student-assessment__intervention-options">
+                                      <strong>Answer Options:</strong>
+                                      <div className="student-assessment__options-list">
                                         {response.questionDetails.options.map((option, optionIndex) => {
                                           const optionText = typeof option === 'object' && option.optionText ? option.optionText : String(option);
                                           return (
-                                            <span key={optionIndex} className="student-assessment__blank-option">
+                                            <span key={optionIndex} className="student-assessment__option">
                                               {optionText}
                                             </span>
                                           );
@@ -777,37 +1234,59 @@ const StudentAssessmentResults = () => {
                                       </div>
                                     </div>
                                   )}
+
+                                  {/* Special handling for Reading Comprehension */}
+                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
+                                    <div className="student-assessment__rc-passages">
+                                      <strong>Reading Passage:</strong>
+                                      {response.questionDetails.passages.map((passage, passageIndex) => (
+                                        <div key={passageIndex} className="student-assessment__passage">
+                                          <p>{passage.text || passage}</p>
+                                          {passage.image && (
+                                            <img
+                                              src={passage.image}
+                                              alt="Passage illustration"
+                                              style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
+                                            />
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.sentenceQuestions && response.questionDetails.sentenceQuestions.length > 0 && (
+                                    <div className="student-assessment__rc-sentence-questions">
+                                      <strong>Sentence Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
+                                      {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => (
+                                        <div key={sqIndex} className="student-assessment__sentence-question">
+                                          <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
+                                          <div className="student-assessment__sq-text">{sq.questionText}</div>
+                                          <div className="student-assessment__sq-correct">Correct: {sq.sentenceCorrectAnswer}</div>
+                                          {sq.sentenceOptionAnswers && sq.sentenceOptionAnswers.length > 0 && (
+                                            <div className="student-assessment__sq-options">
+                                              Options: {sq.sentenceOptionAnswers.join(', ')}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Question metadata */}
+                                  <div className="student-assessment__question-metadata">
+                                    <div className="student-assessment__question-type">
+                                      <strong>Question Type:</strong> {response.questionDetails.questionType}
+                                    </div>
+                                  </div>
                                 </div>
                               )}
 
                               <div className="student-assessment__response-details">
                                 <div className="student-assessment__student-answer">
                                   <strong>Student's Answer:</strong>
-                                  {(() => {
-                                    const value = response.response;
-                                    const toDisplay = () => {
-                                      if (Array.isArray(value)) {
-                                        const joined = value
-                                          .map((item) => {
-                                            if (typeof item === 'object' && item !== null) {
-                                              return JSON.stringify(item);
-                                            }
-                                            if (item === 0 || (typeof item === 'string' && item.trim() === '0')) return '';
-                                            return String(item);
-                                          })
-                                          .filter(part => part && part.trim() !== '')
-                                          .join(', ');
-                                        return joined;
-                                      } else if (typeof value === 'object' && value !== null) {
-                                        return JSON.stringify(value);
-                                      } else {
-                                        if (value === 0 || (typeof value === 'string' && value.trim() === '0')) return '';
-                                        return value ?? '';
-                                      }
-                                    };
-                                    const text = toDisplay();
-                                    return text && text.trim() !== '' ? text : null;
-                                  })()}
+                                  <span className="student-assessment__formatted-response">
+                                    {formatMainAssessmentResponse(response.response, response.questionDetails, selectedCategory?.categoryName)}
+                                  </span>
                                 </div>
                                 {response.responseTime && (
                                   <div className="student-assessment__response-time">
@@ -862,7 +1341,7 @@ const StudentAssessmentResults = () => {
                            questionResponses[selectedCategory.categoryName].intervention.length > 0 ? (
                             questionResponses[selectedCategory.categoryName].intervention.map((response, index) => (
                               <div
-                                key={`intervention_${response._id || index}`}
+                                key={`intervention_${selectedCategory.categoryName}_${response.questionId}_${index}`}
                                 className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'} intervention-response`}
                               >
                                 <div className="student-assessment__question-header">
@@ -883,15 +1362,15 @@ const StudentAssessmentResults = () => {
                                       <strong>Intervention Question:</strong> {response.questionDetails.question || 'Question text not available'}
                                     </div>
 
-                                    {response.questionDetails.image && (
-                                      <div className="student-assessment__question-image">
-                                        <img
-                                          src={response.questionDetails.image}
-                                          alt="Question illustration"
-                                          style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
-                                        />
-                                      </div>
-                                    )}
+                              {response.questionDetails.image && (
+                                <div className="student-assessment__question-image">
+                                  <img 
+                                    src={response.questionDetails.image} 
+                                    alt="Question illustration"
+                                    style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
+                                  />
+                                </div>
+                              )}
 
                                     {response.questionDetails.questionValue && (
                                       <div className="student-assessment__question-value">
@@ -899,10 +1378,20 @@ const StudentAssessmentResults = () => {
                                       </div>
                                     )}
 
-                                    {/* Show correct answer for non-Phonological Awareness */}
-                                    {selectedCategory?.categoryName !== 'Phonological Awareness' && (
-                                      <div className="student-assessment__correct-answer">
-                                        <strong>Correct Answer:</strong> {response.questionDetails.correctAnswer || 'Correct answer not available'}
+                                    {/* Show correct answer for non-Phonological Awareness and non-Reading Comprehension */}
+                                    {selectedCategory?.categoryName !== 'Phonological Awareness' && response.questionDetails.correctAnswer !== null && (
+                                <div className="student-assessment__correct-answer">
+                                  <strong>Correct Answer:</strong> {response.questionDetails.correctAnswer || 'Correct answer not available'}
+                                </div>
+                              )}
+
+                                    {/* Special handling for Phonological Awareness correct pairs */}
+                                    {selectedCategory?.categoryName === 'Phonological Awareness' && response.questionDetails.correctAnswer && (
+                                      <div className="student-assessment__pa-correct-pairs">
+                                        <strong>Correct Audio-Letter Pairs:</strong>
+                                        <div className="student-assessment__correct-pairs-list">
+                                          {response.questionDetails.correctAnswer}
+                                        </div>
                                       </div>
                                     )}
 
@@ -912,16 +1401,16 @@ const StudentAssessmentResults = () => {
                                         <strong>Answer Options:</strong>
                                         <div className="student-assessment__options-list">
                                           {response.questionDetails.options.map((option, optionIndex) => {
-                                            const optionText = typeof option === 'object' && option.optionText ? option.optionText : String(option);
-                                            return (
+                                      const optionText = typeof option === 'object' && option.optionText ? option.optionText : String(option);
+                                      return (
                                               <span key={optionIndex} className="student-assessment__option">
-                                                {optionText}
-                                              </span>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    )}
+                                          {optionText}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
 
                                     {/* Special handling for Reading Comprehension */}
                                     {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
@@ -970,52 +1459,28 @@ const StudentAssessmentResults = () => {
                                         </div>
                                       )}
                                     </div>
-                                  </div>
-                                )}
-
-                                <div className="student-assessment__response-details">
-                                  <div className="student-assessment__student-answer">
-                                    <strong>Student's Answer:</strong>
-                                    {(() => {
-                                      const value = response.response;
-                                      const toDisplay = () => {
-                                        if (Array.isArray(value)) {
-                                          const joined = value
-                                            .map((item) => {
-                                              if (typeof item === 'object' && item !== null) {
-                                                return JSON.stringify(item);
-                                              }
-                                              if (item === 0 || (typeof item === 'string' && item.trim() === '0')) return '';
-                                              return String(item);
-                                            })
-                                            .filter(part => part && part.trim() !== '')
-                                            .join(', ');
-                                          return joined;
-                                        } else if (typeof value === 'object' && value !== null) {
-                                          return JSON.stringify(value);
-                                        } else {
-                                          if (value === 0 || (typeof value === 'string' && value.trim() === '0')) return '';
-                                          return value ?? '';
-                                        }
-                                      };
-                                      const text = toDisplay();
-                                      return text && text.trim() !== '' ? text : null;
-                                    })()}
-                                  </div>
-                                  {response.responseTime && (
-                                    <div className="student-assessment__response-time">
-                                      <strong>Response Time:</strong> {response.responseTime}ms
-                                    </div>
-                                  )}
-                                  {(response.answeredAt) && (
-                                    <div className="student-assessment__response-date">
-                                      <strong>Answered:</strong> {formatDate(response.answeredAt)}
-                                    </div>
-                                  )}
-                                </div>
+                            </div>
+                          )}
+                          
+                          <div className="student-assessment__response-details">
+                            <div className="student-assessment__student-answer">
+                              <strong>Student's Answer:</strong>
+                                    {formatInterventionResponse(response.response, response.questionDetails, selectedCategory?.categoryName) || 'No response recorded'}
+                            </div>
+                            {response.responseTime && (
+                              <div className="student-assessment__response-time">
+                                <strong>Response Time:</strong> {response.responseTime}ms
                               </div>
-                            ))
-                          ) : (
+                            )}
+                            {(response.answeredAt) && (
+                              <div className="student-assessment__response-date">
+                                <strong>Answered:</strong> {formatDate(response.answeredAt)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
                             <div className="student-assessment__no-responses">
                               <p>No intervention responses found for this revision.</p>
                             </div>

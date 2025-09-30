@@ -49,10 +49,18 @@ router.get('/', async (req, res) => {
     console.log('[INTERVENTION RESPONSES] Found responses:', responses.length);
 
     // Also fetch the intervention assessment details
-    const interventionAssessmentsCollection = db.collection('intervention_assessments');
-    const interventionAssessment = await interventionAssessmentsCollection.findOne({
+    const interventionAssessmentCollection = db.collection('intervention_assessment');
+
+    console.log('[INTERVENTION RESPONSES] Looking for intervention assessment with ID:', interventionAssessmentId);
+
+    const interventionAssessment = await interventionAssessmentCollection.findOne({
       _id: new mongoose.Types.ObjectId(interventionAssessmentId)
     });
+
+    console.log('[INTERVENTION RESPONSES] Found intervention assessment:', interventionAssessment ? 'YES' : 'NO');
+    if (interventionAssessment) {
+      console.log('[INTERVENTION RESPONSES] Assessment questions count:', interventionAssessment.questions?.length || 0);
+    }
 
     // Fetch intervention results for this intervention
     const interventionResultsCollection = db.collection('intervention_results');
@@ -151,11 +159,11 @@ router.get('/student/:studentId/intervention/:interventionId/revision/:revisionN
     const responses = await interventionResponsesCollection.find(query).toArray();
 
     // Also fetch intervention assessment and results
-    const interventionAssessmentsCollection = db.collection('intervention_assessments');
+    const interventionAssessmentCollection = db.collection('intervention_assessment');
     const interventionResultsCollection = db.collection('intervention_results');
 
     const [interventionAssessment, interventionResult] = await Promise.all([
-      interventionAssessmentsCollection.findOne({
+      interventionAssessmentCollection.findOne({
         _id: new mongoose.Types.ObjectId(interventionId)
       }),
       interventionResultsCollection.findOne({
