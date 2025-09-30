@@ -79,7 +79,7 @@ const ProtectedRoute = ({ children }) => {
   const isLoggedIn = AuthService.isLoggedIn();
   
   if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/choose-account" replace />;
   }
   
   return children;
@@ -227,7 +227,7 @@ function App() {
         </Route>
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/choose-account" replace />} />
       </Routes>
     </BrowserRouter>
   );

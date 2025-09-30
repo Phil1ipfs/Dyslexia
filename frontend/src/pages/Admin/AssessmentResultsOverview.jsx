@@ -300,6 +300,51 @@ const AssessmentResultsOverview = () => {
     return 'assessment-results__score--failed';
   };
 
+  // Get final category score and pass status considering intervention history
+  const getFinalCategoryResult = (categoryData) => {
+    if (!categoryData) return { finalScore: 0, isPassed: false, hasIntervention: false, interventionCompleted: false };
+    
+    const initialScore = categoryData.score || 0;
+    const initialPassed = initialScore >= 75;
+    
+    // Check if there are intervention attempts
+    const hasIntervention = categoryData.interventionHistory && categoryData.interventionHistory.length > 0;
+    const interventionCompleted = categoryData.interventionCompleted || false;
+    
+    if (!hasIntervention) {
+      return { 
+        finalScore: initialScore, 
+        isPassed: initialPassed, 
+        hasIntervention: false,
+        interventionCompleted: false
+      };
+    }
+    
+    // Find the highest score from intervention history
+    let highestInterventionScore = 0;
+    let passedThroughIntervention = false;
+    
+    categoryData.interventionHistory.forEach(intervention => {
+      if (intervention.score > highestInterventionScore) {
+        highestInterventionScore = intervention.score;
+      }
+      if (intervention.isPassed) {
+        passedThroughIntervention = true;
+      }
+    });
+    
+    // Return the best result (initial or intervention)
+    const finalScore = Math.max(initialScore, highestInterventionScore);
+    const isPassed = initialPassed || passedThroughIntervention;
+    
+    return { 
+      finalScore, 
+      isPassed, 
+      hasIntervention: true,
+      interventionCompleted: interventionCompleted
+    };
+  };
+
   // Toggle filters visibility
   const toggleFilters = () => {
     setShowFilters(prev => !prev);
@@ -706,21 +751,36 @@ const AssessmentResultsOverview = () => {
                   </td>
                   <td className="assessment-results__category-scores">
                     {(() => {
-                      const categoryOrder = [
-                        'Alphabet Knowledge',
-                        'Phonological Awareness',
-                        'Decoding',
-                        'Word Recognition',
-                        'Reading Comprehension'
-                      ];
-                      return categoryOrder.map(catName => {
-                        const key = catName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-                        const cat = student.categoryScores?.[key];
+                      // Get categories available for this student's reading level
+                      const availableCategories = getCategoriesForReadingLevel(student.readingLevel);
+                      
+                      // Map category keys to display names
+                      const categoryDisplayNames = {
+                        'alphabet_knowledge': 'Alphabet Knowledge',
+                        'phonological_awareness': 'Phonological Awareness',
+                        'decoding': 'Decoding',
+                        'word_recognition': 'Word Recognition',
+                        'reading_comprehension': 'Reading Comprehension'
+                      };
+                      
+                      return availableCategories.map(categoryKey => {
+                        const catName = categoryDisplayNames[categoryKey];
+                        const cat = student.categoryScores?.[categoryKey];
+                        const finalResult = getFinalCategoryResult(cat);
+                        
                         return (
                           <div key={catName} className="assessment-results__category-score-item">
                             <span className="assessment-results__category-score-label">{catName}:</span>
-                            <span className={`assessment-results__category-score-value ${cat && cat.isPassed ? 'assessment-results__score--passed' : 'assessment-results__score--failed'}`}>
-                              {cat ? cat.score + '%' : '0%'}
+                            <span className={`assessment-results__category-score-value ${finalResult.isPassed ? 'assessment-results__score--passed' : 'assessment-results__score--failed'}`}>
+                              {finalResult.finalScore}%
+                              {finalResult.hasIntervention && (
+                                <span 
+                                  className={`assessment-results__intervention-indicator ${finalResult.interventionCompleted ? 'assessment-results__intervention-completed' : 'assessment-results__intervention-pending'}`}
+                                  title={finalResult.interventionCompleted ? "Intervention completed" : "Intervention in progress"}
+                                >
+                                  {finalResult.interventionCompleted ? "✓" : "⏳"}
+                                </span>
+                              )}
                             </span>
                           </div>
                         );

@@ -555,6 +555,20 @@
     font-weight: 600;
   }
   
+  .assessment-results__intervention-indicator {
+    font-weight: 700;
+    margin-left: 0.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .assessment-results__intervention-completed {
+    color: #059669;
+  }
+  
+  .assessment-results__intervention-pending {
+    color: #d97706;
+  }
+  
   .assessment-results__view-details-btn {
     display: inline-block;
     padding: 0.5rem 1rem;

@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, FileText, BarChart2, 
   Book, Award, Layers, CheckCircle, XCircle, AlertTriangle, 
-  ChevronDown, ChevronUp, Download, Printer, Share2, Edit, X
+  ChevronDown, ChevronUp, Edit, X
 } from 'lucide-react';
 import '../../css/Admin/AssessmentResults/StudentAssessmentResults.css';
 import axios from 'axios';
@@ -71,6 +71,86 @@ const StudentAssessmentResults = () => {
     fetchStudentData();
   }, [id]);
 
+  // Get final category result considering intervention history
+  const getFinalCategoryResult = (categoryData) => {
+    if (!categoryData) return { 
+      finalScore: 0, 
+      isPassed: false, 
+      hasIntervention: false, 
+      passedThroughIntervention: false,
+      passedAttemptNumber: null,
+      initialScore: 0,
+      initialCorrectAnswers: 0,
+      initialTotalQuestions: 0,
+      bestInterventionScore: 0,
+      bestInterventionAttempt: null,
+      interventionHistory: [],
+      totalInterventionAttempts: 0
+    };
+    
+    const initialScore = categoryData.score || 0;
+    const initialCorrectAnswers = categoryData.correctAnswers || 0;
+    const initialTotalQuestions = categoryData.totalQuestions || 0;
+    const initialPassed = initialScore >= 75;
+    
+    // Check if there are intervention attempts
+    const hasIntervention = categoryData.interventionHistory && categoryData.interventionHistory.length > 0;
+    
+    if (!hasIntervention) {
+      return { 
+        finalScore: initialScore, 
+        isPassed: initialPassed, 
+        hasIntervention: false,
+        passedThroughIntervention: false,
+        passedAttemptNumber: null,
+        initialScore: initialScore,
+        initialCorrectAnswers: initialCorrectAnswers,
+        initialTotalQuestions: initialTotalQuestions,
+        bestInterventionScore: 0,
+        bestInterventionAttempt: null,
+        interventionHistory: [],
+        totalInterventionAttempts: 0
+      };
+    }
+    
+    // Find the best intervention result and collect all attempts
+    let bestInterventionScore = 0;
+    let bestInterventionAttempt = null;
+    let passedThroughIntervention = false;
+    let passedAttemptNumber = null;
+    const interventionHistory = categoryData.interventionHistory || [];
+    
+    interventionHistory.forEach(intervention => {
+      if (intervention.score > bestInterventionScore) {
+        bestInterventionScore = intervention.score;
+        bestInterventionAttempt = intervention.attemptNumber;
+      }
+      if (intervention.isPassed && !passedThroughIntervention) {
+        passedThroughIntervention = true;
+        passedAttemptNumber = intervention.attemptNumber;
+      }
+    });
+    
+    // Return the best result (initial or intervention)
+    const finalScore = Math.max(initialScore, bestInterventionScore);
+    const isPassed = initialPassed || passedThroughIntervention;
+    
+    return { 
+      finalScore, 
+      isPassed, 
+      hasIntervention: true,
+      passedThroughIntervention: passedThroughIntervention,
+      passedAttemptNumber: passedAttemptNumber,
+      initialScore: initialScore,
+      initialCorrectAnswers: initialCorrectAnswers,
+      initialTotalQuestions: initialTotalQuestions,
+      bestInterventionScore: bestInterventionScore,
+      bestInterventionAttempt: bestInterventionAttempt,
+      interventionHistory: interventionHistory,
+      totalInterventionAttempts: interventionHistory.length
+    };
+  };
+
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -87,28 +167,167 @@ const StudentAssessmentResults = () => {
     }
   };
 
-  // Fetch question responses for a specific category
+  // Fetch question responses for a specific category (both main assessment and intervention)
   const fetchQuestionResponses = async (studentId, category) => {
     try {
       setLoadingResponses(prev => ({ ...prev, [category]: true }));
-      
-      const response = await axios.get(`http://localhost:5001/api/admin/student-responses/${studentId}/${category}`);
-      
-      if (response.data.success) {
-        const sanitized = (response.data.data || []).map(item => {
+
+      // Fetch main assessment responses (BEFORE INTERVENTION)
+      const mainResponse = await axios.get(`http://localhost:5001/api/admin/student-responses/${studentId}/${category}`);
+
+      let mainAssessmentResponses = [];
+      if (mainResponse.data.success) {
+        const allResponses = (mainResponse.data.data || []).map(item => {
           const { correctMatches, totalMatches, matches, ...rest } = item || {};
-          return rest;
+          return { ...rest, responseType: 'main_assessment' };
         });
-        setQuestionResponses(prev => ({
-          ...prev,
-          [category]: sanitized
-        }));
+
+        // Filter to get only the most recent assessment session
+        // Group responses by date and get the most recent complete session
+        if (allResponses.length > 0) {
+          const responsesByDate = {};
+
+          allResponses.forEach(response => {
+            const dateKey = new Date(response.answeredAt).toDateString();
+            if (!responsesByDate[dateKey]) {
+              responsesByDate[dateKey] = [];
+            }
+            responsesByDate[dateKey].push(response);
+          });
+
+          // Get the most recent date with complete assessment
+          const sortedDates = Object.keys(responsesByDate).sort((a, b) => new Date(b) - new Date(a));
+
+          // Look for the most recent session with unique question IDs (complete assessment)
+          for (const dateKey of sortedDates) {
+            const dateResponses = responsesByDate[dateKey];
+            const uniqueQuestionIds = [...new Set(dateResponses.map(r => r.questionId))];
+
+            // If this date has a reasonable number of unique questions (likely a complete assessment)
+            if (uniqueQuestionIds.length >= 10) { // Assuming at least 10 questions for a valid assessment
+              // Get the latest responses for each unique question ID from this date
+              const latestResponsesFromDate = uniqueQuestionIds.map(questionId => {
+                const responsesForQuestion = dateResponses
+                  .filter(r => r.questionId === questionId)
+                  .sort((a, b) => new Date(b.answeredAt) - new Date(a.answeredAt));
+                return responsesForQuestion[0]; // Get the most recent response for this question
+              });
+
+              // Sort by question ID for proper display order
+              mainAssessmentResponses = latestResponsesFromDate.sort((a, b) => {
+                const aNum = parseInt(a.questionId.split('_')[1]);
+                const bNum = parseInt(b.questionId.split('_')[1]);
+                return aNum - bNum;
+              });
+              break;
+            }
+          }
+
+          // Fallback: if no complete session found, get most recent unique responses
+          if (mainAssessmentResponses.length === 0) {
+            const uniqueQuestionIds = [...new Set(allResponses.map(r => r.questionId))];
+            mainAssessmentResponses = uniqueQuestionIds.map(questionId => {
+              const responsesForQuestion = allResponses
+                .filter(r => r.questionId === questionId)
+                .sort((a, b) => new Date(b.answeredAt) - new Date(a.answeredAt));
+              return responsesForQuestion[0];
+            }).sort((a, b) => {
+              const aNum = parseInt(a.questionId.split('_')[1]);
+              const bNum = parseInt(b.questionId.split('_')[1]);
+              return aNum - bNum;
+            });
+          }
+        }
       }
+
+      // Fetch intervention responses (AFTER INTERVENTION)
+      let interventionResponses = [];
+
+      // Find the category data to get intervention history
+      const categoryData = student?.categoryScores?.find(cat => cat.categoryName === category);
+      const finalResult = getFinalCategoryResult(categoryData);
+
+      if (finalResult.hasIntervention) {
+        try {
+          // Get ALL intervention responses for this student and category
+          const interventionResponse = await axios.get(
+            `http://localhost:5001/api/admin/intervention-responses/${studentId}/${category}`
+          );
+
+          if (interventionResponse.data.success) {
+            const allInterventionResponses = (interventionResponse.data.data || []).map(item => {
+              const { correctMatches, totalMatches, matches, ...rest } = item || {};
+              return { ...rest, responseType: 'intervention' };
+            });
+
+            // Filter responses by the correct revision number
+            let targetRevisionNumber = null;
+            if (finalResult.passedAttemptNumber) {
+              // Use the passed attempt number as revision number
+              targetRevisionNumber = finalResult.passedAttemptNumber;
+            } else if (finalResult.bestInterventionAttempt) {
+              // Use the best attempt number as revision number
+              targetRevisionNumber = finalResult.bestInterventionAttempt;
+            }
+
+            if (targetRevisionNumber) {
+              // Filter by revision number and get most recent responses for each question
+              const targetRevisionResponses = allInterventionResponses.filter(response =>
+                response.revisionNumber === targetRevisionNumber
+              );
+
+              if (targetRevisionResponses.length > 0) {
+                // Group by questionId and get the most recent response for each question
+                const responsesByQuestion = {};
+                targetRevisionResponses.forEach(response => {
+                  const questionId = response.questionId;
+                  if (!responsesByQuestion[questionId] ||
+                      new Date(response.answeredAt) > new Date(responsesByQuestion[questionId].answeredAt)) {
+                    responsesByQuestion[questionId] = {
+                      ...response,
+                      revisionNumber: targetRevisionNumber,
+                      attemptNumber: targetRevisionNumber
+                    };
+                  }
+                });
+
+                // Convert to array and sort by question ID
+                interventionResponses = Object.values(responsesByQuestion).sort((a, b) => {
+                  const aNum = parseInt(a.questionId.split('_').pop());
+                  const bNum = parseInt(b.questionId.split('_').pop());
+                  return aNum - bNum;
+                });
+              }
+            }
+          }
+        } catch (interventionError) {
+          console.warn(`Error fetching intervention responses for ${category}:`, interventionError);
+        }
+      }
+
+      // Combine both response types
+      setQuestionResponses(prev => ({
+        ...prev,
+        [category]: {
+          mainAssessment: mainAssessmentResponses,
+          intervention: interventionResponses,
+          hasIntervention: finalResult.hasIntervention,
+          passedAttemptNumber: finalResult.passedAttemptNumber,
+          bestInterventionAttempt: finalResult.bestInterventionAttempt
+        }
+      }));
+
     } catch (error) {
       console.error(`Error fetching responses for ${category}:`, error);
       setQuestionResponses(prev => ({
         ...prev,
-        [category]: []
+        [category]: {
+          mainAssessment: [],
+          intervention: [],
+          hasIntervention: false,
+          passedAttemptNumber: null,
+          bestInterventionAttempt: null
+        }
       }));
     } finally {
       setLoadingResponses(prev => ({ ...prev, [category]: false }));
@@ -173,20 +392,6 @@ const StudentAssessmentResults = () => {
           Back to Post Assessment Results
         </Link>
         
-        <div className="student-assessment__actions">
-          <button className="student-assessment__action-btn">
-            <Printer size={16} />
-            <span>Print</span>
-          </button>
-          <button className="student-assessment__action-btn">
-            <Download size={16} />
-            <span>Download PDF</span>
-          </button>
-          <button className="student-assessment__action-btn">
-            <Share2 size={16} />
-            <span>Share</span>
-          </button>
-        </div>
       </div>
 
       {/* Profile Card */}
@@ -275,7 +480,12 @@ const StudentAssessmentResults = () => {
             <div className="student-assessment__summary-content">
               <h3>Categories Passed</h3>
               <p className="student-assessment__summary-value">
-                {Object.values(student.categoryScores).filter(category => category.score >= 75).length} / 5
+                {Array.isArray(student.categoryScores) 
+                  ? student.categoryScores.filter(category => {
+                      const finalResult = getFinalCategoryResult(category);
+                      return finalResult.isPassed;
+                    }).length 
+                  : 0} / {Array.isArray(student.categoryScores) ? student.categoryScores.length : 0}
               </p>
               <p className="student-assessment__summary-detail">
                 Some categories need improvement
@@ -294,42 +504,80 @@ const StudentAssessmentResults = () => {
         
         <div className="student-assessment__categories-grid">
           {Array.isArray(student.categoryScores)
-            ? student.categoryScores.map((cat, idx) => (
-                <div key={cat.categoryName || idx} className="student-assessment__category-card" onClick={() => openCategoryModal(cat)}>
-                  <div className="student-assessment__category-header">
-                    <h3>{cat.categoryName || `Category ${idx + 1}`}</h3>
-                    <button 
-                      className="student-assessment__toggle-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openCategoryModal(cat);
-                      }}
-                    >
-                      <ChevronDown size={18} />
-                    </button>
-                  </div>
-                  <div className="student-assessment__category-score">
-                    <div className={`student-assessment__score-circle student-assessment__score--${cat.score >= 75 ? 'passed' : cat.score >= 50 ? 'partial' : 'failed'}`}>
-                      {cat.score}%
+            ? student.categoryScores.map((cat, idx) => {
+                const finalResult = getFinalCategoryResult(cat);
+                return (
+                  <div key={cat.categoryName || idx} className="student-assessment__category-card" onClick={() => openCategoryModal(cat)}>
+                    <div className="student-assessment__category-header">
+                      <h3>{cat.categoryName || `Category ${idx + 1}`}</h3>
+                      <button 
+                        className="student-assessment__toggle-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCategoryModal(cat);
+                        }}
+                      >
+                        <ChevronDown size={18} />
+                      </button>
                     </div>
-                    <div className="student-assessment__score-details">
-                      <p className="student-assessment__correct-count">
-                        {cat.correctAnswers} out of {cat.totalQuestions} correct
-                      </p>
-                      <span className={`student-assessment__status-badge ${cat.score >= 75 ? 'passed' : 'failed'}`}>
-                        {cat.score >= 75 ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                        {cat.score >= 75 ? 'Passed' : 'Needs Improvement'}
-                      </span>
+                    <div className="student-assessment__category-score">
+                      <div className={`student-assessment__score-circle student-assessment__score--${finalResult.isPassed ? 'passed' : finalResult.finalScore >= 50 ? 'partial' : 'failed'}`}>
+                        {finalResult.finalScore}%
+                        {finalResult.hasIntervention && (
+                          <span 
+                            className="student-assessment__intervention-indicator"
+                            title={finalResult.isPassed ? "Passed through intervention" : "Intervention attempted"}
+                          >
+                            {finalResult.isPassed ? "✓" : "⏳"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="student-assessment__score-details">
+                        {finalResult.hasIntervention ? (
+                          <>
+                            <p className="student-assessment__correct-count">
+                              <strong>Before Intervention:</strong> {finalResult.initialCorrectAnswers} out of {finalResult.initialTotalQuestions} correct ({finalResult.initialScore}%)
+                            </p>
+                            <p className="student-assessment__correct-count">
+                              <strong>After Intervention:</strong> {finalResult.bestInterventionScore}% (Attempt {finalResult.bestInterventionAttempt})
+                            </p>
+                          </>
+                        ) : (
+                          <p className="student-assessment__correct-count">
+                            {finalResult.initialCorrectAnswers} out of {finalResult.initialTotalQuestions} correct
+                          </p>
+                        )}
+                        
+                        {finalResult.hasIntervention && finalResult.passedThroughIntervention && (
+                          <p className="student-assessment__intervention-info">
+                            ✓ Passed through intervention (Attempt {finalResult.passedAttemptNumber})
+                          </p>
+                        )}
+                        {finalResult.hasIntervention && !finalResult.passedThroughIntervention && (
+                          <p className="student-assessment__intervention-info">
+                            ⏳ Intervention attempted (Not passed)
+                          </p>
+                        )}
+                        {finalResult.isPassed && !finalResult.passedThroughIntervention && (
+                          <p className="student-assessment__intervention-info">
+                            ✓ Passed initially
+                          </p>
+                        )}
+                        <span className={`student-assessment__status-badge ${finalResult.isPassed ? 'passed' : 'failed'}`}>
+                          {finalResult.isPassed ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                          {finalResult.isPassed ? 'Passed' : 'Needs Improvement'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="student-assessment__progress-bar">
+                      <div 
+                        className="student-assessment__progress-fill" 
+                        style={{ width: `${finalResult.finalScore}%` }}
+                      ></div>
                     </div>
                   </div>
-                  <div className="student-assessment__progress-bar">
-                    <div 
-                      className="student-assessment__progress-fill" 
-                      style={{ width: `${cat.score}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             : null}
         </div>
       </div>
@@ -354,102 +602,244 @@ const StudentAssessmentResults = () => {
                     <p>Loading question responses...</p>
                   </div>
                 ) : (
-                  <div className="student-assessment__questions-list">
-                    {questionResponses[selectedCategory.categoryName] && questionResponses[selectedCategory.categoryName].length > 0 ? (
-                      questionResponses[selectedCategory.categoryName].map((response, index) => (
-                        <div 
-                          key={response._id || index} 
-                          className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'}`}
-                        >
-                          <div className="student-assessment__question-header">
-                            <span className="student-assessment__question-number">Q{index + 1}</span>
-                            <span className="student-assessment__question-id">{response.questionId}</span>
-                            <div className={`student-assessment__question-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                              {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                              {response.isCorrect ? 'Correct' : 'Incorrect'}
-                            </div>
-                          </div>
-                          
-                          {response.questionDetails && (
-                            <div className="student-assessment__question-content">
-                              <div className="student-assessment__question-text">
-                                <strong>Question:</strong> {response.questionDetails.question || 'Question text not available'}
+                  <div className="student-assessment__questions-sections">
+                    {/* Main Assessment Results (BEFORE INTERVENTION) */}
+                    <div className="student-assessment__main-assessment-section">
+                      <h5 className="student-assessment__response-section-title">
+                        📝 Main Assessment Results (BEFORE INTERVENTION)
+                      </h5>
+                      <div className="student-assessment__questions-list">
+                        {questionResponses[selectedCategory.categoryName]?.mainAssessment &&
+                         questionResponses[selectedCategory.categoryName].mainAssessment.length > 0 ? (
+                          questionResponses[selectedCategory.categoryName].mainAssessment.map((response, index) => (
+                            <div
+                              key={`main_${response._id || index}`}
+                              className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'}`}
+                            >
+                              <div className="student-assessment__question-header">
+                                <span className="student-assessment__question-number">Q{index + 1}</span>
+                                <span className="student-assessment__question-id">{response.questionId}</span>
+                                <div className={`student-assessment__question-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                                  {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                  {response.isCorrect ? 'Correct' : 'Incorrect'}
+                                </div>
                               </div>
-                              {response.questionDetails.image && (
-                                <div className="student-assessment__question-image">
-                                  <img 
-                                    src={response.questionDetails.image} 
-                                    alt="Question illustration"
-                                    style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
-                                  />
-                                </div>
-                              )}
-                              {selectedCategory?.categoryName !== 'Phonological Awareness' && (
-                                <div className="student-assessment__correct-answer">
-                                  <strong>Correct Answer:</strong> {response.questionDetails.correctAnswer || 'Correct answer not available'}
-                                </div>
-                              )}
-                              {response.questionDetails.questionType === 'fill_blank' && response.questionDetails.options && response.questionDetails.options.length > 0 && (
-                                <div className="student-assessment__blank-options">
-                                  <strong>Blank Options:</strong>
-                                  <div className="student-assessment__blank-options-list">
-                                    {response.questionDetails.options.map((option, index) => {
-                                      const optionText = typeof option === 'object' && option.optionText ? option.optionText : String(option);
-                                      return (
-                                        <span key={index} className="student-assessment__blank-option">
-                                          {optionText}
-                                        </span>
-                                      );
-                                    })}
+
+                              {response.questionDetails && (
+                                <div className="student-assessment__question-content">
+                                  <div className="student-assessment__question-text">
+                                    <strong>Question:</strong> {response.questionDetails.question || 'Question text not available'}
                                   </div>
+                                  {response.questionDetails.image && (
+                                    <div className="student-assessment__question-image">
+                                      <img
+                                        src={response.questionDetails.image}
+                                        alt="Question illustration"
+                                        style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
+                                      />
+                                    </div>
+                                  )}
+                                  {selectedCategory?.categoryName !== 'Phonological Awareness' && (
+                                    <div className="student-assessment__correct-answer">
+                                      <strong>Correct Answer:</strong> {response.questionDetails.correctAnswer || 'Correct answer not available'}
+                                    </div>
+                                  )}
+                                  {response.questionDetails.questionType === 'fill_blank' && response.questionDetails.options && response.questionDetails.options.length > 0 && (
+                                    <div className="student-assessment__blank-options">
+                                      <strong>Blank Options:</strong>
+                                      <div className="student-assessment__blank-options-list">
+                                        {response.questionDetails.options.map((option, optionIndex) => {
+                                          const optionText = typeof option === 'object' && option.optionText ? option.optionText : String(option);
+                                          return (
+                                            <span key={optionIndex} className="student-assessment__blank-option">
+                                              {optionText}
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
+
+                              <div className="student-assessment__response-details">
+                                <div className="student-assessment__student-answer">
+                                  <strong>Student's Answer:</strong>
+                                  {(() => {
+                                    const value = response.response;
+                                    const toDisplay = () => {
+                                      if (Array.isArray(value)) {
+                                        const joined = value
+                                          .map((item) => {
+                                            if (typeof item === 'object' && item !== null) {
+                                              return JSON.stringify(item);
+                                            }
+                                            if (item === 0 || (typeof item === 'string' && item.trim() === '0')) return '';
+                                            return String(item);
+                                          })
+                                          .filter(part => part && part.trim() !== '')
+                                          .join(', ');
+                                        return joined;
+                                      } else if (typeof value === 'object' && value !== null) {
+                                        return JSON.stringify(value);
+                                      } else {
+                                        if (value === 0 || (typeof value === 'string' && value.trim() === '0')) return '';
+                                        return value ?? '';
+                                      }
+                                    };
+                                    const text = toDisplay();
+                                    return text && text.trim() !== '' ? text : null;
+                                  })()}
+                                </div>
+                                {response.responseTime && (
+                                  <div className="student-assessment__response-time">
+                                    <strong>Response Time:</strong> {response.responseTime}ms
+                                  </div>
+                                )}
+                                {(response.answeredAt) && (
+                                  <div className="student-assessment__response-date">
+                                    <strong>Answered:</strong> {formatDate(response.answeredAt)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="student-assessment__no-responses">
+                            <p>No main assessment responses found for this category.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Intervention Results (AFTER INTERVENTION) */}
+                    {questionResponses[selectedCategory.categoryName]?.hasIntervention && (
+                      <div className="student-assessment__intervention-section">
+                        <h5 className="student-assessment__response-section-title">
+                          🎯 Intervention Results (AFTER INTERVENTION)
+                          {questionResponses[selectedCategory.categoryName]?.passedAttemptNumber && (
+                            <span className="student-assessment__revision-info">
+                              - Revision {questionResponses[selectedCategory.categoryName].passedAttemptNumber} (Passed)
+                            </span>
+                          )}
+                          {!questionResponses[selectedCategory.categoryName]?.passedAttemptNumber &&
+                           questionResponses[selectedCategory.categoryName]?.bestInterventionAttempt && (
+                            <span className="student-assessment__revision-info">
+                              - Revision {questionResponses[selectedCategory.categoryName].bestInterventionAttempt} (Best Attempt)
+                            </span>
+                          )}
+                        </h5>
+                        <div className="student-assessment__questions-list">
+                          {questionResponses[selectedCategory.categoryName]?.intervention &&
+                           questionResponses[selectedCategory.categoryName].intervention.length > 0 ? (
+                            questionResponses[selectedCategory.categoryName].intervention.map((response, index) => (
+                              <div
+                                key={`intervention_${response._id || index}`}
+                                className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'} intervention-response`}
+                              >
+                                <div className="student-assessment__question-header">
+                                  <span className="student-assessment__question-number">Q{index + 1}</span>
+                                  <span className="student-assessment__question-id">{response.questionId}</span>
+                                  <div className={`student-assessment__question-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                                    {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                    {response.isCorrect ? 'Correct' : 'Incorrect'}
+                                  </div>
+                                  <span className="student-assessment__revision-badge">
+                                    Rev. {response.revisionNumber}
+                                  </span>
+                                </div>
+
+                                {response.questionDetails && (
+                                  <div className="student-assessment__question-content">
+                                    <div className="student-assessment__question-text">
+                                      <strong>Question:</strong> {response.questionDetails.question || 'Question text not available'}
+                                    </div>
+                                    {response.questionDetails.image && (
+                                      <div className="student-assessment__question-image">
+                                        <img
+                                          src={response.questionDetails.image}
+                                          alt="Question illustration"
+                                          style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
+                                        />
+                                      </div>
+                                    )}
+                                    {selectedCategory?.categoryName !== 'Phonological Awareness' && (
+                                      <div className="student-assessment__correct-answer">
+                                        <strong>Correct Answer:</strong> {response.questionDetails.correctAnswer || 'Correct answer not available'}
+                                      </div>
+                                    )}
+                                    {response.questionDetails.questionType === 'fill_blank' && response.questionDetails.options && response.questionDetails.options.length > 0 && (
+                                      <div className="student-assessment__blank-options">
+                                        <strong>Blank Options:</strong>
+                                        <div className="student-assessment__blank-options-list">
+                                          {response.questionDetails.options.map((option, optionIndex) => {
+                                            const optionText = typeof option === 'object' && option.optionText ? option.optionText : String(option);
+                                            return (
+                                              <span key={optionIndex} className="student-assessment__blank-option">
+                                                {optionText}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="student-assessment__response-details">
+                                  <div className="student-assessment__student-answer">
+                                    <strong>Student's Answer:</strong>
+                                    {(() => {
+                                      const value = response.response;
+                                      const toDisplay = () => {
+                                        if (Array.isArray(value)) {
+                                          const joined = value
+                                            .map((item) => {
+                                              if (typeof item === 'object' && item !== null) {
+                                                return JSON.stringify(item);
+                                              }
+                                              if (item === 0 || (typeof item === 'string' && item.trim() === '0')) return '';
+                                              return String(item);
+                                            })
+                                            .filter(part => part && part.trim() !== '')
+                                            .join(', ');
+                                          return joined;
+                                        } else if (typeof value === 'object' && value !== null) {
+                                          return JSON.stringify(value);
+                                        } else {
+                                          if (value === 0 || (typeof value === 'string' && value.trim() === '0')) return '';
+                                          return value ?? '';
+                                        }
+                                      };
+                                      const text = toDisplay();
+                                      return text && text.trim() !== '' ? text : null;
+                                    })()}
+                                  </div>
+                                  {response.responseTime && (
+                                    <div className="student-assessment__response-time">
+                                      <strong>Response Time:</strong> {response.responseTime}ms
+                                    </div>
+                                  )}
+                                  {(response.answeredAt) && (
+                                    <div className="student-assessment__response-date">
+                                      <strong>Answered:</strong> {formatDate(response.answeredAt)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="student-assessment__no-responses">
+                              <p>No intervention responses found for this revision.</p>
                             </div>
                           )}
-                          
-                          <div className="student-assessment__response-details">
-                            <div className="student-assessment__student-answer">
-                              <strong>Student's Answer:</strong>
-                              {(() => {
-                                const value = response.response;
-                                const toDisplay = () => {
-                                  if (Array.isArray(value)) {
-                                    const joined = value
-                                      .map((item) => {
-                                        if (typeof item === 'object' && item !== null) {
-                                          return JSON.stringify(item);
-                                        }
-                                        if (item === 0 || (typeof item === 'string' && item.trim() === '0')) return '';
-                                        return String(item);
-                                      })
-                                      .filter(part => part && part.trim() !== '')
-                                      .join(', ');
-                                    return joined;
-                                  } else if (typeof value === 'object' && value !== null) {
-                                    return JSON.stringify(value);
-                                  } else {
-                                    if (value === 0 || (typeof value === 'string' && value.trim() === '0')) return '';
-                                    return value ?? '';
-                                  }
-                                };
-                                const text = toDisplay();
-                                return text && text.trim() !== '' ? text : null;
-                              })()}
-                            </div>
-                            {response.responseTime && (
-                              <div className="student-assessment__response-time">
-                                <strong>Response Time:</strong> {response.responseTime}ms
-                              </div>
-                            )}
-                            {(response.answeredAt) && (
-                              <div className="student-assessment__response-date">
-                                <strong>Answered:</strong> {formatDate(response.answeredAt)}
-                              </div>
-                            )}
-                          </div>
                         </div>
-                      ))
-                    ) : (
+                      </div>
+                    )}
+
+                    {/* No Data Message */}
+                    {!questionResponses[selectedCategory.categoryName]?.mainAssessment?.length &&
+                     !questionResponses[selectedCategory.categoryName]?.intervention?.length && (
                       <div className="student-assessment__no-responses">
                         <p>No question responses found for this category.</p>
                       </div>
