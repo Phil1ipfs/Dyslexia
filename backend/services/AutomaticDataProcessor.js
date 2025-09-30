@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../models/userModel');
-const StudentResponse = require('../models/Teachers/ManageProgress/studentResponseModel');
+const StudentResponse = require('../models/Teachers/studentResponseModel');
 const CategoryResult = require('../models/Teachers/ManageProgress/categoryResultModel');
 const CategoryResultsService = require('./Teachers/CategoryResultsService');
 

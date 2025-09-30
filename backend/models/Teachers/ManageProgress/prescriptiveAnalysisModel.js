@@ -607,9 +607,9 @@ prescriptiveAnalysisSchema.index({ studentId: 1, assessmentType: 1 });
 // This allows students to have prescriptive analysis for same category at different reading levels
 prescriptiveAnalysisSchema.index({ studentId: 1, readingLevel: 1, assessmentType: 1 });
 prescriptiveAnalysisSchema.index({ studentId: 1, categoryId: 1, readingLevel: 1, createdAt: 1 }, { sparse: true });
+prescriptiveAnalysisSchema.index({ categoryResultId: 1 }, { sparse: true });
 
 // 🛡️ SAFETY: Index to prevent ACTUAL duplicates (same categoryResultId)
-// FIXED: Removed duplicate index declaration - keeping only unique index
 prescriptiveAnalysisSchema.index({ categoryResultId: 1 }, { unique: true, sparse: true });
 
 // Static method to find by category result ID
