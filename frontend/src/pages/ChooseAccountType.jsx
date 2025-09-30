@@ -1,6 +1,6 @@
 // src/pages/ChooseAccountType.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../css/chooseAccount.css';
 
 import logo from '../assets/images/Teachers/LITEREXIA.png';
@@ -11,6 +11,9 @@ import wave from '../assets/images/Teachers/wave.png';
 
 const ChooseAccountType = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showDialog, setShowDialog] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState('');
   const [roleTypes, setRoleTypes] = useState({
     teacher: { displayName: 'Guro' },
     parent: { displayName: 'Magulang' },
@@ -64,10 +67,30 @@ const ChooseAccountType = () => {
     fetchRoleTypes();
   }, []);
 
+  // Check for redirect message from AdminProfile
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const redirectReason = urlParams.get('redirect');
+
+    if (redirectReason === 'email_changed') {
+      setDialogMessage('Your email has been updated successfully!\n\nFor security reasons, please log in again with your new credentials.');
+      setShowDialog(true);
+    } else if (redirectReason === 'password_changed') {
+      setDialogMessage('Your password has been changed successfully!\n\nFor security reasons, please log in again with your new password.');
+      setShowDialog(true);
+    }
+  }, [location]);
+
+  const handleDialogClose = () => {
+    setShowDialog(false);
+    // Clean up URL parameters
+    navigate('/choose-account', { replace: true });
+  };
+
   const handleSelect = (type) => {
     // Only store the type name, no hardcoded IDs
     localStorage.setItem('userType', type);
-    
+
     // Navigate to login where the role will be used for redirection
     navigate('/login');
   };
@@ -94,6 +117,28 @@ const ChooseAccountType = () => {
         </div>
       </div>
       <img src={wave} alt="Wave" className="bottom-wave" />
+
+      {/* Custom Dialog */}
+      {showDialog && (
+        <div className="custom-dialog-overlay">
+          <div className="custom-dialog">
+            <div className="custom-dialog-header">
+              <h3>✅ Success!</h3>
+            </div>
+            <div className="custom-dialog-content">
+              <p>{dialogMessage}</p>
+            </div>
+            <div className="custom-dialog-actions">
+              <button
+                className="custom-dialog-btn custom-dialog-btn-primary"
+                onClick={handleDialogClose}
+              >
+                OK, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -341,16 +341,16 @@ const AdminProfile = () => {
         delete newErrors.confirmPassword;
         setValidationErrors(newErrors);
 
-        // Refresh profile data from server to ensure consistency
-        await fetchProfile();
+        // Clear all authentication data and redirect to custom dialog page
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('user');
 
-        // Dispatch custom event to notify other components about auth state change
-        window.dispatchEvent(new CustomEvent('authStateChanged', {
-          detail: {
-            action: 'password_update',
-            message: 'Password updated successfully'
-          }
-        }));
+        // Redirect to role selection page with custom dialog
+        setTimeout(() => {
+          window.location.href = '/choose-account?redirect=password_changed';
+        }, 1000); // Give user time to see success message
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to change password' });
       }
@@ -479,26 +479,17 @@ const AdminProfile = () => {
           localStorage.setItem('user', JSON.stringify(currentUser));
         }
 
-        // If email changed, show confirmation dialog and redirect
+        // If email changed, redirect to custom dialog page
         if (originalEmail !== profileData.email) {
-          // Show success message first
+          // Clear all authentication data immediately
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('token');
+          localStorage.removeItem('userData');
+          localStorage.removeItem('user');
+
+          // Redirect to role selection page with custom dialog
           setTimeout(() => {
-            const confirmRedirect = window.confirm(
-              'Your email has been updated successfully!\n\n' +
-              'For security reasons, you will be redirected back to the login page.\n\n' +
-              'Click OK to continue.'
-            );
-
-            if (confirmRedirect || true) { // Always redirect regardless of choice
-              // Clear all authentication data
-              localStorage.removeItem('authToken');
-              localStorage.removeItem('token');
-              localStorage.removeItem('userData');
-              localStorage.removeItem('user');
-
-              // Redirect to role selection page
-              window.location.href = '/choose-role';
-            }
+            window.location.href = '/choose-account?redirect=email_changed';
           }, 1000); // Give user time to see success message
 
           return; // Don't continue with normal flow
@@ -592,14 +583,16 @@ const AdminProfile = () => {
             onChange={handleImageChange}
             style={{ display: 'none' }}
           />
-          <button
-            className="admin-profile__image-upload-btn"
-            onClick={() => document.getElementById('profile-image-input').click()}
-            type="button"
-          >
-            <Camera size={16} />
-            Change Photo
-          </button>
+          {isEditMode && (
+            <button
+              className="admin-profile__image-upload-btn"
+              onClick={() => document.getElementById('profile-image-input').click()}
+              type="button"
+            >
+              <Camera size={16} />
+              Change Photo
+            </button>
+          )}
         </div>
 
         {/* Personal Information */}

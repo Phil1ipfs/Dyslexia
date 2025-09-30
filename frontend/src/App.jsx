@@ -169,6 +169,7 @@ function App() {
           }
         />
         <Route path="/choose-account" element={<ChooseAccountType />} />
+        <Route path="/choose-role" element={<ChooseAccountType />} />
 
         {/* Protected Teacher Routes */}
         <Route
