@@ -115,7 +115,6 @@ const ChooseAccountType = () => {
           </div>
         </div>
       </div>
-      <img src={wave} alt="Wave" className="bottom-wave" />
 
       {/* Custom Dialog */}
       {showDialog && (
