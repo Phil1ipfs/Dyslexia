@@ -749,6 +749,166 @@
   }
 }
 
+/* Edit Profile Button Styles */
+.parent-dashboard__edit-profile-btn {
+  background: linear-gradient(135deg, #28a745, #20c043);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+  margin-right: 0.75rem;
+}
+
+.parent-dashboard__edit-profile-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+}
+
+/* Save Button Styles */
+.parent-dashboard__save-btn {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+  margin-right: 0.75rem;
+}
+
+.parent-dashboard__save-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.3);
+}
+
+.parent-dashboard__save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Cancel Button Styles */
+.parent-dashboard__cancel-btn {
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
+}
+
+.parent-dashboard__cancel-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(108, 117, 125, 0.3);
+}
+
+.parent-dashboard__cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Edit Input Styles */
+.parent-dashboard__edit-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background-color: #fff;
+}
+
+.parent-dashboard__edit-input:focus {
+  outline: none;
+  border-color: #4a5494;
+  box-shadow: 0 0 0 3px rgba(74, 84, 148, 0.1);
+}
+
+/* Edit Select Styles */
+.parent-dashboard__edit-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.parent-dashboard__edit-select:focus {
+  outline: none;
+  border-color: #4a5494;
+  box-shadow: 0 0 0 3px rgba(74, 84, 148, 0.1);
+}
+
+/* Edit Textarea Styles */
+.parent-dashboard__edit-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.parent-dashboard__edit-textarea:focus {
+  outline: none;
+  border-color: #4a5494;
+  box-shadow: 0 0 0 3px rgba(74, 84, 148, 0.1);
+}
+
+/* Full Width Card for Address */
+.parent-dashboard__info-card--full-width {
+  grid-column: 1 / -1;
+}
+
+/* Non-editable Note */
+.parent-dashboard__non-editable-note {
+  margin-top: 0.5rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Profile Actions Layout */
+.parent-dashboard__profile-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
 /* Accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
   .parent-dashboard__info-card,
@@ -759,6 +919,9 @@
   }
   
   .parent-dashboard__change-password-btn:hover,
+  .parent-dashboard__edit-profile-btn:hover,
+  .parent-dashboard__save-btn:hover,
+  .parent-dashboard__cancel-btn:hover,
   .parent-dashboard__info-card:hover,
   .parent-dashboard__child-card:hover {
     transform: none;

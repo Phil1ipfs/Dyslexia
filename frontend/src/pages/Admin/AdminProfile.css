@@ -611,7 +611,7 @@
   .admin-profile__content {
     margin: 0;
   }
-  
+
   .admin-profile__form-grid {
     grid-template-columns: 1fr;
   }
@@ -658,7 +658,7 @@
     width: 120px;
     height: 120px;
   }
-  
+
   .admin-profile__section {
     padding: 2rem 1.5rem;
   }
@@ -677,12 +677,12 @@
   .admin-profile__header h1 {
     font-size: 1.125rem;
   }
-  
+
   .admin-profile__avatar {
     width: 100px;
     height: 100px;
   }
-  
+
   .admin-profile__image-section {
     padding: 1.5rem 1rem;
   }

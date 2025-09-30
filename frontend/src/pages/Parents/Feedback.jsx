@@ -15,16 +15,20 @@ import {
 } from 'lucide-react';
 import '../../css/Parents/Feedback.css';
 import axios from 'axios';
+import teachersData from '../../../teachers.profile.json';
 
 const Feedback = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [selectedPdf, setSelectedPdf] = useState(null);
   const [viewMode, setViewMode] = useState(null); // 'pdf' or 'message'
   const [animated, setAnimated] = useState(false);
+  const [teachers, setTeachers] = useState([]);
 
-  // Fetch feedbacks from backend
+  // Fetch feedbacks and teachers from backend
   useEffect(() => {
     const token = localStorage.getItem('token');
+    
+    // Fetch feedbacks
     axios.get('/api/parent/child_pdf', {
       headers: {
         Authorization: `Bearer ${token}`
@@ -34,6 +38,26 @@ const Feedback = () => {
         setFeedbacks(res.data);
       })
       .catch(() => setFeedbacks([]));
+
+    // Fetch teachers
+    axios.get('/api/admin/manage/teachers', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        console.log('Teachers data received:', res.data);
+        if (res.data.success && res.data.data) {
+          setTeachers(res.data.data);
+        } else {
+          setTeachers(res.data || []);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching teachers from API, using fallback data:', error);
+        // Use fallback data from JSON file
+        setTeachers(teachersData || []);
+      });
   }, []);
 
   // Animation trigger
@@ -88,6 +112,26 @@ const Feedback = () => {
     }
   };
 
+  // Get teacher profile image by name
+  const getTeacherProfileImage = (teacherName) => {
+    console.log('Looking for teacher:', teacherName);
+    console.log('Available teachers:', teachers);
+    
+    const teacher = teachers.find(t => {
+      const fullName = `${t.firstName} ${t.lastName}`;
+      const fullNameWithMiddle = `${t.firstName} ${t.middleName || ''} ${t.lastName}`.replace(/\s+/g, ' ').trim();
+      
+      console.log('Comparing:', teacherName, 'with:', fullName, 'or', fullNameWithMiddle);
+      
+      return fullName === teacherName || 
+             fullNameWithMiddle === teacherName ||
+             teacherName.includes(t.firstName) && teacherName.includes(t.lastName);
+    });
+    
+    console.log('Found teacher:', teacher);
+    return teacher?.profileImageUrl || null;
+  };
+
   return (
     <div className="parent-feedback__container">
       {/* Header section with breadcrumb */}
@@ -98,7 +142,7 @@ const Feedback = () => {
             <span className="parent-feedback__breadcrumb-separator">/</span>
             <span className="parent-feedback__breadcrumb-active">Progress Reports</span>
           </div>
-          <h1 className="parent-feedback__title">Weekly Progress Reports</h1>
+          <h1 className="parent-feedback__title">IEP Progress Report</h1>
           <p className="parent-feedback__subtitle">View and download your child's progress reports submitted by teachers</p>
         </div>
 
@@ -106,9 +150,9 @@ const Feedback = () => {
         <div className={`parent-feedback__info-banner ${animated ? 'animate' : ''}`} style={{ animationDelay: '0s' }}>
           <Info className="parent-feedback__info-icon" />
           <div className="parent-feedback__info-content">
-            <h3>Progress Report Overview</h3>
+            <h3>IEP Progress Report Overview</h3>
             <p>
-              These weekly reports provide detailed feedback on your child's performance and development.
+              These reports provide detailed feedback on your child's performance and development.
               Click on "View Report" to open the PDF document. You can download reports for your records.
             </p>
           </div>
@@ -145,12 +189,6 @@ const Feedback = () => {
                   <th>
                     <div className="parent-feedback__th-content">
                       <Calendar size={16} className="parent-feedback__th-icon" />
-                      <span>Week</span>
-                    </div>
-                  </th>
-                  <th>
-                    <div className="parent-feedback__th-content">
-                      <Calendar size={16} className="parent-feedback__th-icon" />
                       <span>Date</span>
                     </div>
                   </th>
@@ -171,12 +209,22 @@ const Feedback = () => {
                   >
                     <td className="parent-feedback__teacher-cell">
                       <div className="parent-feedback__teacher-info">
+                        <div className="parent-feedback__teacher-avatar">
+                          {getTeacherProfileImage(feedback.teacher) ? (
+                            <img 
+                              src={getTeacherProfileImage(feedback.teacher)} 
+                              alt={feedback.teacher}
+                              className="parent-feedback__teacher-avatar-img"
+                            />
+                          ) : (
+                            <User size={16} className="parent-feedback__teacher-avatar-placeholder" />
+                          )}
+                        </div>
                         <span className="parent-feedback__teacher-name">{feedback.teacher}</span>
                       </div>
                     </td>
                     <td>{feedback.parent}</td>
                     <td>{feedback.student}</td>
-                    <td>{feedback.week}</td>
                     <td>{formatDate(feedback.date)}</td>
                     <td>
                       <div className="parent-feedback__action-buttons">
@@ -210,7 +258,7 @@ const Feedback = () => {
           <Info className="parent-feedback__process-note-icon" />
           <div className="parent-feedback__process-note-content">
             <p>
-              <strong>Note:</strong> Progress reports are generated weekly by your child's teachers.
+              <strong>Note:</strong> Progress reports are generated by your child's teachers.
               If you have any questions about a specific report, please contact the teacher directly.
             </p>
           </div>
@@ -227,7 +275,8 @@ const Feedback = () => {
                 {viewMode === 'pdf' && (
                   <a
                     href={selectedPdf.pdfUrl}
-                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="parent-feedback__download-btn"
                   >
                     <Download size={16} />
