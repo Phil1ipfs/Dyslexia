@@ -264,7 +264,7 @@ const StudentAssessmentResults = () => {
         case 'Reading Comprehension':
           // For Reading Comprehension, format sentence answers
           if (Array.isArray(response)) {
-            return response.map((answer, index) => `Q${index + 1}: ${answer}`).join(', ');
+            return response.map((answer, index) => `Q${index + 1}: ${answer}`).join('\n');
           }
           return String(response);
 
@@ -1224,7 +1224,7 @@ const StudentAssessmentResults = () => {
                             </div>
                           </div>
                           
-                          {response.questionDetails && (
+                          {response.questionDetails && selectedCategory?.categoryName !== 'Reading Comprehension' && (
                             <div className="student-assessment__question-content">
                               <div className="student-assessment__question-text">
                                     <strong>Main Assessment Question:</strong> {response.questionDetails.question || 'Question text not available'}
@@ -1434,7 +1434,7 @@ const StudentAssessmentResults = () => {
                                   </div>
                                 </div>
 
-                                {response.questionDetails && (
+                                {response.questionDetails && selectedCategory?.categoryName !== 'Reading Comprehension' && (
                                   <div className="student-assessment__question-content">
                                     <div className="student-assessment__question-text">
                                       <strong>Intervention Question:</strong> {response.questionDetails.question || 'Question text not available'}

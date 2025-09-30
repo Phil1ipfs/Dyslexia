@@ -1455,6 +1455,12 @@
     border: 1px solid #e2e8f0;
   }
 
+  .student-assessment__student-answer {
+    white-space: pre-line;
+    word-wrap: break-word;
+    line-height: 1.6;
+  }
+
   .student-assessment__student-answer:last-child,
   .student-assessment__response-time:last-child,
   .student-assessment__response-date:last-child {
@@ -1646,6 +1652,9 @@
     color: #1e293b;
     font-weight: 500;
     margin-left: 0.5rem;
+    white-space: pre-line;
+    word-wrap: break-word;
+    line-height: 1.6;
   }
 
   .student-assessment__correct-pairs-list {
