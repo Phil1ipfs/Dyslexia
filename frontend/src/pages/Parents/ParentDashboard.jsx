@@ -76,15 +76,23 @@ const ParentDashboard = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Get auth token from localStorage - try both formats
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      // Get token from user object stored by authService
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        setError("No user data found. Please log in again.");
+        setIsLoading(false);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const token = user?.token;
       const userId = localStorage.getItem('userId');
-      
+
       console.log('Attempting to fetch parent profile with:', {
         token: token ? 'Token exists' : 'No token',
         userId: userId || 'No userId'
       });
-      
+
       if (!token) {
         setError("No authentication token found. Please log in again.");
         setIsLoading(false);
@@ -174,10 +182,25 @@ const ParentDashboard = () => {
     if (personalInfo.children && personalInfo.children.length > 0) {
       const fetchChildren = async () => {
         try {
-          const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+          // Get token from user object stored by authService
+          const userStr = localStorage.getItem('user');
+          if (!userStr) {
+            console.error('No user data found for fetching children');
+            setChildren([]);
+            return;
+          }
+
+          const user = JSON.parse(userStr);
+          const token = user?.token;
+          if (!token) {
+            console.error('No token found for fetching children');
+            setChildren([]);
+            return;
+          }
+
           const responses = await Promise.all(
             personalInfo.children.map(childId =>
-              axios.get(`${BASE_URL}/api/admin/manage/students/${childId}`, {
+              axios.get(`${BASE_URL}/admin/manage/students/${childId}`, {
                 headers: {
                   'Authorization': `Bearer ${token}`
                 }
@@ -186,6 +209,7 @@ const ParentDashboard = () => {
           );
           setChildren(responses.map(res => res.data.data.studentProfile));
         } catch (error) {
+          console.error('Error fetching children:', error);
           setChildren([]);
         }
       };
