@@ -571,6 +571,39 @@ class PreAssessmentService {
   };
 
   /**
+   * Get pre-assessment user responses for a student
+   * @param {string} studentId - The ID of the student
+   * @returns {Promise} Promise with the student's user responses
+   */
+  getPreAssessmentUserResponses = async (studentId) => {
+    try {
+      const response = await axios.get(
+        `${this.apiUrl}/student/${studentId}/pre-assessment-user-responses`,
+        this.getAuthHeaders()
+      );
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      // If 404, the student hasn't taken the assessment yet
+      if (error.response && error.response.status === 404) {
+        return {
+          success: true,
+          data: []
+        };
+      }
+      
+      console.error(`Error fetching pre-assessment user responses for student ${studentId}:`, error);
+      return {
+        success: false,
+        data: [],
+        message: `Failed to fetch pre-assessment user responses. Please try again later.`
+      };
+    }
+  };
+
+  /**
    * Add a question to a pre-assessment
    * @param {string} assessmentId - The ID of the assessment
    * @param {Object} questionData - The question data to add
