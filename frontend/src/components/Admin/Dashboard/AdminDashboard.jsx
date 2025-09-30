@@ -20,11 +20,14 @@ import {
   Lightbulb,
   Shield,
   Award,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import CategoryAnalysisModal from './CategoryAnalysisModal';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -41,6 +44,14 @@ const AdminDashboard = () => {
   const [prescriptiveData, setPrescriptiveData] = useState(null);
   const [prescriptiveLoading, setPrescriptiveLoading] = useState(false);
   const [prescriptiveError, setPrescriptiveError] = useState(null);
+
+  // Category Modal State
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategoryData, setSelectedCategoryData] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Recommendations Collapse State
+  const [isRecommendationsExpanded, setIsRecommendationsExpanded] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -128,6 +139,24 @@ const AdminDashboard = () => {
   const handleViewStudents = () => navigate('/admin/student-list');
   const handleViewTeachers = () => navigate('/admin/teacher-list');
   const handleViewParents = () => navigate('/admin/parent-list');
+
+  // Category Modal Handlers
+  const handleCategoryClick = (categoryName, categoryData) => {
+    setSelectedCategory(categoryName);
+    setSelectedCategoryData(categoryData);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCategory(null);
+    setSelectedCategoryData(null);
+  };
+
+  // Recommendations Toggle Handler
+  const handleToggleRecommendations = () => {
+    setIsRecommendationsExpanded(!isRecommendationsExpanded);
+  };
 
   // Fetch Prescriptive Analysis Data
   const fetchPrescriptiveAnalysis = async () => {
@@ -420,7 +449,7 @@ const AdminDashboard = () => {
         <div className="prescriptive-section__header">
           <h2 className="admin-dashboard__section-title">
             <Brain size={20} />
-            Grade 1 Prescriptive Analysis - Project Cornerstone
+            Prescriptive Analysis
           </h2>
           <div className="prescriptive-section__subtitle">
             <Target size={16} />
@@ -451,33 +480,35 @@ const AdminDashboard = () => {
             {/* Overall Performance Summary */}
             <div className="prescriptive-card prescriptive-card--overview">
               <div className="prescriptive-card__header">
-                <BarChart3 size={18} />
+                <div className="header-content">
+                  <BarChart3 size={20} />
                 <h3>Overall Performance Summary</h3>
-                <div className="performance-badge performance-badge--{prescriptiveData.overallPerformance?.riskLevel}">
-                  {prescriptiveData.overallPerformance?.riskLevel} Risk
+                </div>
+                <div className={`performance-badge performance-badge--${prescriptiveData.overallPerformance?.riskLevel?.toLowerCase() || 'moderate'}`}>
+                  {prescriptiveData.overallPerformance?.riskLevel || 'Moderate'} Risk
                 </div>
               </div>
               <div className="prescriptive-card__content">
                 <div className="performance-metrics">
                   <div className="metric">
                     <span className="metric__label">Total Students Analyzed</span>
-                    <span className="metric__value">{prescriptiveData.totalStudents}</span>
+                    <span className="metric__value">{prescriptiveData.totalStudents || 0}</span>
                   </div>
                   <div className="metric">
                     <span className="metric__label">Average Score</span>
-                    <span className="metric__value">{prescriptiveData.overallPerformance?.averageScore}%</span>
+                    <span className="metric__value">{prescriptiveData.overallPerformance?.averageScore || 0}%</span>
                   </div>
                   <div className="metric">
                     <span className="metric__label">Pass Rate</span>
-                    <span className="metric__value">{prescriptiveData.overallPerformance?.passRate}%</span>
+                    <span className="metric__value">{prescriptiveData.overallPerformance?.passRate || 0}%</span>
                   </div>
                   <div className="metric">
                     <span className="metric__label">Improvement Rate</span>
                     <span className="metric__value metric__value--trend">
-                      {prescriptiveData.overallPerformance?.improvementRate > 0 ? (
+                      {(prescriptiveData.overallPerformance?.improvementRate || 0) > 0 ? (
                         <><TrendingUp size={14} /> +{prescriptiveData.overallPerformance?.improvementRate}%</>
                       ) : (
-                        <><TrendingDown size={14} /> {prescriptiveData.overallPerformance?.improvementRate}%</>
+                        <><TrendingDown size={14} /> {prescriptiveData.overallPerformance?.improvementRate || 0}%</>
                       )}
                     </span>
                   </div>
@@ -492,16 +523,38 @@ const AdminDashboard = () => {
                 Category-Specific Analysis (BKT & IRT Models)
               </h3>
               <div className="categories-grid">
-                {prescriptiveData.categoryAnalysis && Object.entries(prescriptiveData.categoryAnalysis).map(([category, analysis]) => (
-                  <div key={category} className="category-card">
+                {prescriptiveData.categoryAnalysis && Object.entries(prescriptiveData.categoryAnalysis).map(([category, analysis]) => {
+                  const getPerformanceLevel = (accuracy) => {
+                    if (accuracy >= 75) return 'Proficient';
+                    if (accuracy >= 60) return 'Developing';
+                    if (accuracy >= 40) return 'Struggling';
+                    return 'Critical';
+                  };
+
+                  const getPerformanceClass = (accuracy) => {
+                    if (accuracy >= 75) return 'proficient';
+                    if (accuracy >= 60) return 'developing';
+                    if (accuracy >= 40) return 'struggling';
+                    return 'critical';
+                  };
+
+                  const performanceLevel = getPerformanceLevel(analysis.performance?.accuracy || 0);
+                  const performanceClass = getPerformanceClass(analysis.performance?.accuracy || 0);
+
+                  return (
+                    <div 
+                      key={category} 
+                      className="category-card category-card--clickable"
+                      onClick={() => handleCategoryClick(category, analysis)}
+                    >
                     <div className="category-card__header">
                       <div className="category-title">
                         <Award size={16} />
                         <h4>{category}</h4>
                       </div>
                       <div className="category-status">
-                        <span className={`status-badge status-badge--${analysis.performance?.performanceLevel}`}>
-                          {analysis.performance?.performanceLevel}
+                          <span className={`status-badge status-badge--${performanceClass}`}>
+                            {performanceLevel}
                         </span>
                       </div>
                     </div>
@@ -509,96 +562,64 @@ const AdminDashboard = () => {
                     <div className="category-metrics">
                       <div className="metric-row">
                         <span>Students:</span>
-                        <span>{analysis.studentCount}</span>
+                          <span className="metric-value">{analysis.studentCount || 0}</span>
                       </div>
                       <div className="metric-row">
                         <span>Accuracy:</span>
-                        <span className={`accuracy ${analysis.performance?.accuracy >= 75 ? 'accuracy--good' : analysis.performance?.accuracy >= 60 ? 'accuracy--warning' : 'accuracy--critical'}`}>
-                          {analysis.performance?.accuracy}%
+                          <span className={`accuracy accuracy--${performanceClass}`}>
+                            {analysis.performance?.accuracy || 0}%
                         </span>
                       </div>
                       <div className="metric-row">
                         <span>BKT Mastery:</span>
-                        <span>{Math.round(analysis.skillMastery?.averageMastery * 100)}%</span>
+                          <span className="metric-value">{Math.round((analysis.skillMastery?.averageMastery || 0) * 100)}%</span>
                       </div>
                       <div className="metric-row">
                         <span>IRT Ability:</span>
-                        <span className={`irt-ability ${analysis.abilityEstimates?.averageAbility >= 0 ? 'irt-ability--positive' : 'irt-ability--negative'}`}>
-                          {analysis.abilityEstimates?.averageAbility >= 0 ? '+' : ''}{analysis.abilityEstimates?.averageAbility}
+                          <span className={`irt-ability ${(analysis.abilityEstimates?.averageAbility || 0) >= 0 ? 'irt-ability--positive' : 'irt-ability--negative'}`}>
+                            {(analysis.abilityEstimates?.averageAbility || 0) >= 0 ? '+' : ''}{analysis.abilityEstimates?.averageAbility || 0}
                         </span>
                       </div>
                     </div>
 
-                    <div className="category-analysis">
-                      <div className="analysis-section">
-                        <h5>
-                          <Shield size={14} />
-                          Strengths
-                        </h5>
-                        <ul className="analysis-list analysis-list--strengths">
-                          {analysis.strengths?.map((strength, index) => (
-                            <li key={index}>{strength}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="analysis-section">
-                        <h5>
-                          <AlertTriangle size={14} />
-                          Weaknesses
-                        </h5>
-                        <ul className="analysis-list analysis-list--weaknesses">
-                          {analysis.weaknesses?.map((weakness, index) => (
-                            <li key={index}>{weakness}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="analysis-section">
-                        <h5>
-                          <Lightbulb size={14} />
-                          Recommendations
-                        </h5>
-                        <ul className="analysis-list analysis-list--recommendations">
-                          {analysis.recommendations?.map((recommendation, index) => (
-                            <li key={index}>{recommendation}</li>
-                          ))}
-                        </ul>
+                      <div className="category-card__footer">
+                        <span className="click-hint">Click to view detailed analysis</span>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Section Analysis */}
+            {prescriptiveData.sectionAnalysis && Object.keys(prescriptiveData.sectionAnalysis).length > 0 && (
             <div className="prescriptive-sections">
               <h3 className="section-subtitle">
                 <School size={16} />
                 Section-Level Performance Analysis
               </h3>
               <div className="sections-grid">
-                {prescriptiveData.sectionAnalysis && Object.entries(prescriptiveData.sectionAnalysis).map(([section, analysis]) => (
+                  {Object.entries(prescriptiveData.sectionAnalysis).map(([section, analysis]) => (
                   <div key={section} className="section-card">
                     <div className="section-card__header">
                       <h4>Section {section}</h4>
-                      <div className={`risk-indicator risk-indicator--${analysis.riskLevel}`}>
-                        {analysis.riskLevel} risk
-                      </div>
+                        <div className={`risk-indicator risk-indicator--${(analysis.riskLevel || 'moderate').toLowerCase()}`}>
+                          {analysis.riskLevel || 'Moderate'} Risk
+                        </div>
                     </div>
 
                     <div className="section-metrics">
                       <div className="metric-row">
                         <span>Students:</span>
-                        <span>{analysis.studentCount}</span>
+                          <span className="metric-value">{analysis.studentCount || 0}</span>
                       </div>
                       <div className="metric-row">
                         <span>Overall Accuracy:</span>
-                        <span>{Math.round(analysis.overallAccuracy)}%</span>
+                          <span className="metric-value">{Math.round(analysis.overallAccuracy || 0)}%</span>
                       </div>
                       <div className="metric-row">
                         <span>Avg Response Time:</span>
-                        <span>{analysis.averageResponseTime}s</span>
+                          <span className="metric-value">{analysis.averageResponseTime || 0}s</span>
                       </div>
                       <div className="metric-row">
                         <span>Intervention Needed:</span>
@@ -609,7 +630,7 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="section-insights">
-                      {analysis.strengths?.length > 0 && (
+                        {analysis.strengths && analysis.strengths.length > 0 && (
                         <div className="insight-group">
                           <h6>Strengths:</h6>
                           <ul>
@@ -620,7 +641,7 @@ const AdminDashboard = () => {
                         </div>
                       )}
 
-                      {analysis.weaknesses?.length > 0 && (
+                        {analysis.weaknesses && analysis.weaknesses.length > 0 && (
                         <div className="insight-group">
                           <h6>Areas for Improvement:</h6>
                           <ul>
@@ -635,8 +656,10 @@ const AdminDashboard = () => {
                 ))}
               </div>
             </div>
+            )}
 
             {/* Skill Mastery Analysis */}
+            {prescriptiveData.skillMasteryAnalysis && (
             <div className="prescriptive-mastery">
               <h3 className="section-subtitle">
                 <Target size={16} />
@@ -649,25 +672,26 @@ const AdminDashboard = () => {
                     <div className="mastery-stat">
                       <span className="mastery-label">Mastered Students</span>
                       <span className="mastery-value mastery-value--good">
-                        {prescriptiveData.skillMasteryAnalysis?.overall.masteredStudents}
+                          {prescriptiveData.skillMasteryAnalysis?.overall?.masteredStudents || 0}
                       </span>
                     </div>
                     <div className="mastery-stat">
                       <span className="mastery-label">Struggling Students</span>
                       <span className="mastery-value mastery-value--warning">
-                        {prescriptiveData.skillMasteryAnalysis?.overall.strugglingStudents}
+                          {prescriptiveData.skillMasteryAnalysis?.overall?.strugglingStudents || 0}
                       </span>
                     </div>
                     <div className="mastery-stat">
                       <span className="mastery-label">Average Mastery</span>
                       <span className="mastery-value">
-                        {Math.round(prescriptiveData.skillMasteryAnalysis?.overall.averageMastery * 100)}%
+                          {Math.round((prescriptiveData.skillMasteryAnalysis?.overall?.averageMastery || 0) * 100)}%
                       </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Intervention Analysis */}
             {prescriptiveData.interventionAnalysis && (
@@ -680,15 +704,15 @@ const AdminDashboard = () => {
                   <div className="intervention-metrics">
                     <div className="metric">
                       <span className="metric__label">Total Interventions</span>
-                      <span className="metric__value">{prescriptiveData.interventionAnalysis.overall.totalInterventions}</span>
+                      <span className="metric__value">{prescriptiveData.interventionAnalysis?.overall?.totalInterventions || 0}</span>
                     </div>
                     <div className="metric">
                       <span className="metric__label">Success Rate</span>
-                      <span className="metric__value">{Math.round(prescriptiveData.interventionAnalysis.overall.effectivenessRate)}%</span>
+                      <span className="metric__value">{Math.round(prescriptiveData.interventionAnalysis?.overall?.effectivenessRate || 0)}%</span>
                     </div>
                     <div className="metric">
                       <span className="metric__label">Average Improvement</span>
-                      <span className="metric__value">+{Math.round(prescriptiveData.interventionAnalysis.overall.averageImprovement)}%</span>
+                      <span className="metric__value">+{Math.round(prescriptiveData.interventionAnalysis?.overall?.averageImprovement || 0)}%</span>
                     </div>
                   </div>
                 </div>
@@ -696,15 +720,32 @@ const AdminDashboard = () => {
             )}
 
             {/* Comprehensive Recommendations */}
-            <div className="prescriptive-recommendations">
-              <h3 className="section-subtitle">
-                <Lightbulb size={16} />
-                Comprehensive Recommendations
-              </h3>
+            {prescriptiveData.recommendations && (
+              <div className="prescriptive-recommendations">
+                <div className="recommendations-header">
+                  <h3 className="section-subtitle">
+                    <Lightbulb size={16} />
+                    Comprehensive Recommendations
+                  </h3>
+                  <button 
+                    className="recommendations-toggle-btn"
+                    onClick={handleToggleRecommendations}
+                    aria-label={isRecommendationsExpanded ? 'Collapse recommendations' : 'Expand recommendations'}
+                  >
+                    {isRecommendationsExpanded ? (
+                      <ChevronUp size={20} />
+                    ) : (
+                      <ChevronDown size={20} />
+                    )}
+                    <span className="toggle-text">
+                      {isRecommendationsExpanded ? 'Collapse' : 'Expand'}
+                    </span>
+                  </button>
+                </div>
 
-              {prescriptiveData.recommendations && (
-                <div className="recommendations-grid">
-                  {prescriptiveData.recommendations.immediate?.length > 0 && (
+                <div className={`recommendations-content ${isRecommendationsExpanded ? 'recommendations-content--expanded' : 'recommendations-content--collapsed'}`}>
+                  <div className="recommendations-grid">
+                  {prescriptiveData.recommendations.immediate && prescriptiveData.recommendations.immediate.length > 0 && (
                     <div className="recommendation-category">
                       <h4 className="recommendation-title recommendation-title--critical">
                         <AlertCircle size={16} />
@@ -714,19 +755,19 @@ const AdminDashboard = () => {
                         {prescriptiveData.recommendations.immediate.map((rec, index) => (
                           <div key={index} className="recommendation-item recommendation-item--critical">
                             <div className="recommendation-header">
-                              <h5>{rec.title}</h5>
-                              <span className="recommendation-timeline">{rec.timeline}</span>
+                              <h5>{rec.title || 'Immediate Action Required'}</h5>
+                              <span className="recommendation-timeline">{rec.timeline || 'ASAP'}</span>
                             </div>
-                            <p className="recommendation-description">{rec.description}</p>
-                            <p className="recommendation-action"><strong>Action:</strong> {rec.action}</p>
-                            <p className="recommendation-impact"><strong>Expected Impact:</strong> {rec.expectedImpact}</p>
+                            <p className="recommendation-description">{rec.description || 'No description available'}</p>
+                            <p className="recommendation-action"><strong>Action:</strong> {rec.action || 'Action required'}</p>
+                            <p className="recommendation-impact"><strong>Expected Impact:</strong> {rec.expectedImpact || 'Positive impact expected'}</p>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {prescriptiveData.recommendations.shortTerm?.length > 0 && (
+                  {prescriptiveData.recommendations.shortTerm && prescriptiveData.recommendations.shortTerm.length > 0 && (
                     <div className="recommendation-category">
                       <h4 className="recommendation-title recommendation-title--high">
                         <TrendingUp size={16} />
@@ -736,19 +777,19 @@ const AdminDashboard = () => {
                         {prescriptiveData.recommendations.shortTerm.map((rec, index) => (
                           <div key={index} className="recommendation-item recommendation-item--high">
                             <div className="recommendation-header">
-                              <h5>{rec.title}</h5>
-                              <span className="recommendation-timeline">{rec.timeline}</span>
+                              <h5>{rec.title || 'Short-term Improvement'}</h5>
+                              <span className="recommendation-timeline">{rec.timeline || '2-4 weeks'}</span>
                             </div>
-                            <p className="recommendation-description">{rec.description}</p>
-                            <p className="recommendation-action"><strong>Action:</strong> {rec.action}</p>
-                            <p className="recommendation-impact"><strong>Expected Impact:</strong> {rec.expectedImpact}</p>
+                            <p className="recommendation-description">{rec.description || 'No description available'}</p>
+                            <p className="recommendation-action"><strong>Action:</strong> {rec.action || 'Action required'}</p>
+                            <p className="recommendation-impact"><strong>Expected Impact:</strong> {rec.expectedImpact || 'Positive impact expected'}</p>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {prescriptiveData.recommendations.longTerm?.length > 0 && (
+                  {prescriptiveData.recommendations.longTerm && prescriptiveData.recommendations.longTerm.length > 0 && (
                     <div className="recommendation-category">
                       <h4 className="recommendation-title recommendation-title--medium">
                         <Target size={16} />
@@ -758,22 +799,24 @@ const AdminDashboard = () => {
                         {prescriptiveData.recommendations.longTerm.map((rec, index) => (
                           <div key={index} className="recommendation-item recommendation-item--medium">
                             <div className="recommendation-header">
-                              <h5>{rec.title}</h5>
-                              <span className="recommendation-timeline">{rec.timeline}</span>
+                              <h5>{rec.title || 'Long-term Strategy'}</h5>
+                              <span className="recommendation-timeline">{rec.timeline || '2-3 months'}</span>
                             </div>
-                            <p className="recommendation-description">{rec.description}</p>
-                            <p className="recommendation-action"><strong>Action:</strong> {rec.action}</p>
-                            <p className="recommendation-impact"><strong>Expected Impact:</strong> {rec.expectedImpact}</p>
+                            <p className="recommendation-description">{rec.description || 'No description available'}</p>
+                            <p className="recommendation-action"><strong>Action:</strong> {rec.action || 'Action required'}</p>
+                            <p className="recommendation-impact"><strong>Expected Impact:</strong> {rec.expectedImpact || 'Positive impact expected'}</p>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Data Quality Metrics */}
+            {prescriptiveData.dataQuality && (
             <div className="prescriptive-data-quality">
               <h3 className="section-subtitle">
                 <Info size={16} />
@@ -785,40 +828,41 @@ const AdminDashboard = () => {
                   <div className="quality-bar">
                     <div
                       className="quality-progress"
-                      style={{width: `${prescriptiveData.dataQuality?.responseCompleteness}%`}}
+                        style={{width: `${prescriptiveData.dataQuality?.responseCompleteness || 0}%`}}
                     ></div>
-                  </div>
-                  <span className="quality-value">{prescriptiveData.dataQuality?.responseCompleteness}%</span>
+                    </div>
+                    <span className="quality-value">{prescriptiveData.dataQuality?.responseCompleteness || 0}%</span>
                 </div>
                 <div className="quality-metric">
                   <span className="quality-label">Assessment Coverage</span>
                   <div className="quality-bar">
                     <div
                       className="quality-progress"
-                      style={{width: `${prescriptiveData.dataQuality?.assessmentCoverage}%`}}
+                        style={{width: `${prescriptiveData.dataQuality?.assessmentCoverage || 0}%`}}
                     ></div>
-                  </div>
-                  <span className="quality-value">{prescriptiveData.dataQuality?.assessmentCoverage}%</span>
+                    </div>
+                    <span className="quality-value">{prescriptiveData.dataQuality?.assessmentCoverage || 0}%</span>
                 </div>
                 <div className="quality-metric">
                   <span className="quality-label">Intervention Coverage</span>
                   <div className="quality-bar">
                     <div
                       className="quality-progress"
-                      style={{width: `${prescriptiveData.dataQuality?.interventionCoverage}%`}}
+                        style={{width: `${prescriptiveData.dataQuality?.interventionCoverage || 0}%`}}
                     ></div>
+                    </div>
+                    <span className="quality-value">{prescriptiveData.dataQuality?.interventionCoverage || 0}%</span>
                   </div>
-                  <span className="quality-value">{prescriptiveData.dataQuality?.interventionCoverage}%</span>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Analysis Footer */}
             <div className="prescriptive-footer">
               <div className="analysis-info">
-                <p><strong>Analysis Generated:</strong> {new Date(prescriptiveData.timestamp).toLocaleString()}</p>
+                <p><strong>Analysis Generated:</strong> {prescriptiveData.timestamp ? new Date(prescriptiveData.timestamp).toLocaleString() : 'Just now'}</p>
                 <p><strong>Mathematical Models Used:</strong> Bayesian Knowledge Tracing (BKT) & Item Response Theory (IRT)</p>
-                <p><strong>Total Students Analyzed:</strong> {prescriptiveData.totalStudents} across {prescriptiveData.totalSections} sections</p>
+                <p><strong>Total Students Analyzed:</strong> {prescriptiveData.totalStudents || 0} across {prescriptiveData.totalSections || 0} sections</p>
               </div>
               <button
                 onClick={fetchPrescriptiveAnalysis}
@@ -831,6 +875,14 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Category Analysis Modal */}
+      <CategoryAnalysisModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        categoryData={selectedCategoryData}
+        categoryName={selectedCategory}
+      />
     </div>
   );
 };

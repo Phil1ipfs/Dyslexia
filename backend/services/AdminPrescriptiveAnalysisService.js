@@ -398,29 +398,48 @@ class AdminPrescriptiveAnalysisService {
     const categoryResults = {};
 
     for (const category of this.categories) {
+      // Get main assessment responses for this category
       const categoryResponses = aggregatedData.responses.filter(r => r.category === category);
 
-      if (categoryResponses.length === 0) {
+      // Get intervention results for this category
+      const categoryInterventionResults = aggregatedData.interventionData?.results?.filter(
+        result => result.category === category
+      ) || [];
+
+      // Get intervention responses for this category
+      const categoryInterventionResponses = aggregatedData.interventionData?.responses?.filter(
+        response => response.category === category
+      ) || [];
+
+      // Build comprehensive student data for this category
+      const categoryStudentData = this.buildCategoryStudentData(
+        categoryResponses,
+        categoryInterventionResults,
+        categoryInterventionResponses,
+        category
+      );
+
+      if (categoryStudentData.students.length === 0 && categoryResponses.length === 0) {
         categoryResults[category] = this.getDefaultCategoryAnalysis(category);
         continue;
       }
 
-      // Apply BKT analysis for this category
-      const bktResults = await this.applyCategoryBKT(categoryResponses, category);
+      // Apply BKT analysis using comprehensive data
+      const bktResults = await this.applyCategoryBKTWithIntervention(categoryStudentData, category);
 
-      // Apply IRT analysis
-      const irtResults = await this.applyCategoryIRT(categoryResponses, category);
+      // Apply IRT analysis using comprehensive data
+      const irtResults = await this.applyCategoryIRTWithIntervention(categoryStudentData, category);
 
-      // Analyze error patterns
-      const errorPatterns = await this.analyzeCategoryErrorPatterns(categoryResponses, category);
+      // Analyze error patterns using comprehensive data
+      const errorPatterns = await this.analyzeCategoryErrorPatternsWithIntervention(categoryStudentData, category);
 
-      // Calculate performance metrics
-      const performanceMetrics = this.calculateCategoryPerformance(categoryResponses);
+      // Calculate performance metrics using comprehensive data
+      const performanceMetrics = this.calculateCategoryPerformanceWithIntervention(categoryStudentData);
 
       categoryResults[category] = {
         category: category,
-        studentCount: new Set(categoryResponses.map(r => r.studentId)).size,
-        totalResponses: categoryResponses.length,
+        studentCount: categoryStudentData.students.length,
+        totalResponses: categoryStudentData.totalResponses,
 
         // BKT Analysis
         skillMastery: bktResults,
@@ -685,6 +704,307 @@ class AdminPrescriptiveAnalysisService {
   }
 
   /**
+   * Build comprehensive student data for a category combining main assessment and intervention data
+   * @param {Array} categoryResponses Main assessment responses for category
+   * @param {Array} categoryInterventionResults Intervention results for category
+   * @param {Array} categoryInterventionResponses Intervention responses for category
+   * @param {string} category Category name
+   * @returns {Object} Comprehensive category student data
+   */
+  buildCategoryStudentData(categoryResponses, categoryInterventionResults, categoryInterventionResponses, category) {
+    const studentData = new Map();
+    const allStudentIds = new Set();
+
+    // Collect all student IDs from main assessment
+    categoryResponses.forEach(response => {
+      allStudentIds.add(response.studentId);
+    });
+
+    // Collect all student IDs from intervention results
+    categoryInterventionResults.forEach(result => {
+      allStudentIds.add(result.studentId);
+    });
+
+    // Collect all student IDs from intervention responses
+    categoryInterventionResponses.forEach(response => {
+      allStudentIds.add(response.studentId);
+    });
+
+    // Build comprehensive data for each student
+    for (const studentId of allStudentIds) {
+      const mainResponses = categoryResponses.filter(r => r.studentId === studentId);
+      const interventionResults = categoryInterventionResults.filter(r => r.studentId === studentId);
+      const interventionResponses = categoryInterventionResponses.filter(r => r.studentId === studentId);
+
+      // Determine if student has intervention data
+      const hasInterventionData = interventionResults.length > 0 || interventionResponses.length > 0;
+
+      // Extract mastery data - prioritize intervention results
+      let masteryProbability = null;
+      let finalScore = null;
+      let isPassed = false;
+
+      if (interventionResults.length > 0) {
+        // Use intervention mastery data if available
+        const latestResult = interventionResults[interventionResults.length - 1];
+        if (latestResult.skillMastery && latestResult.skillMastery[category]) {
+          masteryProbability = latestResult.skillMastery[category].masteryProbability;
+          finalScore = latestResult.skillMastery[category].score;
+          isPassed = latestResult.skillMastery[category].isPassed || false;
+        } else {
+          // Fallback to intervention score
+          finalScore = latestResult.score;
+          masteryProbability = latestResult.score / 100;
+          isPassed = latestResult.isPassed || false;
+        }
+      } else if (mainResponses.length > 0) {
+        // Use main assessment data
+        const correctCount = mainResponses.filter(r => r.isCorrect).length;
+        finalScore = (correctCount / mainResponses.length) * 100;
+        masteryProbability = finalScore / 100;
+        isPassed = finalScore >= 75;
+      }
+
+      studentData.set(studentId, {
+        studentId,
+        hasInterventionData,
+        masteryProbability,
+        finalScore,
+        isPassed,
+        mainResponses,
+        interventionResults,
+        interventionResponses,
+        // For backwards compatibility, provide responses array
+        responses: hasInterventionData ? interventionResponses : mainResponses
+      });
+    }
+
+    return {
+      students: Array.from(studentData.values()),
+      totalResponses: categoryResponses.length + categoryInterventionResponses.length,
+      studentsWithIntervention: Array.from(studentData.values()).filter(s => s.hasInterventionData).length
+    };
+  }
+
+  /**
+   * Apply Bayesian Knowledge Tracing with intervention data priority
+   * @param {Object} categoryStudentData Comprehensive student data
+   * @param {string} category Category name
+   * @returns {Object} BKT analysis results
+   */
+  async applyCategoryBKTWithIntervention(categoryStudentData, category) {
+    const masteryProbabilities = [];
+    const studentBKT = {};
+
+    for (const studentData of categoryStudentData.students) {
+      let finalMastery;
+
+      if (studentData.hasInterventionData && studentData.masteryProbability !== null) {
+        // Use intervention mastery probability directly
+        finalMastery = studentData.masteryProbability;
+      } else if (studentData.responses && studentData.responses.length > 0) {
+        // Fall back to BKT calculation on available responses
+        const bktResult = this.mathModels.processBKTSequence(studentData.responses);
+        finalMastery = bktResult.finalMastery;
+      } else {
+        finalMastery = 0; // No data available
+      }
+
+      masteryProbabilities.push(finalMastery);
+      studentBKT[studentData.studentId] = { finalMastery };
+    }
+
+    const averageMastery = masteryProbabilities.length > 0
+      ? masteryProbabilities.reduce((sum, m) => sum + m, 0) / masteryProbabilities.length
+      : 0;
+
+    return {
+      averageMastery: Math.round(averageMastery * 1000) / 1000,
+      masteryDistribution: this.calculateMasteryDistribution(masteryProbabilities),
+      studentMastery: studentBKT,
+      masteredStudents: masteryProbabilities.filter(m => m >= 0.75).length,
+      strugglingStudents: masteryProbabilities.filter(m => m < 0.4).length
+    };
+  }
+
+  /**
+   * Apply Item Response Theory with intervention data priority
+   * @param {Object} categoryStudentData Comprehensive student data
+   * @param {string} category Category name
+   * @returns {Object} IRT analysis results
+   */
+  async applyCategoryIRTWithIntervention(categoryStudentData, category) {
+    const abilities = [];
+    const studentAbilities = {};
+
+    for (const studentData of categoryStudentData.students) {
+      let abilityEstimate;
+
+      if (studentData.hasInterventionData && studentData.finalScore !== null) {
+        // Convert intervention score to ability estimate
+        const proportionCorrect = studentData.finalScore / 100;
+        abilityEstimate = this.mathModels.estimateAbilityFromProportion(proportionCorrect);
+      } else if (studentData.responses && studentData.responses.length > 0) {
+        // Use main assessment responses for IRT calculation
+        if (category === 'Phonological Awareness') {
+          abilityEstimate = this.mathModels.estimateAbilityPhonologicalAwareness(studentData.responses);
+        } else {
+          const correctCount = studentData.responses.filter(r => r.isCorrect).length;
+          const proportionCorrect = correctCount / studentData.responses.length;
+          abilityEstimate = this.mathModels.estimateAbilityFromProportion(proportionCorrect);
+        }
+      } else {
+        abilityEstimate = -2.0; // Very low ability when no data
+      }
+
+      abilities.push(abilityEstimate);
+      studentAbilities[studentData.studentId] = abilityEstimate;
+    }
+
+    const averageAbility = abilities.length > 0
+      ? abilities.reduce((sum, a) => sum + a, 0) / abilities.length
+      : 0;
+
+    return {
+      averageAbility: Math.round(averageAbility * 100) / 100,
+      abilityDistribution: this.calculateAbilityDistribution(abilities),
+      studentAbilities: studentAbilities,
+      highAbilityStudents: abilities.filter(a => a >= 1.0).length,
+      lowAbilityStudents: abilities.filter(a => a <= -1.0).length
+    };
+  }
+
+  /**
+   * Analyze error patterns with intervention data priority
+   * @param {Object} categoryStudentData Comprehensive student data
+   * @param {string} category Category name
+   * @returns {Object} Error pattern analysis
+   */
+  async analyzeCategoryErrorPatternsWithIntervention(categoryStudentData, category) {
+    // Combine all available responses (prioritizing intervention responses)
+    const allResponses = [];
+    for (const studentData of categoryStudentData.students) {
+      if (studentData.hasInterventionData && studentData.interventionResponses.length > 0) {
+        // Use intervention responses if available
+        allResponses.push(...studentData.interventionResponses);
+      } else if (studentData.mainResponses.length > 0) {
+        // Fall back to main assessment responses
+        allResponses.push(...studentData.mainResponses);
+      }
+    }
+
+    if (allResponses.length === 0) {
+      return {
+        overall: {
+          totalResponses: 0,
+          incorrectResponses: 0,
+          errorRate: 0,
+          errorSeverity: 'minimal'
+        }
+      };
+    }
+
+    const totalResponses = allResponses.length;
+    const incorrectResponses = allResponses.filter(r => !r.isCorrect);
+    const errorRate = (incorrectResponses.length / totalResponses) * 100;
+
+    const errorPatterns = {
+      overall: {
+        totalResponses,
+        incorrectResponses: incorrectResponses.length,
+        errorRate: Math.round(errorRate * 10) / 10,
+        errorSeverity: this.classifyErrorSeverity(errorRate)
+      }
+    };
+
+    // Category-specific error analysis
+    switch (category) {
+      case 'Alphabet Knowledge':
+        errorPatterns.specific = this.analyzeAlphabetErrors(incorrectResponses);
+        break;
+      case 'Phonological Awareness':
+        errorPatterns.specific = this.analyzePhonologicalErrors(incorrectResponses);
+        break;
+      case 'Decoding':
+        errorPatterns.specific = this.analyzeDecodingErrors(incorrectResponses);
+        break;
+      case 'Word Recognition':
+        errorPatterns.specific = this.analyzeWordRecognitionErrors(incorrectResponses);
+        break;
+      case 'Reading Comprehension':
+        errorPatterns.specific = this.analyzeComprehensionErrors(incorrectResponses);
+        break;
+    }
+
+    return errorPatterns;
+  }
+
+  /**
+   * Calculate performance metrics with intervention data priority
+   * @param {Object} categoryStudentData Comprehensive student data
+   * @returns {Object} Performance metrics
+   */
+  calculateCategoryPerformanceWithIntervention(categoryStudentData) {
+    const scores = [];
+    const responseTimes = [];
+    let totalResponses = 0;
+    let correctResponses = 0;
+
+    for (const studentData of categoryStudentData.students) {
+      if (studentData.hasInterventionData && studentData.finalScore !== null) {
+        // Use intervention performance data
+        scores.push(studentData.finalScore);
+        if (studentData.interventionResponses.length > 0) {
+          const interventionCorrect = studentData.interventionResponses.filter(r => r.isCorrect).length;
+          totalResponses += studentData.interventionResponses.length;
+          correctResponses += interventionCorrect;
+
+          // Collect response times from intervention
+          const interventionTimes = studentData.interventionResponses
+            .filter(r => r.responseTime)
+            .map(r => r.responseTime);
+          responseTimes.push(...interventionTimes);
+        }
+      } else if (studentData.mainResponses.length > 0) {
+        // Fall back to main assessment performance
+        const mainCorrect = studentData.mainResponses.filter(r => r.isCorrect).length;
+        const mainScore = (mainCorrect / studentData.mainResponses.length) * 100;
+        scores.push(mainScore);
+        totalResponses += studentData.mainResponses.length;
+        correctResponses += mainCorrect;
+
+        // Collect response times from main assessment
+        const mainTimes = studentData.mainResponses
+          .filter(r => r.responseTime)
+          .map(r => r.responseTime);
+        responseTimes.push(...mainTimes);
+      }
+    }
+
+    const accuracy = totalResponses > 0 ? (correctResponses / totalResponses) * 100 : 0;
+    const avgResponseTime = responseTimes.length > 0
+      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+      : 0;
+
+    // Calculate consistency
+    const timeVariance = responseTimes.length > 1
+      ? this.calculateVariance(responseTimes)
+      : 0;
+    const timeConsistency = timeVariance > 0 ? 1 / (1 + Math.sqrt(timeVariance)) : 1;
+
+    return {
+      accuracy: Math.round(accuracy * 10) / 10,
+      totalResponses,
+      correctResponses,
+      averageResponseTime: Math.round(avgResponseTime * 10) / 10,
+      timeConsistency: Math.round(timeConsistency * 100) / 100,
+      performanceLevel: this.classifyPerformanceLevel(accuracy),
+      improvementNeeded: accuracy < 75,
+      priority: this.calculatePriority(accuracy, responseTimes.length)
+    };
+  }
+
+  /**
    * Generate section-level analysis
    * @param {Object} aggregatedData
    * @returns {Object} Section analysis
@@ -697,11 +1017,21 @@ class AdminPrescriptiveAnalysisService {
 
     for (const section of this.sections) {
       const sectionStudents = aggregatedData.students.filter(s => s.section === section);
+
+      // Get both main assessment and intervention data for section
       const sectionResponses = aggregatedData.responses.filter(r =>
         sectionStudents.some(s => s.studentId === r.studentId)
       );
 
-      console.log(`[ADMIN PRESCRIPTIVE] 📊 Section "${section}": Found ${sectionStudents.length} students, ${sectionResponses.length} responses`);
+      const sectionInterventionResults = aggregatedData.interventionData?.results?.filter(r =>
+        sectionStudents.some(s => s.studentId === r.studentId)
+      ) || [];
+
+      const sectionInterventionResponses = aggregatedData.interventionData?.responses?.filter(r =>
+        sectionStudents.some(s => s.studentId === r.studentId)
+      ) || [];
+
+      console.log(`[ADMIN PRESCRIPTIVE] 📊 Section "${section}": Found ${sectionStudents.length} students, ${sectionResponses.length} main responses, ${sectionInterventionResults.length} intervention results`);
       if (sectionStudents.length > 0) {
         console.log(`[ADMIN PRESCRIPTIVE] 📊 Students in section "${section}":`, sectionStudents.map(s => `${s.firstName} ${s.lastName} (${s.studentId})`));
       }
@@ -711,12 +1041,30 @@ class AdminPrescriptiveAnalysisService {
         continue;
       }
 
-      // Calculate section performance by category
+      // Calculate section performance by category using intervention-aware analysis
       const categoryPerformance = {};
+      let totalSectionResponses = 0;
+
       for (const category of this.categories) {
+        // Get main assessment responses for this category
         const categoryResponses = sectionResponses.filter(r => r.category === category);
-        if (categoryResponses.length > 0) {
-          categoryPerformance[category] = this.calculateCategoryPerformance(categoryResponses);
+
+        // Get intervention data for this category
+        const categoryInterventionResults = sectionInterventionResults.filter(r => r.category === category);
+        const categoryInterventionResponses = sectionInterventionResponses.filter(r => r.category === category);
+
+        // Build comprehensive student data for this category
+        const categoryStudentData = this.buildCategoryStudentData(
+          categoryResponses,
+          categoryInterventionResults,
+          categoryInterventionResponses,
+          category
+        );
+
+        if (categoryStudentData.students.length > 0 || categoryResponses.length > 0) {
+          // Use intervention-aware performance calculation
+          categoryPerformance[category] = this.calculateCategoryPerformanceWithIntervention(categoryStudentData);
+          totalSectionResponses += categoryStudentData.totalResponses;
         }
       }
 
@@ -727,12 +1075,12 @@ class AdminPrescriptiveAnalysisService {
       sectionResults[section] = {
         section,
         studentCount: sectionStudents.length,
-        totalResponses: sectionResponses.length,
+        totalResponses: totalSectionResponses,
         categoryPerformance,
 
         // Section-level metrics
         overallAccuracy: this.calculateSectionOverallAccuracy(categoryPerformance),
-        averageResponseTime: this.calculateSectionAverageResponseTime(sectionResponses),
+        averageResponseTime: this.calculateSectionAverageResponseTimeWithIntervention(sectionResponses, sectionInterventionResponses),
         readingLevelDistribution: this.calculateReadingLevelDistribution(sectionStudents),
 
         // Section insights
@@ -773,14 +1121,53 @@ class AdminPrescriptiveAnalysisService {
     const allMasteryScores = [];
 
     for (const student of aggregatedData.students) {
-      const studentResponses = aggregatedData.responses.filter(r => r.studentId === student.studentId);
+      let finalMasteryScore = null;
 
-      if (studentResponses.length > 0) {
-        const bktResult = this.mathModels.processBKTSequence(studentResponses);
-        allMasteryScores.push(bktResult.finalMastery);
+      // First, check if student has intervention results (prioritize over main assessment)
+      const studentInterventionResults = aggregatedData.interventionData?.results?.filter(r => r.studentId === student.studentId) || [];
 
-        if (bktResult.finalMastery >= 0.75) masteryAnalysis.overall.masteredStudents++;
-        if (bktResult.finalMastery < 0.4) masteryAnalysis.overall.strugglingStudents++;
+      if (studentInterventionResults.length > 0) {
+        // Use the highest mastery score from intervention results
+        const interventionMasteryScores = studentInterventionResults
+          .map(result => {
+            // Check if the intervention result has skill mastery data
+            if (result.skillMastery) {
+              // Extract mastery probability from the category-specific skill mastery
+              const categoryMastery = Object.values(result.skillMastery)[0];
+              if (categoryMastery && typeof categoryMastery.masteryProbability === 'number') {
+                return categoryMastery.masteryProbability;
+              }
+            }
+            // Fallback: if intervention passed with high score, infer high mastery
+            if (result.isPassed && result.score >= 90) return 0.9;
+            if (result.isPassed && result.score >= 75) return 0.75;
+            if (result.score >= 60) return 0.6;
+            return 0.4;
+          })
+          .filter(score => score !== null);
+
+        if (interventionMasteryScores.length > 0) {
+          finalMasteryScore = Math.max(...interventionMasteryScores);
+          console.log(`[ADMIN PRESCRIPTIVE] Using intervention mastery for student ${student.studentId}: ${finalMasteryScore}`);
+        }
+      }
+
+      // If no intervention results, fall back to main assessment BKT calculation
+      if (finalMasteryScore === null) {
+        const studentResponses = aggregatedData.responses.filter(r => r.studentId === student.studentId);
+        if (studentResponses.length > 0) {
+          const bktResult = this.mathModels.processBKTSequence(studentResponses);
+          finalMasteryScore = bktResult.finalMastery;
+          console.log(`[ADMIN PRESCRIPTIVE] Using main assessment BKT for student ${student.studentId}: ${finalMasteryScore}`);
+        }
+      }
+
+      // Add to analysis if we have a mastery score
+      if (finalMasteryScore !== null) {
+        allMasteryScores.push(finalMasteryScore);
+
+        if (finalMasteryScore >= 0.75) masteryAnalysis.overall.masteredStudents++;
+        if (finalMasteryScore < 0.4) masteryAnalysis.overall.strugglingStudents++;
       }
     }
 
@@ -790,14 +1177,59 @@ class AdminPrescriptiveAnalysisService {
 
     // Category-specific mastery analysis
     for (const category of this.categories) {
+      const categoryMasteryScores = [];
+
+      // Get all students who have data for this category (either main assessment or intervention)
+      const studentsWithData = new Set();
+
+      // Add students with main assessment responses
       const categoryResponses = aggregatedData.responses.filter(r => r.category === category);
       const responsesByStudent = this.groupResponsesByStudent(categoryResponses);
+      Object.keys(responsesByStudent).forEach(studentId => studentsWithData.add(parseInt(studentId)));
 
-      const categoryMasteryScores = [];
-      Object.values(responsesByStudent).forEach(responses => {
-        const bktResult = this.mathModels.processBKTSequence(responses);
-        categoryMasteryScores.push(bktResult.finalMastery);
-      });
+      // Add students with intervention results for this category
+      const categoryInterventionResults = aggregatedData.interventionData?.results?.filter(r => r.category === category) || [];
+      categoryInterventionResults.forEach(result => studentsWithData.add(result.studentId));
+
+      // Calculate mastery score for each student (prioritize intervention over main assessment)
+      for (const studentId of studentsWithData) {
+        let finalMasteryScore = null;
+
+        // First check for intervention results for this category
+        const studentCategoryInterventions = categoryInterventionResults.filter(r => r.studentId === studentId);
+
+        if (studentCategoryInterventions.length > 0) {
+          // Use intervention mastery score
+          const interventionMasteryScores = studentCategoryInterventions
+            .map(result => {
+              if (result.skillMastery && result.skillMastery[category]) {
+                return result.skillMastery[category].masteryProbability;
+              }
+              // Fallback based on intervention performance
+              if (result.isPassed && result.score >= 90) return 0.9;
+              if (result.isPassed && result.score >= 75) return 0.75;
+              if (result.score >= 60) return 0.6;
+              return 0.4;
+            })
+            .filter(score => score !== null);
+
+          if (interventionMasteryScores.length > 0) {
+            finalMasteryScore = Math.max(...interventionMasteryScores);
+            console.log(`[ADMIN PRESCRIPTIVE] Using intervention mastery for student ${studentId} in ${category}: ${finalMasteryScore}`);
+          }
+        }
+
+        // If no intervention, use main assessment BKT
+        if (finalMasteryScore === null && responsesByStudent[studentId]) {
+          const bktResult = this.mathModels.processBKTSequence(responsesByStudent[studentId]);
+          finalMasteryScore = bktResult.finalMastery;
+          console.log(`[ADMIN PRESCRIPTIVE] Using main assessment BKT for student ${studentId} in ${category}: ${finalMasteryScore}`);
+        }
+
+        if (finalMasteryScore !== null) {
+          categoryMasteryScores.push(finalMasteryScore);
+        }
+      }
 
       masteryAnalysis.byCategory[category] = {
         averageMastery: categoryMasteryScores.length > 0
@@ -812,17 +1244,47 @@ class AdminPrescriptiveAnalysisService {
     // Reading level mastery analysis
     for (const level of this.readingLevels) {
       const levelStudents = aggregatedData.students.filter(s => s.readingLevel === level);
-      const levelResponses = aggregatedData.responses.filter(r =>
-        levelStudents.some(s => s.studentId === r.studentId)
-      );
-
-      const responsesByStudent = this.groupResponsesByStudent(levelResponses);
       const levelMasteryScores = [];
 
-      Object.values(responsesByStudent).forEach(responses => {
-        const bktResult = this.mathModels.processBKTSequence(responses);
-        levelMasteryScores.push(bktResult.finalMastery);
-      });
+      // Process each student individually, prioritizing intervention results
+      for (const student of levelStudents) {
+        // Check if student has intervention results for any category
+        const studentInterventionResults = aggregatedData.interventionData?.results?.filter(
+          result => result.studentId === student.studentId
+        ) || [];
+
+        if (studentInterventionResults.length > 0) {
+          // Use intervention mastery data if available
+          const interventionMasteryScores = [];
+          studentInterventionResults.forEach(result => {
+            if (result.skillMastery) {
+              Object.values(result.skillMastery).forEach(skillData => {
+                if (skillData.masteryProbability !== undefined) {
+                  interventionMasteryScores.push(skillData.masteryProbability);
+                }
+              });
+            }
+          });
+
+          if (interventionMasteryScores.length > 0) {
+            // Use highest mastery score from interventions
+            const highestMastery = Math.max(...interventionMasteryScores);
+            levelMasteryScores.push(highestMastery);
+          } else {
+            // Fallback to intervention score-based mastery
+            const avgInterventionScore = studentInterventionResults.reduce((sum, result) =>
+              sum + (result.score || 0), 0) / studentInterventionResults.length;
+            levelMasteryScores.push(avgInterventionScore / 100);
+          }
+        } else {
+          // Fall back to main assessment BKT if no intervention data
+          const studentResponses = aggregatedData.responses.filter(r => r.studentId === student.studentId);
+          if (studentResponses.length > 0) {
+            const bktResult = this.mathModels.processBKTSequence(studentResponses);
+            levelMasteryScores.push(bktResult.finalMastery);
+          }
+        }
+      }
 
       masteryAnalysis.byReadingLevel[level] = {
         averageMastery: levelMasteryScores.length > 0
@@ -837,17 +1299,47 @@ class AdminPrescriptiveAnalysisService {
     // Section mastery analysis
     for (const section of this.sections) {
       const sectionStudents = aggregatedData.students.filter(s => s.section === section);
-      const sectionResponses = aggregatedData.responses.filter(r =>
-        sectionStudents.some(s => s.studentId === r.studentId)
-      );
-
-      const responsesByStudent = this.groupResponsesByStudent(sectionResponses);
       const sectionMasteryScores = [];
 
-      Object.values(responsesByStudent).forEach(responses => {
-        const bktResult = this.mathModels.processBKTSequence(responses);
-        sectionMasteryScores.push(bktResult.finalMastery);
-      });
+      // Process each student individually, prioritizing intervention results
+      for (const student of sectionStudents) {
+        // Check if student has intervention results for any category
+        const studentInterventionResults = aggregatedData.interventionData?.results?.filter(
+          result => result.studentId === student.studentId
+        ) || [];
+
+        if (studentInterventionResults.length > 0) {
+          // Use intervention mastery data if available
+          const interventionMasteryScores = [];
+          studentInterventionResults.forEach(result => {
+            if (result.skillMastery) {
+              Object.values(result.skillMastery).forEach(skillData => {
+                if (skillData.masteryProbability !== undefined) {
+                  interventionMasteryScores.push(skillData.masteryProbability);
+                }
+              });
+            }
+          });
+
+          if (interventionMasteryScores.length > 0) {
+            // Use highest mastery score from interventions
+            const highestMastery = Math.max(...interventionMasteryScores);
+            sectionMasteryScores.push(highestMastery);
+          } else {
+            // Fallback to intervention score-based mastery
+            const avgInterventionScore = studentInterventionResults.reduce((sum, result) =>
+              sum + (result.score || 0), 0) / studentInterventionResults.length;
+            sectionMasteryScores.push(avgInterventionScore / 100);
+          }
+        } else {
+          // Fall back to main assessment BKT if no intervention data
+          const studentResponses = aggregatedData.responses.filter(r => r.studentId === student.studentId);
+          if (studentResponses.length > 0) {
+            const bktResult = this.mathModels.processBKTSequence(studentResponses);
+            sectionMasteryScores.push(bktResult.finalMastery);
+          }
+        }
+      }
 
       masteryAnalysis.bySection[section] = {
         averageMastery: sectionMasteryScores.length > 0
@@ -1140,38 +1632,83 @@ class AdminPrescriptiveAnalysisService {
   }
 
   /**
-   * Calculate overall average score
+   * Calculate overall average score with intervention data priority
    * @param {Object} aggregatedData
    * @returns {number} Overall average score
    */
   calculateOverallAverageScore(aggregatedData) {
-    const correctResponses = aggregatedData.responses.filter(r => r.isCorrect).length;
-    const totalResponses = aggregatedData.responses.length;
-    return totalResponses > 0 ? Math.round((correctResponses / totalResponses) * 100 * 10) / 10 : 0;
+    // Prioritize intervention results when available
+    const interventionResults = aggregatedData.interventionData?.results || [];
+
+    if (interventionResults.length > 0) {
+      // Use intervention scores as they represent final outcomes
+      const totalScore = interventionResults.reduce((sum, result) => sum + (result.score || 0), 0);
+      return interventionResults.length > 0 ? Math.round((totalScore / interventionResults.length) * 10) / 10 : 0;
+    } else {
+      // Fall back to main assessment data
+      const correctResponses = aggregatedData.responses.filter(r => r.isCorrect).length;
+      const totalResponses = aggregatedData.responses.length;
+      return totalResponses > 0 ? Math.round((correctResponses / totalResponses) * 100 * 10) / 10 : 0;
+    }
   }
 
   /**
-   * Calculate overall pass rate
+   * Calculate overall pass rate with intervention data priority
    * @param {Object} aggregatedData
    * @returns {number} Pass rate percentage
    */
   calculateOverallPassRate(aggregatedData) {
-    // For this analysis, consider a student "passing" if they have >75% accuracy overall
-    const studentAccuracies = {};
+    // Consider a student "passing" if they have ≥75% accuracy OR passed interventions
+    const studentOutcomes = {};
+    const allStudentIds = new Set();
 
+    // Collect all student IDs from main assessment
     aggregatedData.responses.forEach(response => {
-      if (!studentAccuracies[response.studentId]) {
-        studentAccuracies[response.studentId] = { correct: 0, total: 0 };
-      }
-      studentAccuracies[response.studentId].total++;
-      if (response.isCorrect) studentAccuracies[response.studentId].correct++;
+      allStudentIds.add(response.studentId);
     });
 
-    const passingStudents = Object.values(studentAccuracies).filter(student =>
-      (student.correct / student.total) >= 0.75
-    ).length;
+    // Collect all student IDs from intervention data
+    const interventionResults = aggregatedData.interventionData?.results || [];
+    interventionResults.forEach(result => {
+      allStudentIds.add(result.studentId);
+    });
 
-    const totalStudents = Object.keys(studentAccuracies).length;
+    // Determine pass/fail status for each student
+    for (const studentId of allStudentIds) {
+      // Check if student has intervention results (priority)
+      const studentInterventionResults = interventionResults.filter(r => r.studentId === studentId);
+
+      if (studentInterventionResults.length > 0) {
+        // Student has intervention data - use intervention outcome
+        const hasPassedIntervention = studentInterventionResults.some(result => result.isPassed === true);
+        const avgInterventionScore = studentInterventionResults.reduce((sum, result) =>
+          sum + (result.score || 0), 0) / studentInterventionResults.length;
+
+        studentOutcomes[studentId] = {
+          isPassing: hasPassedIntervention || avgInterventionScore >= 75,
+          source: 'intervention',
+          score: avgInterventionScore
+        };
+      } else {
+        // Fall back to main assessment data
+        const studentResponses = aggregatedData.responses.filter(r => r.studentId === studentId);
+        if (studentResponses.length > 0) {
+          const correct = studentResponses.filter(r => r.isCorrect).length;
+          const total = studentResponses.length;
+          const accuracy = (correct / total) * 100;
+
+          studentOutcomes[studentId] = {
+            isPassing: accuracy >= 75,
+            source: 'main_assessment',
+            score: accuracy
+          };
+        }
+      }
+    }
+
+    const passingStudents = Object.values(studentOutcomes).filter(outcome => outcome.isPassing).length;
+    const totalStudents = Object.keys(studentOutcomes).length;
+
     return totalStudents > 0 ? Math.round((passingStudents / totalStudents) * 100 * 10) / 10 : 0;
   }
 
@@ -1563,6 +2100,26 @@ class AdminPrescriptiveAnalysisService {
   calculateSectionAverageResponseTime(responses) {
     const times = responses.filter(r => r.responseTime).map(r => r.responseTime);
     return times.length > 0 ? times.reduce((sum, time) => sum + time, 0) / times.length : 0;
+  }
+
+  /**
+   * Calculate section average response time with intervention data priority
+   * @param {Array} mainResponses Main assessment responses
+   * @param {Array} interventionResponses Intervention responses
+   * @returns {number} Average response time in seconds
+   */
+  calculateSectionAverageResponseTimeWithIntervention(mainResponses, interventionResponses) {
+    // Prioritize intervention response times if available
+    const interventionTimes = interventionResponses.filter(r => r.responseTime).map(r => r.responseTime);
+
+    if (interventionTimes.length > 0) {
+      // Use intervention response times
+      return interventionTimes.reduce((sum, time) => sum + time, 0) / interventionTimes.length;
+    } else {
+      // Fall back to main assessment response times
+      const mainTimes = mainResponses.filter(r => r.responseTime).map(r => r.responseTime);
+      return mainTimes.length > 0 ? mainTimes.reduce((sum, time) => sum + time, 0) / mainTimes.length : 0;
+    }
   }
 
   calculateReadingLevelDistribution(students) {
