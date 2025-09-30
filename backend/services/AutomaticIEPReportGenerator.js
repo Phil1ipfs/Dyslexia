@@ -75,6 +75,10 @@ class AutomaticIEPReportGenerator {
         overallScore: categoryResult.overallScore || 0,
         objectives: objectives,
         basedOnAssessmentId: categoryResult._id,
+
+        // ⚡ OPTIMIZED: Add concise student summary for single-page layout
+        studentSummary: this.generateConciseStudentSummary(categoryResult, student),
+
         isActive: true,
         academicYear: new Date().getFullYear().toString(),
         createdAt: new Date(),
@@ -94,24 +98,24 @@ class AutomaticIEPReportGenerator {
   }
 
   /**
-   * Update existing IEP report with new data
+   * Update existing IEP report with new data (preserves teacher data)
    */
   static async updateExistingIEPReport(iepReport, categoryResult, student) {
     try {
-      console.log(`[IEP AUTO GEN] 🔄 Updating existing IEP report...`);
+      console.log(`[IEP AUTO GEN] 🔄 Updating existing IEP report (preserving teacher data)...`);
 
-      // Update basic information
+      // Update basic information ONLY - preserve all objectives and teacher data
       iepReport.readingLevel = categoryResult.readingLevel || student.readingLevel;
       iepReport.overallScore = categoryResult.overallScore || 0;
       iepReport.basedOnAssessmentId = categoryResult._id;
       iepReport.updatedAt = new Date();
 
-      // Regenerate objectives to include latest data
-      const updatedObjectives = await this.generateObjectivesFromCategoryResults(categoryResult, student.idNumber);
-      iepReport.objectives = updatedObjectives;
+      // ✅ PRESERVE TEACHER DATA: Don't regenerate objectives, just update overallScore
+      // This prevents duplicate intervention attempts and preserves teacher remarks
+      console.log(`[IEP AUTO GEN] 🔄 Preserving existing objectives and teacher data, only updating overallScore: ${iepReport.overallScore}`);
 
       const savedReport = await iepReport.save();
-      console.log(`[IEP AUTO GEN] ✅ IEP report updated with ${updatedObjectives.length} objectives`);
+      console.log(`[IEP AUTO GEN] ✅ IEP report updated (overallScore synced, teacher data preserved)`);
 
       return savedReport;
 
@@ -138,8 +142,16 @@ class AutomaticIEPReportGenerator {
           categoryName: category.categoryName,
           lesson: this.generateLessonName(category.categoryName),
 
-          // Assessment data
-          assessmentScore: category.score || 0,
+          // Assessment data (capped at 100 to meet validation requirements)
+          // ✅ FIXED: Use correct scoring for Phonological Awareness
+          assessmentScore: Math.min(
+            category.categoryName === 'Phonological Awareness' &&
+            category.totalPossibleMatches > 0 &&
+            category.correctMatches !== undefined
+              ? Math.round((category.correctMatches / category.totalPossibleMatches) * 100)
+              : (category.score || 0),
+            100
+          ),
           totalQuestions: category.totalQuestions || 0,
           correctAnswers: category.correctAnswers || 0,
           totalPossibleMatches: category.totalPossibleMatches || 0,
@@ -147,12 +159,18 @@ class AutomaticIEPReportGenerator {
           isCompleted: category.isCompleted || false,
           isPassed: category.isPassed || false,
 
+          // ⚡ OPTIMIZED: Proper performance formatting for different categories
+          performanceDetails: this.formatPerformanceDetails(category),
+
           // Status determination
           status: this.determineStatus(category),
           completed: category.isPassed || false,
-          supportLevel: this.determineSupportLevel(category.score || 0),
-          score: category.score || 0,
+          supportLevel: null, // Teachers will set this manually after assessment
+          score: Math.min(category.score || 0, 100),
           passingThreshold: category.passingThreshold || 75,
+
+          // ⚡ OPTIMIZED: Proper intervention progress formatting
+          interventionProgress: this.formatInterventionProgress(interventionData, category),
 
           // Intervention tracking
           hasIntervention: interventionData.hasIntervention,
@@ -220,7 +238,7 @@ class AutomaticIEPReportGenerator {
 
       const interventionHistory = allInterventionResults.map((result, index) => ({
         attemptNumber: index + 1,
-        score: result.score || 0,
+        score: Math.min(result.score || 0, 100), // Cap at 100 for validation
         isPassed: result.isPassed || false,
         attemptedAt: result.assessmentDate || new Date(),
         reason: 'intervention_attempt',
@@ -236,9 +254,9 @@ class AutomaticIEPReportGenerator {
         interventionAttempts: allInterventionResults.length,
         interventionCompleted: true,
         interventionHistory: interventionHistory,
-        latestInterventionScore: latestInterventionResult.score || 0,
+        latestInterventionScore: Math.min(latestInterventionResult.score || 0, 100), // Cap at 100 for validation
         latestInterventionPassed: latestInterventionResult.isPassed || false,
-        interventionImprovement: (latestInterventionResult.score || 0) - (latestInterventionResult.previousScore || 0),
+        interventionImprovement: Math.max(-100, Math.min(100, (latestInterventionResult.score || 0) - (latestInterventionResult.previousScore || 0))), // Cap between -100 and +100
         interventionCreatedAt: latestInterventionResult.assessmentDate || new Date()
       };
 
@@ -276,6 +294,87 @@ class AutomaticIEPReportGenerator {
   }
 
   /**
+   * ⚡ OPTIMIZED: Format performance details properly for different categories
+   */
+  static formatPerformanceDetails(category) {
+    const categoryName = category.categoryName;
+
+    // ✅ FIXED: Calculate correct score for Phonological Awareness using correctMatches/totalMatches
+    let score;
+    if (categoryName === 'Phonological Awareness' &&
+        category.totalPossibleMatches > 0 &&
+        category.correctMatches !== undefined) {
+      score = Math.round((category.correctMatches / category.totalPossibleMatches) * 100);
+    } else {
+      score = Math.min(category.score || 0, 100);
+    }
+
+    if (categoryName === 'Phonological Awareness') {
+      // Show matches format for Phonological Awareness
+      const correctMatches = category.correctMatches || 0;
+      const totalMatches = category.totalPossibleMatches || 0;
+      return `${score}% (${correctMatches}/${totalMatches} matches correct)`;
+    } else if (categoryName === 'Reading Comprehension') {
+      // Show all-or-nothing scoring info
+      const correctAnswers = category.correctAnswers || 0;
+      const totalQuestions = category.totalQuestions || 0;
+      return `${score}% (${correctAnswers}/${totalQuestions} stories fully understood)`;
+    } else {
+      // Standard format for other categories
+      const correctAnswers = category.correctAnswers || 0;
+      const totalQuestions = category.totalQuestions || 0;
+      return `${score}% (${correctAnswers}/${totalQuestions} questions correct)`;
+    }
+  }
+
+  /**
+   * ⚡ OPTIMIZED: Format intervention progress properly
+   */
+  static formatInterventionProgress(interventionData, category) {
+    // Handle case where interventionData might be undefined or category might be undefined
+    if (!interventionData && !category) {
+      return 'Not Started';
+    }
+
+    // If category passed and no intervention needed
+    if (category && category.isPassed && category.score >= 75) {
+      return 'Not Started'; // No intervention needed - category passed
+    }
+
+    // If no intervention data available
+    if (!interventionData) {
+      if (category && !category.isPassed) {
+        return 'Required'; // Intervention needed but not started yet
+      }
+      return 'Not Started';
+    }
+
+    // If intervention data indicates no intervention
+    if (!interventionData.hasIntervention) {
+      if (category && category.isPassed) {
+        return 'Not Started'; // No intervention needed - category passed
+      } else {
+        return 'Required'; // Intervention needed but not started yet
+      }
+    }
+
+    // If intervention exists but no attempts yet
+    if (interventionData.interventionAttempts === 0) {
+      return 'Not Started'; // Intervention exists but no attempts yet
+    }
+
+    const attempts = interventionData.interventionAttempts;
+    const latestScore = interventionData.latestInterventionScore || 0;
+    const passed = interventionData.latestInterventionPassed;
+
+    if (passed) {
+      return `${latestScore}% (${attempts} attempt${attempts > 1 ? 's' : ''}) - COMPLETED`;
+    } else {
+      return `${latestScore}% (${attempts} attempt${attempts > 1 ? 's' : ''}) - IN PROGRESS`;
+    }
+  }
+
+  /**
    * Determine status based on category performance
    */
   static determineStatus(category) {
@@ -286,6 +385,118 @@ class AutomaticIEPReportGenerator {
     } else {
       return 'not_started';
     }
+  }
+
+  /**
+   * ✅ COMPREHENSIVE: Generate complete student summary matching React component
+   */
+  static generateConciseStudentSummary(categoryResult, student) {
+    const totalCategories = categoryResult.categories?.length || 0;
+    const passedCategories = categoryResult.categories?.filter(cat => cat.isPassed).length || 0;
+    const overallScore = categoryResult.overallScore || 0;
+    const interventionCategories = categoryResult.categories?.filter(cat => cat.interventionRequired).length || 0;
+
+    // Check if all categories are passed (mastery achieved)
+    const allCategoriesPassed = passedCategories === totalCategories;
+    const masteryText = allCategoriesPassed ?
+      'demonstrating complete mastery across all assessed literacy domains' :
+      `requiring targeted development in ${totalCategories} critical literacy domains`;
+
+    // Build category performance details
+    const categoryDetails = categoryResult.categories?.map(cat => {
+      const score = cat.categoryName === 'Phonological Awareness' &&
+                   cat.totalPossibleMatches > 0 &&
+                   cat.correctMatches !== undefined
+        ? Math.round((cat.correctMatches / cat.totalPossibleMatches) * 100)
+        : (cat.score || 0);
+      return `${cat.categoryName} (${score}%)`;
+    }).join(', ') || '';
+
+    // Build initial assessment details
+    const initialAssessmentDetails = categoryResult.categories?.map(cat => {
+      const score = cat.categoryName === 'Phonological Awareness' &&
+                   cat.totalPossibleMatches > 0 &&
+                   cat.correctMatches !== undefined
+        ? Math.round((cat.correctMatches / cat.totalPossibleMatches) * 100)
+        : (cat.score || 0);
+      const totalQuestions = cat.totalQuestions || 0;
+      const correctAnswers = cat.correctAnswers || 0;
+      return `${cat.categoryName}: ${score}% (${correctAnswers}/${totalQuestions} questions correct)`;
+    }).join('; ') || '';
+
+    // Build intervention progress details
+    const interventionDetails = categoryResult.categories
+      ?.filter(cat => cat.interventionHistory && cat.interventionHistory.length > 0)
+      ?.map(cat => {
+        const history = cat.interventionHistory[cat.interventionHistory.length - 1]; // Latest intervention
+        const initialScore = cat.categoryName === 'Phonological Awareness' &&
+                            cat.totalPossibleMatches > 0 &&
+                            cat.correctMatches !== undefined
+          ? Math.round((cat.correctMatches / cat.totalPossibleMatches) * 100)
+          : (cat.score || 0);
+        const interventionScore = history.score || 0;
+        const improvement = interventionScore - initialScore;
+        return `${cat.categoryName} (1 attempt with +${improvement}% improvement (latest score: ${interventionScore}%))`;
+      }).join('; ') || '';
+
+    const masteredDomains = categoryResult.categories
+      ?.filter(cat => cat.isPassed)
+      ?.map(cat => cat.categoryName)
+      ?.join(', ') || '';
+
+    const averageImprovement = categoryResult.categories
+      ?.filter(cat => cat.interventionHistory && cat.interventionHistory.length > 0)
+      ?.reduce((sum, cat) => {
+        const history = cat.interventionHistory[cat.interventionHistory.length - 1];
+        const initialScore = cat.score || 0;
+        const interventionScore = history.score || 0;
+        return sum + (interventionScore - initialScore);
+      }, 0) / Math.max(categoryResult.categories?.filter(cat => cat.interventionHistory && cat.interventionHistory.length > 0).length || 1, 1);
+
+    // Generate comprehensive report
+    let comprehensiveReport = `Reading Level Achievement: ${student.firstName} ${student.lastName} is currently functioning at the ${categoryResult.readingLevel} reading level, ${masteryText}: ${categoryDetails}. `;
+
+    if (allCategoriesPassed) {
+      comprehensiveReport += `With an average performance of ${overallScore}%, this achievement reflects strong foundational reading skills and readiness for advancement to the next developmental reading level. `;
+    } else {
+      comprehensiveReport += `Current performance indicates specific skill gaps that benefit from systematic intervention approaches. The average assessment performance of ${overallScore}% suggests foundational skills requiring intensive support through evidence-based instructional strategies. `;
+    }
+
+    comprehensiveReport += `Initial Assessment Performance: The comprehensive initial assessment administered across multiple literacy domains revealed the following detailed performance profile: ${initialAssessmentDetails}. `;
+
+    if (interventionCategories > 0) {
+      const strugglingCategories = categoryResult.categories
+        ?.filter(cat => !cat.isPassed)
+        ?.map(cat => {
+          const score = cat.categoryName === 'Phonological Awareness' &&
+                       cat.totalPossibleMatches > 0 &&
+                       cat.correctMatches !== undefined
+            ? Math.round((cat.correctMatches / cat.totalPossibleMatches) * 100)
+            : (cat.score || 0);
+          const difficulty = score === 0 ? 'significant challenge' :
+                           score < 40 ? 'severe difficulty' :
+                           score < 60 ? 'moderate difficulty' : 'approaching proficiency';
+          return `${cat.categoryName} (${difficulty} at ${score}%)`;
+        }).join(', ') || '';
+
+      comprehensiveReport += `Assessment results indicate ${interventionCategories} domains requiring intervention: ${strugglingCategories}. `;
+    }
+
+    if (interventionDetails) {
+      comprehensiveReport += `Intervention Progress: ${student.firstName} ${student.lastName} has actively engaged in ${interventionCategories} intervention sessions across ${interventionCategories} literacy domains: ${interventionDetails}. `;
+
+      if (masteredDomains) {
+        comprehensiveReport += `The student successfully achieved mastery in ${passedCategories} domains (${masteredDomains}), demonstrating an average improvement of ${Math.round(averageImprovement)}% across intervention areas. This progress indicates strong responsiveness to targeted instructional support and effective skill acquisition through systematic intervention approaches. `;
+      }
+    }
+
+    if (allCategoriesPassed) {
+      comprehensiveReport += `Current Status: Complete mastery achieved - ready for reading level advancement.`;
+    } else {
+      comprehensiveReport += `Current Academic Status and Recommendations: ${student.firstName} ${student.lastName} requires immediate implementation of intensive intervention protocols in ${interventionCategories} critical literacy domains: ${categoryDetails}. With current performance metrics showing ${Math.round((passedCategories/totalCategories)*100)}% mastery rate and ${overallScore}% overall academic achievement, priority actions include: development of individualized intervention plans, implementation of evidence-based instructional strategies, provision of specialized educational supports, and establishment of frequent progress monitoring systems. The student would benefit from multi-sensory teaching approaches, reduced cognitive load strategies, and potential consultation with literacy specialists to address identified learning gaps and facilitate academic progress toward mastery at the ${categoryResult.readingLevel} reading level.`;
+    }
+
+    return comprehensiveReport;
   }
 
   /**

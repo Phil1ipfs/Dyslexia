@@ -1,33 +1,79 @@
 [{
   "_id": {
-    "$oid": "68491110988139e71b308f60"
+    "$oid": "68491110988139e71b308f14"
   },
   "studentId": 202533333,
   "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
+    "$oid": "68bcbfaae32d5718169f6bc6"
   },
-  "questionId": "AK_001",
+  "questionId": "AK_014",
   "category": "Alphabet Knowledge",
   "response": [
     "1"
   ],
   "isCorrect": true,
-  "responseTime": 4.2,
+  "responseTime": 12.8,
   "answeredAt": {
-    "$date": "2025-09-16T09:00:00.000Z"
+    "$date": "2025-09-16T08:08:00.000Z"
   },
   "createdAt": {
-    "$date": "2025-09-16T09:00:00.000Z"
+    "$date": "2025-09-16T08:08:00.000Z"
   },
-  "readingLevel": "High Emerging"
+  "readingLevel": "Low Emerging"
 },
 {
   "_id": {
-    "$oid": "68491110988139e71b308f61"
+    "$oid": "68491110988139e71b308f15"
   },
   "studentId": 202533333,
   "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_015",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": false,
+  "responseTime": 17.3,
+  "answeredAt": {
+    "$date": "2025-09-16T08:08:25.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:08:25.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_001",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 8.5,
+  "answeredAt": {
+    "$date": "2025-09-16T08:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:04:00.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
   },
   "questionId": "AK_002",
   "category": "Alphabet Knowledge",
@@ -35,14 +81,267 @@
     "1"
   ],
   "isCorrect": false,
-  "responseTime": 5.8,
+  "responseTime": 12.3,
   "answeredAt": {
-    "$date": "2025-09-16T09:00:30.000Z"
+    "$date": "2025-09-16T08:04:15.000Z"
   },
   "createdAt": {
-    "$date": "2025-09-16T09:00:30.000Z"
+    "$date": "2025-09-16T08:04:15.000Z"
   },
-  "readingLevel": "High Emerging"
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f08"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_008",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 14.6,
+  "answeredAt": {
+    "$date": "2025-09-16T08:06:05.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:06:05.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_003",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 15.7,
+  "answeredAt": {
+    "$date": "2025-09-16T08:04:35.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:04:35.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_004",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 9.2,
+  "answeredAt": {
+    "$date": "2025-09-16T08:04:50.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:04:50.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f07"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_007",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": false,
+  "responseTime": 18.2,
+  "answeredAt": {
+    "$date": "2025-09-16T08:05:45.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:05:45.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_005",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": false,
+  "responseTime": 11.8,
+  "answeredAt": {
+    "$date": "2025-09-16T08:05:05.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:05:05.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f09"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_009",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 16.9,
+  "answeredAt": {
+    "$date": "2025-09-16T08:06:25.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:06:25.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f10"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_010",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 13.1,
+  "answeredAt": {
+    "$date": "2025-09-16T08:06:45.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:06:45.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f11"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_011",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 10.7,
+  "answeredAt": {
+    "$date": "2025-09-16T08:07:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:07:00.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f12"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_012",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 8.9,
+  "answeredAt": {
+    "$date": "2025-09-16T08:07:15.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:07:15.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_006",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 7.4,
+  "answeredAt": {
+    "$date": "2025-09-16T08:05:20.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:05:20.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f13"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_013",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 19.4,
+  "answeredAt": {
+    "$date": "2025-09-16T08:07:40.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:07:40.000Z"
+  },
+  "readingLevel": "Low Emerging"
 },
 {
   "_id": {
@@ -64,167 +363,6 @@
   },
   "createdAt": {
     "$date": "2025-09-16T09:01:00.000Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308f63"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
-  },
-  "questionId": "AK_004",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 4.5,
-  "answeredAt": {
-    "$date": "2025-09-16T09:01:30.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-09-16T09:01:30.000Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308f64"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
-  },
-  "questionId": "AK_005",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": false,
-  "responseTime": 3.7,
-  "answeredAt": {
-    "$date": "2025-09-16T09:02:00.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-09-16T09:02:00.000Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308f65"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
-  },
-  "questionId": "AK_006",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 4.1,
-  "answeredAt": {
-    "$date": "2025-09-16T09:02:30.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-09-16T09:02:30.000Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308f66"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
-  },
-  "questionId": "AK_007",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "3"
-  ],
-  "isCorrect": false,
-  "responseTime": 6.2,
-  "answeredAt": {
-    "$date": "2025-09-16T09:03:00.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-09-16T09:03:00.000Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308f67"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
-  },
-  "questionId": "AK_008",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "3"
-  ],
-  "isCorrect": false,
-  "responseTime": 5.4,
-  "answeredAt": {
-    "$date": "2025-09-16T09:03:30.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-09-16T09:03:30.000Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308f68"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
-  },
-  "questionId": "AK_009",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": false,
-  "responseTime": 4.8,
-  "answeredAt": {
-    "$date": "2025-09-16T09:04:00.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-09-16T09:04:00.000Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308f69"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "68bcbfaae82d5718169f6bc6"
-  },
-  "questionId": "AK_010",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 3.6,
-  "answeredAt": {
-    "$date": "2025-09-16T09:04:30.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-09-16T09:04:30.000Z"
   },
   "readingLevel": "High Emerging"
 },
@@ -253,24 +391,70 @@
 },
 {
   "_id": {
-    "$oid": "68491110988139e71b308f71"
+    "$oid": "68491110988139e71b308f60"
   },
   "studentId": 202533333,
   "categoryId": {
     "$oid": "68bcbfaae82d5718169f6bc6"
   },
-  "questionId": "AK_012",
+  "questionId": "AK_001",
   "category": "Alphabet Knowledge",
   "response": [
-    "2"
+    "1"
   ],
-  "isCorrect": false,
-  "responseTime": 3.8,
+  "isCorrect": true,
+  "responseTime": 4.2,
   "answeredAt": {
-    "$date": "2025-09-16T09:05:30.000Z"
+    "$date": "2025-09-16T09:00:00.000Z"
   },
   "createdAt": {
-    "$date": "2025-09-16T09:05:30.000Z"
+    "$date": "2025-09-16T09:00:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f63"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_004",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.5,
+  "answeredAt": {
+    "$date": "2025-09-16T09:01:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:01:30.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f66"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_007",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": false,
+  "responseTime": 6.2,
+  "answeredAt": {
+    "$date": "2025-09-16T09:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:03:00.000Z"
   },
   "readingLevel": "High Emerging"
 },
@@ -299,24 +483,93 @@
 },
 {
   "_id": {
-    "$oid": "68491110988139e71b308f73"
+    "$oid": "68491110988139e71b308f61"
   },
   "studentId": 202533333,
   "categoryId": {
     "$oid": "68bcbfaae82d5718169f6bc6"
   },
-  "questionId": "AK_014",
+  "questionId": "AK_002",
   "category": "Alphabet Knowledge",
   "response": [
     "1"
   ],
   "isCorrect": false,
-  "responseTime": 4.7,
+  "responseTime": 5.8,
   "answeredAt": {
-    "$date": "2025-09-16T09:06:30.000Z"
+    "$date": "2025-09-16T09:00:30.000Z"
   },
   "createdAt": {
-    "$date": "2025-09-16T09:06:30.000Z"
+    "$date": "2025-09-16T09:00:30.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f68"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_009",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 4.8,
+  "answeredAt": {
+    "$date": "2025-09-16T09:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:04:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f65"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_006",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.1,
+  "answeredAt": {
+    "$date": "2025-09-16T09:02:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:02:30.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f67"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_008",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": false,
+  "responseTime": 5.4,
+  "answeredAt": {
+    "$date": "2025-09-16T09:03:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:03:30.000Z"
   },
   "readingLevel": "High Emerging"
 },
@@ -342,4 +595,4383 @@
     "$date": "2025-09-16T09:07:00.000Z"
   },
   "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f69"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_010",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 3.6,
+  "answeredAt": {
+    "$date": "2025-09-16T09:04:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:04:30.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f64"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_005",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 3.7,
+  "answeredAt": {
+    "$date": "2025-09-16T09:02:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:02:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f73"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_014",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 4.7,
+  "answeredAt": {
+    "$date": "2025-09-16T09:06:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:06:30.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f71"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_012",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 3.8,
+  "answeredAt": {
+    "$date": "2025-09-16T09:05:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T09:05:30.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f22"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_002",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "L": "Ll"
+    },
+    {
+      "P": "Pp"
+    }
+  ],
+  "correctMatches": 2,
+  "totalMatches": 2,
+  "isCorrect": true,
+  "responseTime": 12.8,
+  "answeredAt": {
+    "$date": "2025-09-16T08:09:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:09:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f26"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_006",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "NGA": "NGA"
+    },
+    {
+      "WU": "WU"
+    }
+  ],
+  "correctMatches": 2,
+  "totalMatches": 2,
+  "isCorrect": true,
+  "responseTime": 13.9,
+  "answeredAt": {
+    "$date": "2025-09-16T08:13:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:13:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f21"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_001",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "H": "Hh"
+    },
+    {
+      "T": "Tt"
+    },
+    {
+      "N": "Nn"
+    }
+  ],
+  "correctMatches": 3,
+  "totalMatches": 3,
+  "isCorrect": true,
+  "responseTime": 15.2,
+  "answeredAt": {
+    "$date": "2025-09-16T08:08:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:08:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f23"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_003",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "DAGA": "DAGA"
+    },
+    {
+      "ILAW": "ILAW"
+    },
+    {
+      "MATA": "MATA"
+    }
+  ],
+  "correctMatches": 3,
+  "totalMatches": 3,
+  "isCorrect": true,
+  "responseTime": 18.5,
+  "answeredAt": {
+    "$date": "2025-09-16T08:10:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:10:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f24"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_004",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "PUNO": "PUNO"
+    },
+    {
+      "RELO": "RELO"
+    }
+  ],
+  "correctMatches": 2,
+  "totalMatches": 2,
+  "isCorrect": true,
+  "responseTime": 14.3,
+  "answeredAt": {
+    "$date": "2025-09-16T08:11:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:11:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f25"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_005",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "GA": "GA"
+    },
+    {
+      "LO": "LO"
+    },
+    {
+      "PI": "PI"
+    }
+  ],
+  "correctMatches": 3,
+  "totalMatches": 3,
+  "isCorrect": true,
+  "responseTime": 16.7,
+  "answeredAt": {
+    "$date": "2025-09-16T08:12:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:12:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f32"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_006",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": true,
+  "responseTime": 3.7,
+  "answeredAt": {
+    "$date": "2025-09-16T08:02:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:02:30.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "48491110988139e71b308f21"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_001",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "H": "Hh"
+    },
+    {
+      "T": "Tt"
+    },
+    {
+      "N": "Nn"
+    }
+  ],
+  "correctMatches": 3,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 15.2,
+  "answeredAt": {
+    "$date": "2025-09-16T08:08:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:08:00.000Z"
+  },
+  "readingLevel": "High Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f30"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_004",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 3.9,
+  "answeredAt": {
+    "$date": "2025-09-16T08:01:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:01:30.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f39"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_013",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 3.9,
+  "answeredAt": {
+    "$date": "2025-09-16T08:06:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:06:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f37"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_011",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 3.8,
+  "answeredAt": {
+    "$date": "2025-09-16T08:05:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:05:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f29"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_003",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.5,
+  "answeredAt": {
+    "$date": "2025-09-16T08:01:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:01:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f28"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_002",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 3.8,
+  "answeredAt": {
+    "$date": "2025-09-16T08:00:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:00:30.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f31"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_005",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.1,
+  "answeredAt": {
+    "$date": "2025-09-16T08:02:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:02:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f38"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_012",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.2,
+  "answeredAt": {
+    "$date": "2025-09-16T08:05:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:05:30.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f41"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_015",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": true,
+  "responseTime": 3.7,
+  "answeredAt": {
+    "$date": "2025-09-16T08:07:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:07:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f33"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_007",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.3,
+  "answeredAt": {
+    "$date": "2025-09-16T08:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:03:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f36"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_010",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.4,
+  "answeredAt": {
+    "$date": "2025-09-16T08:04:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:04:30.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f40"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_014",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.1,
+  "answeredAt": {
+    "$date": "2025-09-16T08:06:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:06:30.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f27"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_001",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.2,
+  "answeredAt": {
+    "$date": "2025-09-16T08:00:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:00:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f34"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_008",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": true,
+  "responseTime": 4,
+  "answeredAt": {
+    "$date": "2025-09-16T08:03:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:03:30.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f35"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_009",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 3.6,
+  "answeredAt": {
+    "$date": "2025-09-16T08:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:04:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "54491110988139e71b308f24"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_004",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "PUNO": "PUNO"
+    },
+    {
+      "RELO": "RELO"
+    }
+  ],
+  "correctMatches": 2,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 14.3,
+  "answeredAt": {
+    "$date": "2025-09-16T08:11:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:11:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "88491110988139e71b308f22"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_002",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "L": "Ll"
+    },
+    {
+      "P": "Pp"
+    }
+  ],
+  "correctMatches": 2,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 12.8,
+  "answeredAt": {
+    "$date": "2025-09-16T08:09:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:09:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "38491110988139e71b308f25"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_005",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "GA": "GA"
+    },
+    {
+      "LO": "LO"
+    },
+    {
+      "PI": "PI"
+    }
+  ],
+  "correctMatches": 3,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 16.7,
+  "answeredAt": {
+    "$date": "2025-09-16T08:12:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:12:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "18491110988139e71b308f26"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_006",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "NGA": "NGA"
+    },
+    {
+      "WU": "WU"
+    }
+  ],
+  "correctMatches": 2,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 13.9,
+  "answeredAt": {
+    "$date": "2025-09-16T08:13:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:13:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "78491110988139e71b308f23"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_003",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "DAGA": "DAGA"
+    },
+    {
+      "ILAW": "ILAW"
+    },
+    {
+      "MATA": "MATA"
+    }
+  ],
+  "correctMatches": 3,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 18.5,
+  "answeredAt": {
+    "$date": "2025-09-16T08:10:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:10:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "62491110988139e71b308f22"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "18bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_001",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "L": "Ll"
+    },
+    {
+      "P": "Pp"
+    }
+  ],
+  "correctMatches": 2,
+  "totalMatches": 2,
+  "isCorrect": true,
+  "responseTime": 12.8,
+  "answeredAt": {
+    "$date": "2025-09-16T08:09:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:09:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "88491110988139e71b308f63"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_006",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.3,
+  "answeredAt": {
+    "$date": "2025-09-16T08:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:03:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f81"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_002",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "A",
+    "R",
+    "A",
+    "W"
+  ],
+  "isCorrect": false,
+  "responseTime": 15.3,
+  "answeredAt": {
+    "$date": "2025-09-16T08:42:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:42:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f87"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_008",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "P",
+    "A",
+    "L",
+    "A",
+    "K",
+    "A"
+  ],
+  "isCorrect": false,
+  "responseTime": 19.6,
+  "answeredAt": {
+    "$date": "2025-09-16T08:48:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:48:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f94"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_015",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "W"
+  ],
+  "isCorrect": true,
+  "responseTime": 8.5,
+  "answeredAt": {
+    "$date": "2025-09-16T08:55:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:55:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f83"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_004",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "E",
+    "R",
+    "O",
+    "P",
+    "L",
+    "A",
+    "N",
+    "O"
+  ],
+  "isCorrect": false,
+  "responseTime": 22.1,
+  "answeredAt": {
+    "$date": "2025-09-16T08:44:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:44:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f89"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_010",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "O"
+  ],
+  "isCorrect": false,
+  "responseTime": 6.7,
+  "answeredAt": {
+    "$date": "2025-09-16T08:50:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:50:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f80"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_001",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "Y",
+    "E",
+    "L",
+    "O"
+  ],
+  "isCorrect": false,
+  "responseTime": 12.5,
+  "answeredAt": {
+    "$date": "2025-09-16T08:41:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:41:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f82"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_003",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "N",
+    "G",
+    "I",
+    "P",
+    "I",
+    "N"
+  ],
+  "isCorrect": false,
+  "responseTime": 18.7,
+  "answeredAt": {
+    "$date": "2025-09-16T08:43:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:43:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f84"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_005",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "B",
+    "A",
+    "H",
+    "A",
+    "Y"
+  ],
+  "isCorrect": false,
+  "responseTime": 16.8,
+  "answeredAt": {
+    "$date": "2025-09-16T08:45:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:45:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f88"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_009",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "T"
+  ],
+  "isCorrect": false,
+  "responseTime": 8.3,
+  "answeredAt": {
+    "$date": "2025-09-16T08:49:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:49:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f91"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_012",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "D"
+  ],
+  "isCorrect": true,
+  "responseTime": 9.2,
+  "answeredAt": {
+    "$date": "2025-09-16T08:52:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:52:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f90"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_011",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "U"
+  ],
+  "isCorrect": true,
+  "responseTime": 7.1,
+  "answeredAt": {
+    "$date": "2025-09-16T08:51:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:51:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f93"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_014",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "S"
+  ],
+  "isCorrect": true,
+  "responseTime": 7.8,
+  "answeredAt": {
+    "$date": "2025-09-16T08:54:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:54:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f85"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_006",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "K",
+    "A",
+    "M",
+    "A",
+    "Y"
+  ],
+  "isCorrect": false,
+  "responseTime": 14.2,
+  "answeredAt": {
+    "$date": "2025-09-16T08:46:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:46:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f86"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_007",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "R",
+    "O",
+    "S",
+    "A",
+    "S"
+  ],
+  "isCorrect": false,
+  "responseTime": 17.4,
+  "answeredAt": {
+    "$date": "2025-09-16T08:47:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:47:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308f92"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_013",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "H"
+  ],
+  "isCorrect": true,
+  "responseTime": 8.9,
+  "answeredAt": {
+    "$date": "2025-09-16T08:53:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-16T08:53:00.000Z"
+  },
+  "readingLevel": "Developing"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af09"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_009",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 2.5,
+  "answeredAt": {
+    "$date": "2025-09-17T09:18:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:18:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_001",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 2.1,
+  "answeredAt": {
+    "$date": "2025-09-17T09:10:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:10:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af14"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_014",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 3,
+  "answeredAt": {
+    "$date": "2025-09-17T09:23:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:23:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af15"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_015",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 3.3,
+  "answeredAt": {
+    "$date": "2025-09-17T09:24:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:24:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_005",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 2,
+  "answeredAt": {
+    "$date": "2025-09-17T09:14:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:14:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_004",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 1.9,
+  "answeredAt": {
+    "$date": "2025-09-17T09:13:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:13:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af07"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_007",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 3.1,
+  "answeredAt": {
+    "$date": "2025-09-17T09:16:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:16:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af08"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_008",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": false,
+  "responseTime": 2.8,
+  "answeredAt": {
+    "$date": "2025-09-17T09:17:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:17:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af10"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_010",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 3.2,
+  "answeredAt": {
+    "$date": "2025-09-17T09:19:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:19:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af12"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_012",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 2.7,
+  "answeredAt": {
+    "$date": "2025-09-17T09:21:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:21:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_003",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": true,
+  "responseTime": 2.3,
+  "answeredAt": {
+    "$date": "2025-09-17T09:12:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:12:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_002",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 1.8,
+  "answeredAt": {
+    "$date": "2025-09-17T09:11:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:11:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_006",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 2.2,
+  "answeredAt": {
+    "$date": "2025-09-17T09:15:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:15:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af11"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_011",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 2.9,
+  "answeredAt": {
+    "$date": "2025-09-17T09:20:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:20:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30af13"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "66bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_013",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 3.4,
+  "answeredAt": {
+    "$date": "2025-09-17T09:22:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T09:22:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30cf03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "63bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_003",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "DAGA": "ILAW"
+    },
+    {
+      "ILAW": "MATA"
+    },
+    {
+      "MATA": "DAGA"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 15.7,
+  "answeredAt": {
+    "$date": "2025-09-17T10:02:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T10:02:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30cf05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "63bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_005",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "GA": "LO"
+    },
+    {
+      "LO": "PI"
+    },
+    {
+      "PI": "GA"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 11.2,
+  "answeredAt": {
+    "$date": "2025-09-17T10:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T10:04:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30cf01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "63bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_001",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "H": "Tt"
+    },
+    {
+      "T": "Hh"
+    },
+    {
+      "N": "Nn"
+    }
+  ],
+  "correctMatches": 1,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 12.5,
+  "answeredAt": {
+    "$date": "2025-09-17T10:00:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T10:00:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30cf02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "63bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_002",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "L": "Pp"
+    },
+    {
+      "P": "Ll"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 8.3,
+  "answeredAt": {
+    "$date": "2025-09-17T10:01:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T10:01:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30cf04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "63bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_004",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "PUNO": "RELO"
+    },
+    {
+      "RELO": "PUNO"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 9.8,
+  "answeredAt": {
+    "$date": "2025-09-17T10:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T10:03:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30cf06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "63bb9e66e4c854c11d631622"
+  },
+  "questionId": "PA_006",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "NGA": "WU"
+    },
+    {
+      "WU": "NGA"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 7.4,
+  "answeredAt": {
+    "$date": "2025-09-17T10:05:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T10:05:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff08"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_008",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "P",
+    "L",
+    "A",
+    "A",
+    "K",
+    "A"
+  ],
+  "isCorrect": false,
+  "responseTime": 16.1,
+  "answeredAt": {
+    "$date": "2025-09-17T13:07:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:07:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff14"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_014",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "M"
+  ],
+  "isCorrect": false,
+  "responseTime": 10.1,
+  "answeredAt": {
+    "$date": "2025-09-17T13:13:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:13:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff15"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_015",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "H"
+  ],
+  "isCorrect": false,
+  "responseTime": 11.8,
+  "answeredAt": {
+    "$date": "2025-09-17T13:14:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:14:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_005",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "B",
+    "A",
+    "H",
+    "A",
+    "Y"
+  ],
+  "isCorrect": true,
+  "responseTime": 11.4,
+  "answeredAt": {
+    "$date": "2025-09-17T13:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:04:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff12"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_012",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "B"
+  ],
+  "isCorrect": false,
+  "responseTime": 8.7,
+  "answeredAt": {
+    "$date": "2025-09-17T13:11:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:11:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff07"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_007",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "R",
+    "O",
+    "S",
+    "A",
+    "S"
+  ],
+  "isCorrect": true,
+  "responseTime": 9.6,
+  "answeredAt": {
+    "$date": "2025-09-17T13:06:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:06:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_003",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "N",
+    "G",
+    "I",
+    "P",
+    "I",
+    "N"
+  ],
+  "isCorrect": true,
+  "responseTime": 15.7,
+  "answeredAt": {
+    "$date": "2025-09-17T13:02:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:02:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_006",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "K",
+    "M",
+    "A",
+    "A",
+    "Y"
+  ],
+  "isCorrect": false,
+  "responseTime": 14.8,
+  "answeredAt": {
+    "$date": "2025-09-17T13:05:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:05:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff10"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_010",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "O"
+  ],
+  "isCorrect": true,
+  "responseTime": 7.9,
+  "answeredAt": {
+    "$date": "2025-09-17T13:09:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:09:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff13"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_013",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "W"
+  ],
+  "isCorrect": false,
+  "responseTime": 9.4,
+  "answeredAt": {
+    "$date": "2025-09-17T13:12:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:12:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_001",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "Y",
+    "E",
+    "L",
+    "O"
+  ],
+  "isCorrect": true,
+  "responseTime": 8.5,
+  "answeredAt": {
+    "$date": "2025-09-17T13:00:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:00:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_002",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "A",
+    "R",
+    "W",
+    "A"
+  ],
+  "isCorrect": false,
+  "responseTime": 12.3,
+  "answeredAt": {
+    "$date": "2025-09-17T13:01:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:01:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_004",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "E",
+    "R",
+    "P",
+    "L",
+    "A",
+    "N",
+    "O"
+  ],
+  "isCorrect": false,
+  "responseTime": 18.2,
+  "answeredAt": {
+    "$date": "2025-09-17T13:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:03:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff09"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_009",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "T"
+  ],
+  "isCorrect": true,
+  "responseTime": 6.2,
+  "answeredAt": {
+    "$date": "2025-09-17T13:08:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:08:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30ff11"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "64bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_011",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "U"
+  ],
+  "isCorrect": true,
+  "responseTime": 5.3,
+  "answeredAt": {
+    "$date": "2025-09-17T13:10:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T13:10:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_005",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "Manok",
+  "isCorrect": true,
+  "responseTime": 7.8,
+  "answeredAt": {
+    "$date": "2025-09-17T16:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:04:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff10"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_010",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "TUBO",
+  "isCorrect": true,
+  "responseTime": 11.8,
+  "answeredAt": {
+    "$date": "2025-09-17T16:09:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:09:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff14"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_014",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "SUSI",
+  "isCorrect": true,
+  "responseTime": 12.6,
+  "answeredAt": {
+    "$date": "2025-09-17T16:13:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:13:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff13"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_013",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "MESA",
+  "isCorrect": true,
+  "responseTime": 8.1,
+  "answeredAt": {
+    "$date": "2025-09-17T16:12:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:12:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff15"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_015",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "SILYA",
+  "isCorrect": true,
+  "responseTime": 10.9,
+  "answeredAt": {
+    "$date": "2025-09-17T16:14:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:14:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_006",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "Kutsara",
+  "isCorrect": true,
+  "responseTime": 10.4,
+  "answeredAt": {
+    "$date": "2025-09-17T16:05:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:05:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_003",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "Nanay",
+  "isCorrect": true,
+  "responseTime": 9.7,
+  "answeredAt": {
+    "$date": "2025-09-17T16:02:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:02:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff07"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_007",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "Damit",
+  "isCorrect": true,
+  "responseTime": 8.9,
+  "answeredAt": {
+    "$date": "2025-09-17T16:06:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:06:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff08"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_008",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "Papel",
+  "isCorrect": true,
+  "responseTime": 6.5,
+  "answeredAt": {
+    "$date": "2025-09-17T16:07:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:07:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff11"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_011",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "KULUNGAN",
+  "isCorrect": true,
+  "responseTime": 15.2,
+  "answeredAt": {
+    "$date": "2025-09-17T16:10:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:10:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_004",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "Lamesa",
+  "isCorrect": true,
+  "responseTime": 11.2,
+  "answeredAt": {
+    "$date": "2025-09-17T16:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:03:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_002",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "Elepante",
+  "isCorrect": true,
+  "responseTime": 12.3,
+  "answeredAt": {
+    "$date": "2025-09-17T16:01:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:01:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff09"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_009",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "LIBRO",
+  "isCorrect": true,
+  "responseTime": 13.7,
+  "answeredAt": {
+    "$date": "2025-09-17T16:08:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:08:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff12"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_012",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "TIYA",
+  "isCorrect": true,
+  "responseTime": 9.3,
+  "answeredAt": {
+    "$date": "2025-09-17T16:11:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:11:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b33ff01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_001",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "response": "Bola",
+  "isCorrect": true,
+  "responseTime": 8.5,
+  "answeredAt": {
+    "$date": "2025-09-17T16:00:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T16:00:00.000Z"
+  },
+  "readingLevel": "Transitioning"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_004",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.5,
+  "answeredAt": {
+    "$date": "2025-09-17T17:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:03:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_005",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 5.7,
+  "answeredAt": {
+    "$date": "2025-09-17T17:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:04:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff10"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_010",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 8.1,
+  "answeredAt": {
+    "$date": "2025-09-17T17:09:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:09:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff11"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_011",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 7.5,
+  "answeredAt": {
+    "$date": "2025-09-17T17:10:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:10:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff12"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_012",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 6.4,
+  "answeredAt": {
+    "$date": "2025-09-17T17:11:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:11:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff15"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_015",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 7.8,
+  "answeredAt": {
+    "$date": "2025-09-17T17:14:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:14:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff08"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_008",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 6.8,
+  "answeredAt": {
+    "$date": "2025-09-17T17:07:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:07:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_002",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.8,
+  "answeredAt": {
+    "$date": "2025-09-17T17:01:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:01:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_001",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 5.2,
+  "answeredAt": {
+    "$date": "2025-09-17T17:00:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:00:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff07"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_007",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 7.2,
+  "answeredAt": {
+    "$date": "2025-09-17T17:06:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:06:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff09"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_009",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 5.9,
+  "answeredAt": {
+    "$date": "2025-09-17T17:08:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:08:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff13"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_013",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 9.2,
+  "answeredAt": {
+    "$date": "2025-09-17T17:12:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:12:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff14"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_014",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 8.7,
+  "answeredAt": {
+    "$date": "2025-09-17T17:13:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:13:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_003",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": true,
+  "responseTime": 6.1,
+  "answeredAt": {
+    "$date": "2025-09-17T17:02:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:02:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b34ff06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "61bcbfaae82d5718169f6bc6"
+  },
+  "questionId": "AK_006",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.3,
+  "answeredAt": {
+    "$date": "2025-09-17T17:05:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-17T17:05:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b36ff04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631222"
+  },
+  "questionId": "PA_004",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "PUNO": "RELO"
+    },
+    {
+      "RELO": "PUNO"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 19.8,
+  "answeredAt": {
+    "$date": "2025-09-29T09:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:03:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b36ff02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631222"
+  },
+  "questionId": "PA_002",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "L": "Pp"
+    },
+    {
+      "P": "Ll"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 18.7,
+  "answeredAt": {
+    "$date": "2025-09-29T09:01:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:01:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b36ff03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631222"
+  },
+  "questionId": "PA_003",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "DAGA": "ILAW"
+    },
+    {
+      "ILAW": "MATA"
+    },
+    {
+      "MATA": "DAGA"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 22.4,
+  "answeredAt": {
+    "$date": "2025-09-29T09:02:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:02:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b36ff01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631222"
+  },
+  "questionId": "PA_001",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "H": "Tt"
+    },
+    {
+      "T": "Hh"
+    },
+    {
+      "N": "Nn"
+    }
+  ],
+  "correctMatches": 1,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 15.2,
+  "answeredAt": {
+    "$date": "2025-09-29T09:00:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:00:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b36ff06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631222"
+  },
+  "questionId": "PA_006",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "NGA": "WU"
+    },
+    {
+      "WU": "NGA"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 2,
+  "isCorrect": false,
+  "responseTime": 17.3,
+  "answeredAt": {
+    "$date": "2025-09-29T09:05:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:05:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b36ff05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68bb9e66e4c854c11d631222"
+  },
+  "questionId": "PA_005",
+  "category": "Phonological Awareness",
+  "response": [
+    {
+      "GA": "LO"
+    },
+    {
+      "LO": "PI"
+    },
+    {
+      "PI": "GA"
+    }
+  ],
+  "correctMatches": 0,
+  "totalMatches": 3,
+  "isCorrect": false,
+  "responseTime": 25.1,
+  "answeredAt": {
+    "$date": "2025-09-29T09:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:04:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff08"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_008",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "P",
+    "L",
+    "A",
+    "A",
+    "K",
+    "A"
+  ],
+  "isCorrect": false,
+  "responseTime": 11.2,
+  "answeredAt": {
+    "$date": "2025-09-29T12:07:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:07:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff11"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_011",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "U"
+  ],
+  "isCorrect": true,
+  "responseTime": 4.9,
+  "answeredAt": {
+    "$date": "2025-09-29T12:10:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:10:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_002",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "A",
+    "R",
+    "W",
+    "A"
+  ],
+  "isCorrect": false,
+  "responseTime": 7.2,
+  "answeredAt": {
+    "$date": "2025-09-29T12:01:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:01:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff07"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_007",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "R",
+    "O",
+    "S",
+    "A",
+    "S"
+  ],
+  "isCorrect": true,
+  "responseTime": 10.4,
+  "answeredAt": {
+    "$date": "2025-09-29T12:06:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:06:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff10"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_010",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "A"
+  ],
+  "isCorrect": false,
+  "responseTime": 5.8,
+  "answeredAt": {
+    "$date": "2025-09-29T12:09:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:09:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff13"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_013",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "W"
+  ],
+  "isCorrect": false,
+  "responseTime": 6.8,
+  "answeredAt": {
+    "$date": "2025-09-29T12:12:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:12:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff09"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_009",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "T"
+  ],
+  "isCorrect": true,
+  "responseTime": 6.5,
+  "answeredAt": {
+    "$date": "2025-09-29T12:08:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:08:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff12"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_012",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "B"
+  ],
+  "isCorrect": false,
+  "responseTime": 7.1,
+  "answeredAt": {
+    "$date": "2025-09-29T12:11:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:11:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_003",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "N",
+    "G",
+    "I",
+    "P",
+    "I",
+    "N"
+  ],
+  "isCorrect": true,
+  "responseTime": 12.1,
+  "answeredAt": {
+    "$date": "2025-09-29T12:02:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:02:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff14"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_014",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "M"
+  ],
+  "isCorrect": false,
+  "responseTime": 8.2,
+  "answeredAt": {
+    "$date": "2025-09-29T12:13:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:13:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff15"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_015",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "H"
+  ],
+  "isCorrect": false,
+  "responseTime": 9.5,
+  "answeredAt": {
+    "$date": "2025-09-29T12:14:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:14:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_004",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "E",
+    "R",
+    "P",
+    "L",
+    "A",
+    "N",
+    "O"
+  ],
+  "isCorrect": false,
+  "responseTime": 15.8,
+  "answeredAt": {
+    "$date": "2025-09-29T12:03:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:03:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_006",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "K",
+    "M",
+    "A",
+    "A",
+    "Y"
+  ],
+  "isCorrect": false,
+  "responseTime": 8.7,
+  "answeredAt": {
+    "$date": "2025-09-29T12:05:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:05:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_001",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "Y",
+    "E",
+    "L",
+    "O"
+  ],
+  "isCorrect": true,
+  "responseTime": 8.5,
+  "answeredAt": {
+    "$date": "2025-09-29T12:00:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b38ff05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bcf37ce32d5718169f6ea0"
+  },
+  "questionId": "DC_005",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "response": [
+    "B",
+    "A",
+    "H",
+    "A",
+    "Y"
+  ],
+  "isCorrect": true,
+  "responseTime": 9.3,
+  "answeredAt": {
+    "$date": "2025-09-29T12:04:00.000Z"
+  },
+  "readingLevel": "At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T12:04:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff05"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_005",
+  "category": "Word Recognition",
+  "response": [
+    "Manok"
+  ],
+  "isCorrect": true,
+  "responseTime": 10.4,
+  "answeredAt": {
+    "$date": "2025-09-29T15:04:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:04:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff11"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_011",
+  "category": "Word Recognition",
+  "response": [
+    "LUNGAN"
+  ],
+  "isCorrect": false,
+  "responseTime": 20.1,
+  "answeredAt": {
+    "$date": "2025-09-29T15:10:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:10:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff02"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_002",
+  "category": "Word Recognition",
+  "response": [
+    "Elepante"
+  ],
+  "isCorrect": true,
+  "responseTime": 15.7,
+  "answeredAt": {
+    "$date": "2025-09-29T15:01:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:01:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff07"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_007",
+  "category": "Word Recognition",
+  "response": [
+    "Damit"
+  ],
+  "isCorrect": true,
+  "responseTime": 12.9,
+  "answeredAt": {
+    "$date": "2025-09-29T15:06:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:06:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff12"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_012",
+  "category": "Word Recognition",
+  "response": [
+    "UPO"
+  ],
+  "isCorrect": false,
+  "responseTime": 17.4,
+  "answeredAt": {
+    "$date": "2025-09-29T15:11:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:11:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff03"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_003",
+  "category": "Word Recognition",
+  "response": [
+    "Nanay"
+  ],
+  "isCorrect": true,
+  "responseTime": 11.8,
+  "answeredAt": {
+    "$date": "2025-09-29T15:02:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:02:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff04"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_004",
+  "category": "Word Recognition",
+  "response": [
+    "Lamesa"
+  ],
+  "isCorrect": true,
+  "responseTime": 13.2,
+  "answeredAt": {
+    "$date": "2025-09-29T15:03:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:03:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff15"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_015",
+  "category": "Word Recognition",
+  "response": [
+    "Mena"
+  ],
+  "isCorrect": false,
+  "responseTime": 16.9,
+  "answeredAt": {
+    "$date": "2025-09-29T15:14:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:14:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff08"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_008",
+  "category": "Word Recognition",
+  "response": [
+    "Papel"
+  ],
+  "isCorrect": true,
+  "responseTime": 11.5,
+  "answeredAt": {
+    "$date": "2025-09-29T15:07:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:07:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff06"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_006",
+  "category": "Word Recognition",
+  "response": [
+    "Kutsara"
+  ],
+  "isCorrect": true,
+  "responseTime": 14.6,
+  "answeredAt": {
+    "$date": "2025-09-29T15:05:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:05:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff09"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_009",
+  "category": "Word Recognition",
+  "response": [
+    "MESA"
+  ],
+  "isCorrect": false,
+  "responseTime": 18.7,
+  "answeredAt": {
+    "$date": "2025-09-29T15:08:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:08:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff01"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_001",
+  "category": "Word Recognition",
+  "response": [
+    "Bola"
+  ],
+  "isCorrect": true,
+  "responseTime": 12.3,
+  "answeredAt": {
+    "$date": "2025-09-29T15:00:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:00:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff10"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_010",
+  "category": "Word Recognition",
+  "response": [
+    "MESA"
+  ],
+  "isCorrect": false,
+  "responseTime": 16.3,
+  "answeredAt": {
+    "$date": "2025-09-29T15:09:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:09:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff13"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_013",
+  "category": "Word Recognition",
+  "response": [
+    "YASA"
+  ],
+  "isCorrect": false,
+  "responseTime": 15.8,
+  "answeredAt": {
+    "$date": "2025-09-29T15:12:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:12:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b40ff14"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "69bba9b3e4c854c11d63162f"
+  },
+  "questionId": "WR_014",
+  "category": "Word Recognition",
+  "response": [
+    "ROSAS"
+  ],
+  "isCorrect": false,
+  "responseTime": 19.2,
+  "answeredAt": {
+    "$date": "2025-09-29T15:13:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T15:13:00.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf44"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_005",
+  "category": "Reading Comprehension",
+  "response": [
+    "Juan",
+    "Parke",
+    "Bola"
+  ],
+  "isCorrect": false,
+  "responseTime": 65.8,
+  "answeredAt": {
+    "$date": "2025-09-29T09:20:50.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:20:50.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf45"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_006",
+  "category": "Reading Comprehension",
+  "response": [
+    "Saging"
+  ],
+  "isCorrect": false,
+  "responseTime": 28.4,
+  "answeredAt": {
+    "$date": "2025-09-29T09:22:05.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:22:05.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf41"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_002",
+  "category": "Reading Comprehension",
+  "response": [
+    "Ana",
+    "Tindahan",
+    "Saging"
+  ],
+  "isCorrect": false,
+  "responseTime": 71.2,
+  "answeredAt": {
+    "$date": "2025-09-29T09:16:45.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:16:45.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf42"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_003",
+  "category": "Reading Comprehension",
+  "response": [
+    "Tatay",
+    "Kusina",
+    "Gulay"
+  ],
+  "isCorrect": false,
+  "responseTime": 74.5,
+  "answeredAt": {
+    "$date": "2025-09-29T09:18:20.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:18:20.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf47"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_008",
+  "category": "Reading Comprehension",
+  "response": [
+    "Bahay"
+  ],
+  "isCorrect": false,
+  "responseTime": 19.7,
+  "answeredAt": {
+    "$date": "2025-09-29T09:24:35.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:24:35.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf48"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_009",
+  "category": "Reading Comprehension",
+  "response": [
+    "Sinigang"
+  ],
+  "isCorrect": false,
+  "responseTime": 25.3,
+  "answeredAt": {
+    "$date": "2025-09-29T09:25:50.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:25:50.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf46"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_007",
+  "category": "Reading Comprehension",
+  "response": [
+    "Sapatos"
+  ],
+  "isCorrect": false,
+  "responseTime": 22.1,
+  "answeredAt": {
+    "$date": "2025-09-29T09:23:20.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:23:20.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf49"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_010",
+  "category": "Reading Comprehension",
+  "response": [
+    "Tumakbo"
+  ],
+  "isCorrect": false,
+  "responseTime": 31.8,
+  "answeredAt": {
+    "$date": "2025-09-29T09:27:05.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:27:05.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf40"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_001",
+  "category": "Reading Comprehension",
+  "response": [
+    "Max",
+    "Bahay",
+    "Tumakbo"
+  ],
+  "isCorrect": false,
+  "responseTime": 45.2,
+  "answeredAt": {
+    "$date": "2025-09-29T09:15:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:15:30.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf43"
+  },
+  "studentId": 202533333,
+  "categoryId": {
+    "$oid": "68be35c466224f27838e0a42"
+  },
+  "questionId": "RC_004",
+  "category": "Reading Comprehension",
+  "response": [
+    "Maria",
+    "Bahay",
+    "Tumakbo"
+  ],
+  "isCorrect": false,
+  "responseTime": 82.3,
+  "answeredAt": {
+    "$date": "2025-09-29T09:19:35.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T09:19:35.000Z"
+  },
+  "readingLevel": "At Grade Level"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf70"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_001",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 8.5,
+  "answeredAt": {
+    "$date": "2025-09-29T11:15:30.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:15:30.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf72"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_003",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 15.7,
+  "answeredAt": {
+    "$date": "2025-09-29T11:18:20.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:18:20.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf71"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_002",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 12.3,
+  "answeredAt": {
+    "$date": "2025-09-29T11:16:45.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:16:45.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf73"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_004",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 18.2,
+  "answeredAt": {
+    "$date": "2025-09-29T11:19:35.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:19:35.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf74"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_005",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 14.8,
+  "answeredAt": {
+    "$date": "2025-09-29T11:20:50.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:20:50.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf83"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_014",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 36.5,
+  "answeredAt": {
+    "$date": "2025-09-29T11:32:05.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:32:05.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf75"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_006",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 16.4,
+  "answeredAt": {
+    "$date": "2025-09-29T11:22:05.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:22:05.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf76"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_007",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "3"
+  ],
+  "isCorrect": false,
+  "responseTime": 20.1,
+  "answeredAt": {
+    "$date": "2025-09-29T11:23:20.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:23:20.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf80"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_011",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 28.4,
+  "answeredAt": {
+    "$date": "2025-09-29T11:28:20.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:28:20.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf82"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_013",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 33.8,
+  "answeredAt": {
+    "$date": "2025-09-29T11:30:50.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:30:50.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf84"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_015",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 39.1,
+  "answeredAt": {
+    "$date": "2025-09-29T11:33:20.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:33:20.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf77"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_008",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 22.7,
+  "answeredAt": {
+    "$date": "2025-09-29T11:24:35.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:24:35.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf78"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_009",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": true,
+  "responseTime": 19.3,
+  "answeredAt": {
+    "$date": "2025-09-29T11:25:50.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:25:50.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf79"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_010",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "2"
+  ],
+  "isCorrect": false,
+  "responseTime": 25.6,
+  "answeredAt": {
+    "$date": "2025-09-29T11:27:05.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:27:05.000Z"
+  },
+  "readingLevel": "Low Emerging"
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b30bf81"
+  },
+  "studentId": 202522233,
+  "categoryId": {
+    "$oid": "68bcbfaae32d5718169f6bc6"
+  },
+  "questionId": "AK_012",
+  "category": "Alphabet Knowledge",
+  "response": [
+    "1"
+  ],
+  "isCorrect": false,
+  "responseTime": 31.2,
+  "answeredAt": {
+    "$date": "2025-09-29T11:29:35.000Z"
+  },
+  "createdAt": {
+    "$date": "2025-09-29T11:29:35.000Z"
+  },
+  "readingLevel": "Low Emerging"
 }]

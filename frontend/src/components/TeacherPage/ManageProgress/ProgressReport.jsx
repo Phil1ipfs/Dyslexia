@@ -1073,7 +1073,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       <div className="student-progress-info">
         <FaInfoCircle className="student-progress-info-icon" />
         <div className="student-progress-info-text">
-          <h3>Post Assessment Progress Report</h3>
+          <h3>Post Assessment Progress</h3>
           <p>
             This report shows the student's progress based on their assessment
             completed on <strong>{assessmentDate}</strong>. Current reading level: <strong>{readingLevel}</strong>.
@@ -1559,32 +1559,53 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                                           </div>
                                           
                                           <div className="student-progress-word-answer">
-                                            <div className="student-progress-word-section">
-                                              <h5>Student's Answer:</h5>
-                                              <div className="student-progress-word-response">
-                                                {Array.isArray(question.response) ? 
-                                                  question.response.map((part, idx) => (
-                                                    <span key={idx} className={`student-progress-word-part ${question.isCorrect ? 'correct' : 'incorrect'}`}>
+                                              <div className="student-progress-word-section">
+                                                <h5>Student's Answer:</h5>
+                                                <div className="student-progress-word-response">
+                                                  {Array.isArray(question.response) ? 
+                                                    question.response.map((part, idx) => (
+                                                      <span key={idx} className={`student-progress-word-part ${question.isCorrect ? 'correct' : 'incorrect'}`} style={{ 
+                                                        color: question.isCorrect ? '#28a745' : '#dc3545', 
+                                                        fontWeight: 'bold',
+                                                        backgroundColor: question.isCorrect ? '#d4edda' : '#f8d7da',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        border: question.isCorrect ? '1px solid #c3e6cb' : '1px solid #f5c6cb'
+                                                      }}>
+                                                        {part}
+                                                      </span>
+                                                    )) : 
+                                                    <span className={`student-progress-word-part ${question.isCorrect ? 'correct' : 'incorrect'}`} style={{ 
+                                                      color: question.isCorrect ? '#28a745' : '#dc3545', 
+                                                      fontWeight: 'bold',
+                                                      backgroundColor: question.isCorrect ? '#d4edda' : '#f8d7da',
+                                                      padding: '4px 8px',
+                                                      borderRadius: '4px',
+                                                      border: question.isCorrect ? '1px solid #c3e6cb' : '1px solid #f5c6cb'
+                                                    }}>
+                                                      {question.response || 'No response'}
+                                                    </span>
+                                                  }
+                                                </div>
+                                              </div>
+                                              
+                                              <div className="student-progress-word-section">
+                                                <h5>Correct Answer:</h5>
+                                                <div className="student-progress-word-correct">
+                                                  {question.questionDetails.correctAnswer?.map((part, idx) => (
+                                                    <span key={idx} className="student-progress-word-part correct" style={{ 
+                                                      color: '#28a745', 
+                                                      fontWeight: 'bold',
+                                                      backgroundColor: '#d4edda',
+                                                      padding: '4px 8px',
+                                                      borderRadius: '4px',
+                                                      border: '1px solid #c3e6cb'
+                                                    }}>
                                                       {part}
                                                     </span>
-                                                  )) : 
-                                                  <span className={`student-progress-word-part ${question.isCorrect ? 'correct' : 'incorrect'}`}>
-                                                    {question.response || 'No response'}
-                                                  </span>
-                                                }
+                                                  ))}
+                                                </div>
                                               </div>
-                                            </div>
-                                            
-                                            <div className="student-progress-word-section">
-                                              <h5>Correct Answer:</h5>
-                                              <div className="student-progress-word-correct">
-                                                {question.questionDetails.correctAnswer?.map((part, idx) => (
-                                                  <span key={idx} className="student-progress-word-part correct">
-                                                    {part}
-                                                  </span>
-                                                ))}
-                                              </div>
-                                            </div>
                                           </div>
                                         </div>
                                       )}

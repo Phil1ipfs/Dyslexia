@@ -210,6 +210,77 @@ const extractCorrectAnswerForCategory = (question, category) => {
 };
 
 /**
+ * Extract student answer text from response data for different categories
+ * @param {string|object|array} response - The student's response data
+ * @param {object} question - The question object containing choiceOptions, etc.
+ * @param {string} category - The category name
+ * @returns {string} - The formatted student answer text
+ */
+const extractStudentAnswerForCategory = (response, question, category) => {
+  console.log('[STUDENT EXTRACT] Category:', category, 'Response:', response, 'Question:', question);
+
+  if (!response) return 'No response';
+
+  switch (category) {
+    case 'Alphabet Knowledge':
+      // For Alphabet Knowledge, response is an option number (1, 2, 3)
+      // We need to find the corresponding option text from choiceOptions
+      if (question?.choiceOptions && Array.isArray(question.choiceOptions)) {
+        const optionNumber = String(response);
+        const selectedOption = question.choiceOptions.find(option => option.optionId === optionNumber);
+        if (selectedOption) {
+          return selectedOption.optionText;
+        }
+        console.warn('[STUDENT EXTRACT] Option not found for number:', optionNumber, 'Available options:', question.choiceOptions);
+      }
+      // Fallback: return the raw response if no choiceOptions found
+      return String(response);
+
+    case 'Phonological Awareness':
+      // Handle audio-visual pairs format
+      if (typeof response === 'object' && Array.isArray(response)) {
+        return response.map(item => {
+          if (typeof item === 'object' && item.audio && item.match) {
+            return `${item.audio} → ${item.match}`;
+          } else if (typeof item === 'object' && item.audio && item.visual) {
+            return `${item.audio} → ${item.visual}`;
+          } else if (typeof item === 'object') {
+            const keys = Object.keys(item);
+            if (keys.length === 2) {
+              return `${keys[0]} → ${item[keys[0]]}`;
+            }
+            return JSON.stringify(item);
+          }
+          return String(item);
+        }).join(', ');
+      } else if (typeof response === 'object' && response.audio && response.match) {
+        return `${response.audio} → ${response.match}`;
+      } else if (typeof response === 'object' && response.audio && response.visual) {
+        return `${response.audio} → ${response.visual}`;
+      } else if (typeof response === 'object') {
+        return JSON.stringify(response);
+      }
+      return String(response);
+
+    case 'Decoding':
+    case 'Word Recognition':
+    case 'Reading Comprehension':
+      // For these categories, response is usually already in text format
+      if (typeof response === 'object') {
+        return JSON.stringify(response);
+      }
+      return String(response);
+
+    default:
+      console.warn('[STUDENT EXTRACT] Unknown category:', category);
+      if (typeof response === 'object') {
+        return JSON.stringify(response);
+      }
+      return String(response);
+  }
+};
+
+/**
  * Simple error boundary component to catch and display errors
  * from the PrescriptiveAnalysis component
  */
@@ -6347,6 +6418,24 @@ const PrescriptiveAnalysis = ({
                                   <span className="intervention-response-answer-label">Student Answer</span>
                                   <span className={`intervention-response-answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
                                     {(() => {
+                                      // Find the corresponding question in the intervention assessment
+                                      if (selectedInterventionData?.interventionAssessment?.questions) {
+                                        const question = selectedInterventionData.interventionAssessment.questions.find(
+                                          q => q.questionId === response.questionId
+                                        );
+
+                                        console.log('🔍 [STUDENT ANSWER] Found question for', response.questionId, ':', question);
+
+                                        if (question) {
+                                          // Use the new extractStudentAnswerForCategory function
+                                          return extractStudentAnswerForCategory(response.response, question, selectedInterventionData.category);
+                                        }
+
+                                        console.log('🔍 [STUDENT ANSWER] Question not found');
+                                      }
+
+                                      console.log('🔍 [STUDENT ANSWER] No intervention assessment or questions found, using fallback');
+                                      // Fallback to original logic if no intervention assessment data
                                       if (!response.response) return 'No response';
 
                                       // Handle Phonological Awareness audio-visual pairs

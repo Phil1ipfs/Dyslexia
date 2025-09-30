@@ -1,21 +1,18 @@
 // server.js - Main Express application
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-// const https = require('https'); // Disabled - using HTTP only
-const http = require('http');
 require('dotenv').config();
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const s3Client = require('./config/s3');
-const { generalLimiter, authLimiter, uploadLimiter, passwordChangeLimiter } = require('./middleware/rateLimiter');
-const { sessionMiddleware } = require('./middleware/sessionManager');
-const { secureErrorHandler } = require('./middleware/secureErrorHandler');
-const { checkAPIKeyExposure, validateEnvironmentSetup } = require('./middleware/apiKeyValidation');
+const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// Create HTTP server for WebSocket integration
+const server = http.createServer(app);
 
 // Check for AWS environment variables
 if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_REGION) {
@@ -58,66 +55,6 @@ const requestLogger = (req, res, next) => {
   next();
 };
 
-// Apply security headers first
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: [
-        "'self'",
-        "'sha256-HASH'", // Only allow specific inline styles with known hashes
-        "https://fonts.googleapis.com",
-        "https://cdnjs.cloudflare.com"
-      ],
-      styleSrcElem: [
-        "'self'",
-        "https://fonts.googleapis.com",
-        "https://cdnjs.cloudflare.com"
-      ],
-      styleSrcAttr: "'none'", // Block all inline style attributes to prevent CSS injection
-      scriptSrc: [
-        "'self'",
-        "'unsafe-eval'", // Required for development and React
-        "https://cdnjs.cloudflare.com"
-      ],
-      fontSrc: [
-        "'self'",
-        "https://fonts.gstatic.com",
-        "https://cdnjs.cloudflare.com"
-      ],
-      imgSrc: [
-        "'self'",
-        "data:",
-        "blob:",
-        "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com",
-        "https://*.amazonaws.com"
-      ],
-      connectSrc: [
-        "'self'",
-        "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com",
-        "https://*.amazonaws.com"
-      ],
-      mediaSrc: [
-        "'self'",
-        "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com",
-        "https://*.amazonaws.com"
-      ],
-      objectSrc: ["'none'"],
-      frameSrc: ["'none'"],
-      upgradeInsecureRequests: []
-    }
-  },
-  hsts: {
-    maxAge: 31536000, // 1 year
-    includeSubDomains: true,
-    preload: true
-  },
-  frameguard: { action: 'deny' }, // Prevent clickjacking
-  noSniff: true, // Prevent MIME type sniffing
-  xssFilter: true, // Enable XSS filtering
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
-}));
-
 // Apply middlewares
 app.use(cors({
   origin: function(origin, callback) {
@@ -126,8 +63,6 @@ app.use(cors({
       'http://localhost:5174',
       'http://192.168.56.1:5173',
       'http://192.168.1.4:5173',
-      'https://literexia.com',
-      'https://rain.d1et9fk8q5ajyl.amplifyapp.com',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -150,8 +85,6 @@ app.options('*', cors({
       'http://localhost:5174',
       'http://192.168.56.1:5173',
       'http://192.168.1.4:5173',
-      'https://literexia.com',
-      'https://rain.d1et9fk8q5ajyl.amplifyapp.com',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -166,32 +99,43 @@ app.options('*', cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With']
 }));
 
-// Apply general rate limiting to all routes
-app.use(generalLimiter);
-
-// Apply session management middleware
-app.use(sessionMiddleware);
-
 // Increase body parser limits for larger file uploads
-app.use(express.json({ limit: '10mb' })); // Reduced from 50mb for security
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Reduced from 50mb for security
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Add global request sanitization middleware
-const { sanitizeRequest } = require('./middleware/validationMiddleware');
-app.use(sanitizeRequest);
+// OWASP Security Headers and Rate Limiting
+const { apiLimiter, securityHeaders } = require('./middleware/rateLimiter');
 
-// Add security monitoring middleware
-const { securityMonitoringMiddleware, securityErrorHandler } = require('./middleware/securityMonitoring');
-app.use(securityMonitoringMiddleware);
+// Production Security and AWS EC2 Optimization
+const {
+  createProductionSecurityConfig,
+  setupCloudWatchLogging,
+  createHealthCheckEndpoint,
+  setupPerformanceMonitoring,
+  setupAutoScalingMetrics,
+  optimizeProcess
+} = require('./middleware/productionSecurity');
 
-// Add CSS injection protection middleware
-const { cssInjectionProtectionMiddleware, sanitizeCSSInRequest } = require('./middleware/cssInjectionProtection');
-app.use(cssInjectionProtectionMiddleware);
-app.use(sanitizeCSSInRequest);
+// Apply production optimizations
+if (process.env.NODE_ENV === 'production') {
+  console.log('[AWS EC2] Applying production security and optimization...');
+  setupCloudWatchLogging();
+  setupPerformanceMonitoring();
+  optimizeProcess();
 
-// Add API key validation and environment setup middleware
-app.use(validateEnvironmentSetup);
-app.use(checkAPIKeyExposure);
+  const prodConfig = createProductionSecurityConfig();
+  app.use(prodConfig.helmet);
+  app.use(prodConfig.compression);
+  app.set('trust proxy', prodConfig.trustProxy);
+} else {
+  app.use(securityHeaders);
+}
+
+app.use('/api/', apiLimiter); // Apply general API rate limiting
+
+// Add auto-scaling metrics middleware
+const metricsMiddleware = setupAutoScalingMetrics(app);
+app.use(metricsMiddleware);
 
 app.use(requestLogger);
 
@@ -209,19 +153,19 @@ const connectDB = async () => {
   try {
     console.log('Attempting to connect to MongoDB...');
     
-    // FIRST connect to the database - require MONGO_URI for security
-    const mongoUri = process.env.MONGO_URI;
+    // FIRST connect to the database with AWS EC2 optimizations
+    const mongoOptions = process.env.NODE_ENV === 'production'
+      ? require('./middleware/productionSecurity').optimizeMongoConnection()
+      : {
+          dbName: 'test',
+          connectTimeoutMS: 30000,
+          socketTimeoutMS: 45000,
+          serverSelectionTimeoutMS: 60000
+        };
 
-    if (!mongoUri) {
-      console.error('MONGO_URI environment variable is required');
-      throw new Error('Database configuration missing');
-    }
-
-    await mongoose.connect(mongoUri, {
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017', {
       dbName: 'test',
-      connectTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      serverSelectionTimeoutMS: 60000
+      ...mongoOptions
     });
 
     console.log('✅ MongoDB Connected to test database');
@@ -349,16 +293,10 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const secretKey = process.env.JWT_SECRET;
-
-    if (!secretKey) {
-      console.error('JWT_SECRET environment variable is required');
-      return res.status(500).json({ error: 'Server configuration error' });
-    }
-
+    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
     const decoded = jwt.verify(token, secretKey);
     req.user = decoded;
-    console.log('Authenticated user ID:', req.user.id, 'User roles:', req.user.roles);
+    console.log('Authenticated user:', req.user.email, 'User roles:', req.user.roles);
     next();
   } catch (error) {
     console.error('Token verification failed:', error.message);
@@ -432,11 +370,6 @@ connectDB().then(async (connected) => {
     const authRouter = require('./routes/auth/authRoutes');
     app.use('/api/auth', authRouter);
     console.log('✅ Auth routes registered at /api/auth/*');
-
-    // Register security monitoring routes
-    const securityRoutes = require('./routes/securityRoutes');
-    app.use('/api/security', securityRoutes);
-    console.log('✅ Security monitoring routes registered at /api/security/*');
 
     // Register admin routes
     const teacherRoutes = require('./routes/Admin/teacherRoutes');
@@ -621,6 +554,14 @@ connectDB().then(async (connected) => {
       console.log('✅ Loaded intervention results routes at /api/intervention-results/*');
     } catch (error) {
       console.warn('⚠️ Could not load intervention results routes:', error.message);
+    }
+
+    // Load notification routes
+    try {
+      app.use('/api/notifications', require('./routes/notifications'));
+      console.log('✅ Loaded notification routes at /api/notifications/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load notification routes:', error.message);
     }
 
     // Load dashboard routes
@@ -832,17 +773,6 @@ connectDB().then(async (connected) => {
         message: 'Protected route accessed successfully',
         user: req.user
       });
-    });
-
-    // Security report endpoint (admin only)
-    const { getSecurityReport } = require('./middleware/apiKeyValidation');
-    app.get('/api/security/report', authenticateToken, (req, res) => {
-      // In production, this should be restricted to admin users only
-      if (process.env.NODE_ENV === 'production' && req.user.roles !== 'admin') {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
-      getSecurityReport(req, res);
     });
 
     // Test password verification route
@@ -1211,7 +1141,7 @@ connectDB().then(async (connected) => {
     // Load upload routes
     try {
       const uploadRoutes = require('./routes/uploadRoutes');
-      app.use('/api/uploads', uploadLimiter, uploadRoutes);
+      app.use('/api/uploads', uploadRoutes);
       console.log('✅ Loaded upload routes at /api/uploads/*');
 
     } catch (error) {
@@ -1238,6 +1168,51 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load data migration routes:', error.message);
     }
 
+    // Load mobile-optimized category results routes
+    try {
+      const categoryResultsMobileRoutes = require('./routes/mobile/categoryResultsMobileRoutes');
+      app.use('/api/mobile/category-results', categoryResultsMobileRoutes);
+      console.log('✅ Loaded mobile-optimized category results routes at /api/mobile/category-results/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load mobile category results routes:', error.message);
+    }
+
+    // Load mobile-optimized student response routes
+    try {
+      const studentResponseMobileRoutes = require('./routes/mobile/studentResponseMobileRoutes');
+      app.use('/api/mobile/student-responses', studentResponseMobileRoutes);
+      console.log('✅ Loaded mobile-optimized student response routes at /api/mobile/student-responses/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load mobile student response routes:', error.message);
+    }
+
+    // Load comprehensive optimization routes
+    try {
+      const comprehensiveOptimizationRoutes = require('./routes/mobile/comprehensiveOptimizationRoutes');
+      app.use('/api/mobile/comprehensive', comprehensiveOptimizationRoutes);
+      console.log('✅ Loaded comprehensive optimization routes at /api/mobile/comprehensive/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load comprehensive optimization routes:', error.message);
+    }
+
+    // Load intervention results mobile routes
+    try {
+      const interventionResultsMobileRoutes = require('./routes/mobile/interventionResultsMobileRoutes');
+      app.use('/api/mobile/intervention-results', interventionResultsMobileRoutes);
+      console.log('✅ Loaded intervention results mobile routes at /api/mobile/intervention-results/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load intervention results mobile routes:', error.message);
+    }
+
+    // Initialize WebSocket service for real-time updates
+    try {
+      const WebSocketService = require('./services/mobile/WebSocketService');
+      WebSocketService.initialize(server);
+      console.log('✅ WebSocket service initialized for real-time mobile updates');
+    } catch (error) {
+      console.warn('⚠️ Could not initialize WebSocket service:', error.message);
+    }
+
 
     // 404 handler
     app.use((req, res) => {
@@ -1258,20 +1233,20 @@ connectDB().then(async (connected) => {
   }
 });
 
-// Add security error handler (must be after routes)
-app.use(securityErrorHandler);
+// Setup health checks for AWS Load Balancer
+createHealthCheckEndpoint(app);
 
-// Global secure error handler (replaces old insecure error handler)
-app.use(secureErrorHandler);
-
-// HTTPS disabled - using HTTP only on PORT from .env
-const httpServer = http.createServer(app);
-
-// Start HTTP server on PORT from .env (5001)
-httpServer.listen(PORT, async () => {
-  console.log(`\n✅ HTTP Server is running on port ${PORT}`);
+// Start the server with WebSocket support
+server.listen(PORT, async () => {
+  console.log(`\n✅ Server is running on port ${PORT} - Data Integrity Fixes Applied`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log(`API URL: http://18.139.217.179:${PORT}`);
+  console.log(`API URL: http://localhost:${PORT}`);
+
+  if (process.env.NODE_ENV === 'production') {
+    console.log('[AWS EC2] Production optimizations active');
+    console.log(`[AWS EC2] Health check: http://localhost:${PORT}/health`);
+    console.log(`[AWS EC2] Metrics endpoint: http://localhost:${PORT}/metrics`);
+  }
 
   // Auto-fix existing data inconsistencies
   try {
@@ -1281,6 +1256,49 @@ httpServer.listen(PORT, async () => {
     console.log('✅ Automatic data consistency fix completed');
   } catch (error) {
     console.warn('⚠️ Could not run automatic data fix:', error.message);
+  }
+
+  // 🚀 INITIALIZE ULTRA-FAST SCORING SYSTEM
+  try {
+    const PerformanceInitializationService = require('./services/PerformanceInitializationService');
+    console.log('🚀 Initializing ultra-fast scoring system...');
+    const initResult = await PerformanceInitializationService.initializeUltraFastScoring();
+
+    if (initResult.success) {
+      console.log('⚡ Ultra-fast scoring system initialized:');
+      console.log(`   📊 Expected response time: ${initResult.performance.expectedResponseTime}`);
+      console.log(`   🔄 Trigger delay: ${initResult.performance.triggerDelay}`);
+      console.log(`   📈 Batch processing: ${initResult.performance.batchProcessing}`);
+
+      // Health check
+      const healthCheck = await PerformanceInitializationService.healthCheck();
+      if (healthCheck.status === 'healthy') {
+        console.log('✅ Performance system health: OPTIMAL');
+      } else {
+        console.warn('⚠️ Performance system health: DEGRADED -', healthCheck.error);
+      }
+    } else {
+      console.warn('⚠️ Ultra-fast scoring initialization warning:', initResult.error);
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not initialize ultra-fast scoring:', error.message);
+  }
+
+  // 📡 INITIALIZE REAL-TIME WEBSOCKET NOTIFICATIONS
+  try {
+    const NotificationService = require('./services/NotificationService');
+    console.log('📡 Initializing real-time WebSocket notifications...');
+    const wsResult = NotificationService.initialize(server);
+
+    if (wsResult.success) {
+      console.log('✅ WebSocket notification service initialized');
+      console.log('   📡 WebSocket endpoint: ws://localhost:' + PORT + '/notifications');
+      console.log('   🔔 Real-time notifications: ENABLED');
+    } else {
+      console.warn('⚠️ WebSocket initialization warning:', wsResult.error);
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not initialize WebSocket notifications:', error.message);
   }
 
   // ❌ DISABLED: Run complete automatic progression validation

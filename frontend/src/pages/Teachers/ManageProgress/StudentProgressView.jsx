@@ -671,7 +671,7 @@ const StudentProgressView = () => {
         {activeTab === 'progress' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
-              <h2>Post Assessment Progress Report</h2>
+              <h2>Post Assessment Progress</h2>
             </div>
             <div className="literexia-panel-content">
               {(() => {

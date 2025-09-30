@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { 
   Search, Filter, ChevronDown, PieChart, BarChart2, 
   Book, Award, Layers, CheckCircle, AlertTriangle,
-  User, UserPlus
+  User, UserPlus, Eye
 } from 'lucide-react';
 import axios from 'axios'; // Import axios
+import UserResponsesModal from '../../components/Admin/UserResponsesModal';
 import { API_BASE_URL } from '../../config/apiConfig';
 
 import '../../css/Admin/AssessmentResults/StudentAssessmentsList.css';
@@ -20,6 +21,8 @@ const StudentAssessmentsList = () => {
   const [filterSection, setFilterSection] = useState('all');
   const [sortBy, setSortBy] = useState('name-asc');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showResponsesModal, setShowResponsesModal] = useState(false);
 
   // Fetch students data
   useEffect(() => {
@@ -150,6 +153,18 @@ const StudentAssessmentsList = () => {
   // Toggle filters visibility
   const toggleFilters = () => {
     setShowFilters(prev => !prev);
+  };
+
+  // Handle view responses
+  const handleViewResponses = (student) => {
+    setSelectedStudent(student);
+    setShowResponsesModal(true);
+  };
+
+  // Handle close modal
+  const handleCloseModal = () => {
+    setShowResponsesModal(false);
+    setSelectedStudent(null);
   };
 
   return (
@@ -322,6 +337,23 @@ const StudentAssessmentsList = () => {
                   )}
                   <span className="student-assessments__score-label">Pre Assessment Score</span>
                 </div>
+                
+                {/* Action Buttons */}
+                <div className="student-assessments__actions">
+                  {student.readingPercentage != null ? (
+                    <button 
+                      className="student-assessments__view-responses-btn"
+                      onClick={() => handleViewResponses(student)}
+                    >
+                      <Eye size={16} />
+                      View Responses
+                    </button>
+                  ) : (
+                    <span className="student-assessments__no-responses">
+                      No responses available
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -333,6 +365,13 @@ const StudentAssessmentsList = () => {
           <p>No pre-assessment results match your current filters. Try adjusting your search criteria.</p>
         </div>
       )}
+
+      {/* User Responses Modal */}
+      <UserResponsesModal
+        isOpen={showResponsesModal}
+        onClose={handleCloseModal}
+        student={selectedStudent}
+      />
     </div>
   );
 };

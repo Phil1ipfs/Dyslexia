@@ -4,6 +4,9 @@ import { Search, Filter, Plus, Edit, Trash2, Eye, UserSquare2, BookOpen, Clock, 
 import axios from 'axios';
 import { API_BASE_URL } from '../../config/apiConfig';
 import Select from 'react-select';
+import authService from '../../services/authService';
+import adminValidation from '../../utils/adminValidation';
+import { InlineValidation, FormValidationSummary } from '../../components/Admin/ValidationErrorDisplay';
 import './ParentsPage.css';
 
 // Success Modal Component
@@ -47,17 +50,38 @@ const CredentialsModal = ({ credentials, onClose }) => {
     try {
       setIsSending(true);
       setSendStatus(null);
-      const response = await axios.post(`${API_BASE_URL}/admin/send-credentials`, {
+
+      // Get current admin user from authService
+      const currentUser = authService.getCurrentUser();
+
+      // Extract admin information from auth service
+      const adminEmail = currentUser?.user?.email || currentUser?.email || 'admin@literexia.com';
+      const adminName = currentUser?.user?.name ||
+                       (currentUser?.user?.firstName && currentUser?.user?.lastName ?
+                        `${currentUser.user.firstName} ${currentUser.user.lastName}` :
+                        'Literexia Admin');
+
+      console.log('Sending credentials with admin info:', {
+        adminEmail,
+        adminName,
+        recipientEmail: credentials.email
+      });
+
+      const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
         email: credentials.email,
         password: credentials.password,
-        userType: 'parent'
+        userType: 'parent',
+        adminEmail: adminEmail,
+        adminName: adminName
       });
+
       if (response.data.success) {
         setSendStatus({ type: 'success', message: 'Credentials sent successfully!' });
       } else {
         setSendStatus({ type: 'error', message: 'Failed to send credentials.' });
       }
     } catch (error) {
+      console.error('Error sending credentials:', error);
       setSendStatus({ type: 'error', message: error.response?.data?.message || 'Failed to send credentials.' });
     } finally {
       setIsSending(false);
@@ -139,7 +163,9 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
+  const [validationResults, setValidationResults] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [students, setStudents] = useState([]);
   const totalSteps = 3;
 
@@ -184,29 +210,133 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
     fetchStudents();
   }, []);
 
-  const validateStep = (step) => {
-    const currentFields = steps[step - 1].fields;
-    const stepErrors = {};
-    let isValid = true;
+  // Real-time validation function
+  const validateField = (fieldName, value) => {
+    console.log(`🔍 [PARENT FORM] Validating field: ${fieldName}, value: ${value}`);
 
-    // Define required fields for validation (excluding middleName, children, and profileImage)
-    const requiredFields = ['firstName', 'lastName', 'email', 'gender', 'dateOfBirth', 'civilStatus', 'contact', 'address'];
+    switch (fieldName) {
+      case 'firstName':
+        return adminValidation.validateName(value, 'First Name');
+      case 'lastName':
+        return adminValidation.validateName(value, 'Last Name');
+      case 'middleName':
+        return adminValidation.validateName(value, 'Middle Name', true);
+      case 'email':
+        return adminValidation.validateEmail(value);
+      case 'contact':
+        return adminValidation.validateContactNumber(value);
+      case 'address':
+        return adminValidation.validateText(value, 'Address', false, 200);
+      case 'dateOfBirth':
+        return adminValidation.validateBirthdate(value, 'parent', 'Date of Birth');
+      default:
+        return { isValid: true, errors: [] };
+    }
+  };
 
-    currentFields.forEach(field => {
-      if (requiredFields.includes(field)) {
-        if (!formData[field] || formData[field].toString().trim() === '') {
-          stepErrors[field] = `${getFieldLabel(field)} is required`;
-          isValid = false;
-        }
-        // Add specific validations if needed (e.g., email format)
-        if (field === 'email' && formData.email && !validateEmail(formData.email)) {
-          stepErrors[field] = `Please enter a valid email address`;
-          isValid = false;
-        }
+  // Comprehensive form validation
+  const validateAllFields = () => {
+    console.log('🔍 [PARENT FORM] Validating all fields...');
+
+    const newValidationResults = {};
+    let hasErrors = false;
+
+    // Validate all required fields
+    const fieldsToValidate = ['firstName', 'lastName', 'email', 'gender', 'dateOfBirth', 'civilStatus', 'contact', 'address'];
+
+    fieldsToValidate.forEach(fieldName => {
+      const result = validateField(fieldName, formData[fieldName]);
+      newValidationResults[fieldName] = result;
+      if (!result.isValid) {
+        hasErrors = true;
       }
     });
 
-    setErrors(stepErrors);
+    // Handle optional middle name separately
+    if (formData.middleName && formData.middleName.trim()) {
+      const middleNameResult = validateField('middleName', formData.middleName);
+      newValidationResults.middleName = middleNameResult;
+      if (!middleNameResult.isValid) {
+        hasErrors = true;
+      }
+    } else {
+      // Middle name is empty and optional - that's valid
+      newValidationResults.middleName = { isValid: true, errors: [] };
+    }
+
+    // Validate gender separately
+    if (!formData.gender || !formData.gender.trim()) {
+      newValidationResults.gender = { isValid: false, errors: ['Gender is required'] };
+      hasErrors = true;
+    } else {
+      const validGenders = ['Male', 'Female', 'Other'];
+      if (!validGenders.includes(formData.gender.trim())) {
+        newValidationResults.gender = { isValid: false, errors: ['Gender must be Male, Female, or Other'] };
+        hasErrors = true;
+      } else {
+        newValidationResults.gender = { isValid: true, errors: [] };
+      }
+    }
+
+    // Validate civil status separately
+    if (!formData.civilStatus || !formData.civilStatus.trim()) {
+      newValidationResults.civilStatus = { isValid: false, errors: ['Civil Status is required'] };
+      hasErrors = true;
+    } else {
+      const validCivilStatuses = ['Single', 'Married', 'Widowed', 'Separated', 'Divorced'];
+      if (!validCivilStatuses.includes(formData.civilStatus.trim())) {
+        newValidationResults.civilStatus = { isValid: false, errors: ['Please select a valid civil status'] };
+        hasErrors = true;
+      } else {
+        newValidationResults.civilStatus = { isValid: true, errors: [] };
+      }
+    }
+
+    setValidationResults(newValidationResults);
+
+    console.log('🔍 [PARENT FORM] Validation results:', { hasErrors, results: newValidationResults });
+
+    return !hasErrors;
+  };
+
+  const validateStep = (step) => {
+    const currentFields = steps[step - 1].fields;
+    const stepValidationResults = {};
+    let isValid = true;
+
+    currentFields.forEach(field => {
+      if (field === 'profileImage') return; // Skip file upload validation for now
+
+      // Handle optional fields
+      if (field === 'middleName') {
+        // Only validate middle name if it has content
+        if (formData[field] && formData[field].trim()) {
+          const result = validateField(field, formData[field]);
+          stepValidationResults[field] = result;
+          if (!result.isValid) {
+            isValid = false;
+          }
+        } else {
+          // Middle name is empty and optional - that's valid
+          stepValidationResults[field] = { isValid: true, errors: [] };
+        }
+        return;
+      }
+
+      const result = validateField(field, formData[field]);
+      stepValidationResults[field] = result;
+
+      if (!result.isValid) {
+        isValid = false;
+      }
+    });
+
+    // Update validation results for current step
+    setValidationResults(prev => ({
+      ...prev,
+      ...stepValidationResults
+    }));
+
     return isValid;
   };
 
@@ -290,12 +420,23 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
       ...prev,
       [name]: value
     }));
+
+    // Real-time validation
+    const validationResult = validateField(name, value);
+    setValidationResults(prev => ({
+      ...prev,
+      [name]: validationResult
+    }));
+
+    // Clear old-style errors when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
       }));
     }
+
+    console.log(`🔍 [PARENT FORM] Real-time validation for ${name}:`, validationResult);
   };
 
   const handleFileChange = (e) => {
@@ -333,6 +474,8 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
       <div className="admin-parent-form-section">
         {currentFields.map(field => {
           const isRequired = requiredFields.includes(field);
+          const validationResult = validationResults[field];
+          const hasValidationError = validationResult && !validationResult.isValid;
 
           if (field === 'children') {
             return (
@@ -375,6 +518,28 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
             return (
               <div key={field} className="admin-parent-form-group full-width">
                 <label className="admin-parent-optional">Profile Image (Optional)</label>
+                
+                {/* Show image preview - either current image or new image preview */}
+                {(formData.profileImageUrl || (formData.profileImage && typeof formData.profileImage === 'string') || (formData.profileImage && typeof formData.profileImage === 'object')) && (
+                  <div className="admin-parent-current-image">
+                    <img 
+                      src={
+                        formData.profileImage && typeof formData.profileImage === 'object' 
+                          ? URL.createObjectURL(formData.profileImage)
+                          : (formData.profileImageUrl || formData.profileImage)
+                      } 
+                      alt="Profile preview"
+                      className="admin-parent-profile-preview"
+                    />
+                    <p className="admin-parent-image-label">
+                      {formData.profileImage && typeof formData.profileImage === 'object' 
+                        ? 'New Image Preview' 
+                        : 'Current Image'
+                      }
+                    </p>
+                  </div>
+                )}
+
                 <div className="admin-parent-file-input-wrapper">
                   <input
                     type="file"
@@ -396,33 +561,38 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
 
           if (field === 'gender') {
             return (
-              <div key={field} className="admin-parent-form-group">
+              <div key={field} className={`admin-parent-form-group ${hasValidationError ? 'has-error' : ''}`}>
                 <label className="admin-parent-required">Gender</label>
                 <select
                   name="gender"
                   value={formData.gender || ''}
                   onChange={handleChange}
-                  className={`admin-parent-input ${errors.gender ? 'error' : ''}`}
+                  className={`admin-parent-input ${errors.gender || hasValidationError ? 'error' : ''}`}
                 >
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </select>
-                {errors.gender && <div className="admin-parent-error-message">{errors.gender}</div>}
+                {/* Show validation errors first, then old error format */}
+                <InlineValidation
+                  validationResult={validationResult}
+                  fieldName="Gender"
+                />
+                {!hasValidationError && errors.gender && <div className="admin-parent-error-message">{errors.gender}</div>}
               </div>
             );
           }
 
           if (field === 'civilStatus') {
             return (
-              <div key={field} className="admin-parent-form-group">
+              <div key={field} className={`admin-parent-form-group ${hasValidationError ? 'has-error' : ''}`}>
                 <label className="admin-parent-required">Civil Status</label>
                 <select
                   name="civilStatus"
                   value={formData.civilStatus || ''}
                   onChange={handleChange}
-                  className={`admin-parent-input ${errors.civilStatus ? 'error' : ''}`}
+                  className={`admin-parent-input ${errors.civilStatus || hasValidationError ? 'error' : ''}`}
                 >
                   <option value="">Select Civil Status</option>
                   <option value="Single">Single</option>
@@ -431,7 +601,12 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
                   <option value="Separated">Separated</option>
                   <option value="Divorced">Divorced</option>
                 </select>
-                {errors.civilStatus && <div className="admin-parent-error-message">{errors.civilStatus}</div>}
+                {/* Show validation errors first, then old error format */}
+                <InlineValidation
+                  validationResult={validationResult}
+                  fieldName="Civil Status"
+                />
+                {!hasValidationError && errors.civilStatus && <div className="admin-parent-error-message">{errors.civilStatus}</div>}
               </div>
             );
           }
@@ -440,7 +615,7 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
           const inputType = field === 'dateOfBirth' ? 'date' : field === 'email' ? 'email' : field === 'contact' ? 'tel' : 'text';
 
           return (
-            <div key={field} className="admin-parent-form-group">
+            <div key={field} className={`admin-parent-form-group ${field === 'address' ? 'full-width' : ''} ${hasValidationError ? 'has-error' : ''}`}>
               <label className={isRequired ? "admin-parent-required" : "admin-parent-optional"}>
                 {getFieldLabel(field)} {!isRequired ? '(Optional)' : ''}
               </label>
@@ -449,10 +624,15 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
                 name={field}
                 value={formData[field] || ''}
                 onChange={handleChange}
-                className={`admin-parent-input ${errors[field] ? 'error' : ''}`}
+                className={`admin-parent-input ${errors[field] || hasValidationError ? 'error' : ''}`}
                 placeholder={`Enter ${getFieldLabel(field).toLowerCase()}`}
               />
-              {errors[field] && <div className="admin-parent-error-message">{errors[field]}</div>}
+              {/* Show validation errors first, then old error format */}
+              <InlineValidation
+                validationResult={validationResult}
+                fieldName={getFieldLabel(field)}
+              />
+              {!hasValidationError && errors[field] && <div className="admin-parent-error-message">{errors[field]}</div>}
             </div>
           );
         })}
@@ -497,6 +677,25 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
           <form onSubmit={handleSubmit}>
             {renderFormFields()}
 
+            {/* Form Validation Summary - Shows on final step */}
+            {currentStep === totalSteps && (
+              <FormValidationSummary
+                validationResult={{
+                  isValid: Object.keys(validationResults).length === 0 || Object.values(validationResults).every(result => result.isValid),
+                  errors: Object.fromEntries(
+                    Object.entries(validationResults)
+                      .filter(([_, result]) => !result.isValid)
+                      .map(([field, result]) => [field, result.errors])
+                  ),
+                  hasWarnings: false
+                }}
+                isSubmitting={isSubmitting}
+                onSubmit={handleFinalSubmit}
+                submitButtonText={parent ? 'Update Parent' : 'Add Parent'}
+                className="parent-form-validation-summary"
+              />
+            )}
+
             <div className="admin-parent-modal-footer">
               <div className="admin-parent-modal-footer-buttons">
                 {currentStep > 1 && (
@@ -509,13 +708,16 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
                     Previous
                   </button>
                 )}
-                <button
-                  type="submit"
-                  className={`admin-parent-btn admin-parent-btn-primary ${isLoading ? 'admin-parent-loading' : ''}`}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Saving...' : currentStep < totalSteps ? 'Next' : (parent ? 'Update Parent' : 'Add Parent')}
-                </button>
+                {/* Only show Next/Submit button if not on final step or if using validation summary */}
+                {currentStep < totalSteps && (
+                  <button
+                    type="submit"
+                    className={`admin-parent-btn admin-parent-btn-primary ${isLoading ? 'admin-parent-loading' : ''}`}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Saving...' : 'Next'}
+                  </button>
+                )}
               </div>
             </div>
             {errors.apiError && <div className="admin-parent-error-message" style={{ textAlign: 'center', marginTop: '10px' }}>{errors.apiError}</div>}
@@ -652,6 +854,7 @@ const ParentListPage = () => {
   const [newCredentials, setNewCredentials] = useState(null);
   const [error, setError] = useState(null);
   const [viewModalChildren, setViewModalChildren] = useState([]);
+  const [allStudents, setAllStudents] = useState([]); // For displaying children names in table
 
   // Fetch parents from database
   useEffect(() => {
@@ -681,6 +884,53 @@ const ParentListPage = () => {
 
     fetchParents();
   }, []);
+
+  // Fetch all students for displaying children names in table
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
+        if (response.data.success) {
+          setAllStudents(response.data.data);
+        } else {
+          console.error("Error fetching students:", response.data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching students data:", error);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  // Helper function to get children names for a parent
+  const getChildrenNames = (parent) => {
+    if (!parent.children || parent.children.length === 0) {
+      return <span className="admin-parent-no-children">No children linked</span>;
+    }
+
+    const childrenNames = parent.children
+      .map(childId => {
+        const student = allStudents.find(s => s._id === childId);
+        return student ? `${student.firstName} ${student.lastName}` : null;
+      })
+      .filter(Boolean); // Remove null values
+
+    if (childrenNames.length === 0) {
+      return <span className="admin-parent-no-children">Children not found</span>;
+    }
+
+    return (
+      <div className="admin-parent-children-list">
+        <span className="admin-parent-children-count">
+          {childrenNames.length} {childrenNames.length === 1 ? 'child' : 'children'}:
+        </span>
+        <div className="admin-parent-children-names">
+          {childrenNames.join(', ')}
+        </div>
+      </div>
+    );
+  };
 
   // Filter and search functionality
   useEffect(() => {
@@ -901,6 +1151,7 @@ const ParentListPage = () => {
                 <th>Parent Name</th>
                 <th>Email</th>
                 <th>Address</th>
+                <th>Children</th>
                 <th>View Profile</th>
                 <th>Actions</th>
               </tr>
@@ -908,6 +1159,7 @@ const ParentListPage = () => {
             <tbody>
               {[1, 2, 3].map((_, index) => (
                 <tr key={index}>
+                  <td><div className="admin-parent-skeleton-text"></div></td>
                   <td><div className="admin-parent-skeleton-text"></div></td>
                   <td><div className="admin-parent-skeleton-text"></div></td>
                   <td><div className="admin-parent-skeleton-text"></div></td>
@@ -988,6 +1240,7 @@ const ParentListPage = () => {
               <th>Parent Name</th>
               <th>Email</th>
               <th>Address</th>
+              <th>Children</th>
               <th>View Profile</th>
               <th>Actions</th>
             </tr>
@@ -998,8 +1251,11 @@ const ParentListPage = () => {
                 <td className="admin-parent-name">{`${parent.firstName} ${parent.lastName}`}</td>
                 <td>{parent.email}</td>
                 <td>{parent.address}</td>
+                <td className="admin-parent-children-cell">
+                  {getChildrenNames(parent)}
+                </td>
                 <td>
-                  <button 
+                  <button
                     className="admin-parent-view-btn"
                     onClick={() => handleViewProfile(parent)}
                   >

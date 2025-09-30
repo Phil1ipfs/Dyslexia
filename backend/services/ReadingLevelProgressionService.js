@@ -303,6 +303,18 @@ class ReadingLevelProgressionService {
 
       console.log(`[PROGRESSION] ✅ Updated user reading level: ${fromLevel} → ${toLevel}`);
 
+      // Step 1.5: Clean up old prescriptive analysis records to prevent duplicate key errors
+      console.log(`[PROGRESSION] 🧹 Cleaning up old prescriptive analysis records for student ${studentId}`);
+      const PrescriptiveAnalysis = require('../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+
+      const deletedAnalysisResult = await PrescriptiveAnalysis.deleteMany(
+        { studentId: studentId },
+        { session }
+      );
+
+      console.log(`[PROGRESSION] ✅ Deleted ${deletedAnalysisResult.deletedCount} old prescriptive analysis records`);
+      console.log(`[PROGRESSION] 💡 This prevents duplicate key errors when generating new analysis for ${toLevel} level`);
+
       // Step 2: Update OLD category results to mark progression as completed
       // ✅ CLAUDE.md COMPLIANCE: Keep old record's readingLevel, just mark as updated
       const categoryResultsUpdate = await CategoryResult.updateOne(
@@ -341,6 +353,10 @@ class ReadingLevelProgressionService {
         fromLevel: fromLevel,
         toLevel: toLevel,
         userUpdated: true,
+        prescriptiveAnalysisCleanup: {
+          deleted: deletedAnalysisResult.deletedCount,
+          reason: "Prevents duplicate key errors for new reading level"
+        },
         categoryResultsUpdated: true,
         placeholderCreated: toLevel !== 'At Grade Level'
       };

@@ -94,10 +94,10 @@ class PrescriptionOnlyService {
           ? failedCategories[0].categoryName
           : `maintenance_${readingLevel}_${Date.now()}`,
 
-        // Map diagnosis to schema fields
-        skillMastery: new Map(Object.entries(diagnosis.skillMastery)),
-        abilityEstimates: new Map(Object.entries(this.calculateAbilityEstimates(diagnosis.skillMastery))),
-        errorPatterns: new Map(Object.entries(this.fixErrorPatternStructure(diagnosis.errorPatterns))),
+        // Map diagnosis to schema fields (use plain objects for Mongoose Maps)
+        skillMastery: diagnosis.skillMastery || {},
+        abilityEstimates: this.calculateAbilityEstimates(diagnosis.skillMastery) || {},
+        errorPatterns: this.fixErrorPatternStructure(diagnosis.errorPatterns) || {},
 
         // Map intervention plan
         interventionPlan: this.mapToInterventionPlan(prescription),
@@ -105,10 +105,8 @@ class PrescriptionOnlyService {
         // Map insights
         insights: this.mapToInsights(diagnosis, prescription, categoryResult.categories),
 
-        // Map research-based prescriptions to schema format
-        researchBasedPrescriptions: new Map(Object.entries(
-          this.mapToResearchBasedPrescriptions(prescription, diagnosis, categoryResult.categories)
-        )),
+        // Map research-based prescriptions to schema format (use plain object for Mongoose Map)
+        researchBasedPrescriptions: this.mapToResearchBasedPrescriptions(prescription, diagnosis, categoryResult.categories) || {},
 
         // Legacy fields for backward compatibility
         strengths: diagnosis.primaryDifficulties.length === 0 ?
@@ -204,7 +202,7 @@ class PrescriptionOnlyService {
   async generateTeacherPrescription(diagnosis, categoryResults, readingLevel, studentId) {
     // Identify categories needing intervention (CLAUDE.md: only completed AND failed categories)
     const failedCategories = categoryResults.filter(cat =>
-      !cat.isPassed && cat.isCompleted === true && cat.score > 0
+      !cat.isPassed && cat.isCompleted === true // ✅ REMOVED cat.score > 0 filter - even 0% scores can need intervention
     );
 
     console.log(`[PRESCRIPTION] Failed categories (completed & failed): [${failedCategories.map(c => c.categoryName).join(', ')}]`);
@@ -1062,7 +1060,7 @@ class PrescriptionOnlyService {
     const scoreRatio = score / 100;
 
     // If the BKT mastery is way higher than the actual performance, adjust it
-    const maxReasonableMastery = scoreRatio + 0.15; // Allow 15% optimism above actual score
+    const maxReasonableMastery = Math.min(1.0, scoreRatio + 0.15); // Allow 15% optimism above actual score, but cap at 1.0
     const minReasonableMastery = Math.max(0.05, scoreRatio - 0.1); // Don't go below 5% or too far below score
 
     console.log(`[BKT ADJUSTMENT] Score: ${score}%, ScoreRatio: ${scoreRatio}, BKT: ${bktMastery}, MaxReasonable: ${maxReasonableMastery}, MinReasonable: ${minReasonableMastery}`);
@@ -1070,14 +1068,20 @@ class PrescriptionOnlyService {
     // If BKT is reasonable, use it. Otherwise, constrain it.
     if (bktMastery >= minReasonableMastery && bktMastery <= maxReasonableMastery) {
       console.log(`[BKT ADJUSTMENT] BKT is reasonable, using original: ${bktMastery}`);
-      return Math.round(bktMastery * 1000) / 1000; // Keep original if reasonable
+      // ✅ CRITICAL FIX: Ensure final result never exceeds 1.0 for Mongoose validation
+      const cappedMastery = Math.min(1.0, Math.round(Math.min(1.0, bktMastery) * 1000) / 1000);
+      console.log(`[BKT ADJUSTMENT] Final reasonable mastery (capped at 1.0): ${cappedMastery}`);
+      return cappedMastery;
     }
 
     // Adjust BKT to be more realistic based on actual performance
-    const adjustedMastery = Math.max(minReasonableMastery, Math.min(maxReasonableMastery, scoreRatio + 0.1));
+    const adjustedMastery = Math.max(minReasonableMastery, Math.min(maxReasonableMastery, Math.min(1.0, scoreRatio + 0.1)));
     console.log(`[BKT ADJUSTMENT] BKT unreasonable, adjusting to: ${adjustedMastery}`);
 
-    return Math.round(adjustedMastery * 1000) / 1000;
+    // ✅ CRITICAL FIX: Ensure final result never exceeds 1.0 for Mongoose validation
+    const finalMastery = Math.min(1.0, Math.round(adjustedMastery * 1000) / 1000);
+    console.log(`[BKT ADJUSTMENT] Final mastery (capped at 1.0): ${finalMastery}`);
+    return finalMastery;
   }
 }
 

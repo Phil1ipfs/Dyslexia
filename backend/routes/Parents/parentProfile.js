@@ -292,7 +292,12 @@ router.get('/children', authenticateToken, authorize('parent'), async (req, res)
   }
 });
 
-// Add this route for password update:
+// Add routes for password update (both PUT and POST for compatibility):
 router.put('/profile/password', authenticateToken, authorize('parent'), parentProfileController.updatePassword);
+router.post('/profile/password', authenticateToken, authorize('parent'), parentProfileController.updatePassword);
+
+// Also add shorter routes for easier access:
+router.put('/password', authenticateToken, authorize('parent'), parentProfileController.updatePassword);
+router.post('/password', authenticateToken, authorize('parent'), parentProfileController.updatePassword);
 
 module.exports = router;

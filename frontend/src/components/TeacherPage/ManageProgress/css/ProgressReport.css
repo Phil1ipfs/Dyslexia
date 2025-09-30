@@ -2445,15 +2445,17 @@
 }
 
 .student-progress-word-part.correct {
-  background-color: #d1fae5;
-  color: #065f46;
-  border-color: #10b981;
+  background-color: #d4edda !important;
+  color: #28a745 !important;
+  border-color: #c3e6cb !important;
+  font-weight: bold !important;
 }
 
 .student-progress-word-part.incorrect {
-  background-color: #fef3c7;
-  color: #d97706;
-  border-color: #f59e0b;
+  background-color: #f8d7da !important;
+  color: #dc3545 !important;
+  border-color: #f5c6cb !important;
+  font-weight: bold !important;
 }
 
 /* Decoding Specific Styles */

@@ -365,6 +365,13 @@
   margin-bottom: 0.5rem;
 }
 
+/* Required field indicator */
+.lit-required {
+  color: #dc2626;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
 .lit-full-width {
   grid-column: span 2;
 }

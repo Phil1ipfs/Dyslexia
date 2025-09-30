@@ -113,14 +113,15 @@ const ParentSidebar = ({ onLogout }) => {
 
         <div className="parent-sidebar__navigation">
           {navigationItems.map(item => (
-            <Link 
-              key={item.id}
-              to={item.path}
-              className={`parent-sidebar__nav-item ${isActiveItem(item.path) ? 'parent-sidebar__nav-item--active' : ''}`}
-            >
-              <item.icon className="parent-sidebar__icon" />
-              <span className="parent-sidebar__label">{item.label}</span>
-            </Link>
+            <div key={item.id} className="parent-sidebar__section">
+              <Link 
+                to={item.path}
+                className={`parent-sidebar__nav-item ${isActiveItem(item.path) ? 'parent-sidebar__nav-item--active' : ''}`}
+              >
+                <item.icon className="parent-sidebar__icon" />
+                <span className="parent-sidebar__label">{item.label}</span>
+              </Link>
+            </div>
           ))}
         </div>
 

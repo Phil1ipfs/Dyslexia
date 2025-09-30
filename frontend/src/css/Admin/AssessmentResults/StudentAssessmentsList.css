@@ -521,4 +521,51 @@
   .student-assessments__grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ===== ACTION BUTTONS ===== */
+.student-assessments__actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.student-assessments__view-responses-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #3B4F81;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.student-assessments__view-responses-btn:hover {
+  background: #2d3f6b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 79, 129, 0.2);
+}
+
+.student-assessments__view-responses-btn:active {
+  transform: translateY(0);
+}
+
+.student-assessments__no-responses {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-style: italic;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
 } 

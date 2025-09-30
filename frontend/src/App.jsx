@@ -21,6 +21,7 @@ import Feedback from "./pages/Parents/Feedback";
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminProfile from "./pages/Admin/AdminProfile";
 import SubmissionsOverview from './pages/Admin/SubmissionsOverview';
 import StudentListPage from './pages/Admin/StudentListPage';
 import TeacherListPage from './pages/Admin/TeacherLists';
@@ -78,7 +79,7 @@ const ProtectedRoute = ({ children }) => {
   const isLoggedIn = AuthService.isLoggedIn();
   
   if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/choose-account" replace />;
   }
   
   return children;
@@ -168,6 +169,7 @@ function App() {
           }
         />
         <Route path="/choose-account" element={<ChooseAccountType />} />
+        <Route path="/choose-role" element={<ChooseAccountType />} />
 
         {/* Protected Teacher Routes */}
         <Route
@@ -213,6 +215,7 @@ function App() {
           }
         >
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="profile" element={<AdminProfile />} />
           <Route path="submissions-overview" element={<SubmissionsOverview />} />
           <Route path="student-list" element={<StudentListPage />} />
           <Route path="teacher-list" element={<TeacherListPage />} />
@@ -224,7 +227,7 @@ function App() {
         </Route>
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/choose-account" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -38,6 +38,7 @@ const TeacherDashboard = () => {
   const [sectionFilter, setSectionFilter] = useState('all');
 
   const [interventionFilter, setInterventionFilter] = useState('all');
+  const [interventionStudentFilter, setInterventionStudentFilter] = useState('all');
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [interventionDetailOpen, setInterventionDetailOpen] = useState(false);
 
@@ -186,12 +187,19 @@ const TeacherDashboard = () => {
   };
 
   // Add this computed value for filtered intervention progress
-  const filteredInterventionProgress = interventionFilter === 'all'
-    ? interventionProgress
-    : interventionProgress.filter(progress =>
+  const filteredInterventionProgress = interventionProgress.filter(progress => {
+    // Filter by reading level
+    const matchesReadingLevel = interventionFilter === 'all' || 
       progress.readingLevel === interventionFilter ||
-      progress.studentReadingLevel === interventionFilter
-    );
+      progress.studentReadingLevel === interventionFilter;
+    
+    // Filter by student name
+    const matchesStudent = interventionStudentFilter === 'all' || 
+      progress.studentName?.toLowerCase().includes(interventionStudentFilter.toLowerCase()) ||
+      progress.studentId?.toString().includes(interventionStudentFilter);
+    
+    return matchesReadingLevel && matchesStudent;
+  });
 
 
 
@@ -289,12 +297,9 @@ const TeacherDashboard = () => {
               
               if (categoryResult.isPassed === false || categoryResult.score < 75) {
                 // Student failed the category - now check intervention status
-                if (!categoryResult.currentInterventionId || categoryResult.interventionHistory.length === 0) {
-                  // No intervention assigned yet - NEEDS INTERVENTION
-                  needsIntervention = true;
-                  interventionStatus = 'No intervention assigned';
-                } else {
-                  // Has intervention - check if latest attempt passed
+                // Check if there are any intervention attempts (even if currentInterventionId is null)
+                if (categoryResult.interventionHistory && categoryResult.interventionHistory.length > 0) {
+                  // Has intervention history - check if latest attempt passed
                   const latestAttempt = categoryResult.interventionHistory.reduce((latest, current) => {
                     return current.attemptNumber > latest.attemptNumber ? current : latest;
                   });
@@ -305,9 +310,14 @@ const TeacherDashboard = () => {
                     interventionStatus = `Active intervention (attempt ${latestAttempt.attemptNumber})`;
                   } else {
                     // Latest intervention attempt passed - INTERVENTION COMPLETED
+                    // Don't count as needing intervention if intervention was successful
                     needsIntervention = false;
                     interventionStatus = `Intervention completed (attempt ${latestAttempt.attemptNumber})`;
                   }
+                } else {
+                  // No intervention history - NEEDS INTERVENTION
+                  needsIntervention = true;
+                  interventionStatus = 'No intervention assigned';
                 }
               } else {
                 // Student passed the category - NO INTERVENTION NEEDED
@@ -333,6 +343,13 @@ const TeacherDashboard = () => {
                 });
               } else {
                 console.log(`  ✅ Student does not need intervention for ${categoryName}: ${interventionStatus}`);
+                // Debug: Log why student doesn't need intervention
+                if (categoryResult.interventionHistory.length > 0) {
+                  const latestAttempt = categoryResult.interventionHistory.reduce((latest, current) => {
+                    return current.attemptNumber > latest.attemptNumber ? current : latest;
+                  });
+                  console.log(`    📊 Latest intervention attempt: score=${latestAttempt.score}%, isPassed=${latestAttempt.isPassed}`);
+                }
               }
             } else if (categoryResult) {
               console.log(`  ⚠️ ${categoryName}: not completed (completed=${categoryResult.isCompleted})`);
@@ -609,13 +626,9 @@ const TeacherDashboard = () => {
         
         if (hasFailed) {
           // Student failed the category - now check intervention status
-          if (!categoryResult.currentInterventionId || categoryResult.interventionHistory.length === 0) {
-            // No intervention assigned yet - NEEDS INTERVENTION
-            needsIntervention = true;
-            interventionStatus = 'No intervention assigned';
-            shouldShowInAttentionList = true;
-          } else {
-            // Has intervention - check if latest attempt passed
+          // Check if there are any intervention attempts (even if currentInterventionId is null)
+          if (categoryResult.interventionHistory && categoryResult.interventionHistory.length > 0) {
+            // Has intervention history - check if latest attempt passed
             const latestAttempt = categoryResult.interventionHistory.reduce((latest, current) => {
               return current.attemptNumber > latest.attemptNumber ? current : latest;
             });
@@ -629,10 +642,16 @@ const TeacherDashboard = () => {
               shouldShowInAttentionList = true;
             } else {
               // Latest intervention attempt passed - INTERVENTION COMPLETED
+              // Don't count as needing intervention if intervention was successful
               needsIntervention = false;
               interventionStatus = `Intervention completed (attempt ${latestAttempt.attemptNumber}, score: ${latestAttempt.score}%)`;
               shouldShowInAttentionList = false; // Don't show in attention list
             }
+          } else {
+            // No intervention history - NEEDS INTERVENTION
+            needsIntervention = true;
+            interventionStatus = 'No intervention assigned';
+            shouldShowInAttentionList = true;
           }
         } else {
           // Student passed the category - NO INTERVENTION NEEDED
@@ -661,6 +680,15 @@ const TeacherDashboard = () => {
             status = `Intervention Completed (Attempt ${latestAttemptInfo.attemptNumber}, Score: ${latestAttemptInfo.score}%)`;
           }
 
+          console.log(`  🚨 Adding student to attention list for ${categoryResult.categoryName}:`, {
+            hasFailed,
+            shouldShowInAttentionList,
+            needsIntervention,
+            interventionStatus,
+            latestAttemptScore: latestAttemptInfo?.score,
+            latestAttemptPassed: latestAttemptInfo?.isPassed
+          });
+
           categoriesNeedingImprovement.push({
             category: categoryResult.categoryName,
             score: Math.round(categoryResult.score || 0),
@@ -669,6 +697,17 @@ const TeacherDashboard = () => {
             interventionCompleted: !needsIntervention && interventionStatus.includes('Intervention completed'),
             isCompleted: categoryResult.isCompleted || false,
             interventionStatus: interventionStatus // Add detailed intervention status for debugging
+          });
+        } else {
+          // Debug: Log why student is NOT being added to attention list
+          console.log(`  ✅ Student does NOT need attention for ${categoryResult.categoryName}:`, {
+            hasFailed,
+            shouldShowInAttentionList,
+            needsIntervention,
+            interventionStatus,
+            latestAttemptScore: latestAttemptInfo?.score,
+            latestAttemptPassed: latestAttemptInfo?.isPassed,
+            isCompleted: categoryResult.isCompleted
           });
         }
       });
@@ -1698,7 +1737,17 @@ const TeacherDashboard = () => {
                     });
                   }
                   
-                  if (chartData.length === 0) {
+                  // Check if all categories have 0% intervention needs
+                  const hasAnyInterventionNeeds = chartData.some(levelData => {
+                    return Object.keys(levelData).some(key => {
+                      if (['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'].includes(key)) {
+                        return levelData[key] && levelData[key].percentage > 0;
+                      }
+                      return false;
+                    });
+                  });
+
+                  if (chartData.length === 0 || !hasAnyInterventionNeeds) {
                     return (
                       <div style={{
                         display: 'flex',
@@ -1712,10 +1761,10 @@ const TeacherDashboard = () => {
                       }}>
                         <div>
                           <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>
-                            No intervention data available for {selectedReadingLevel} level
+                            No students need intervention for {selectedReadingLevel} level
                           </p>
                           <p style={{ margin: '0', opacity: 0.8, fontSize: '0.9rem' }}>
-                            Students in this level may need to complete assessments first to identify intervention needs
+                            All students in this level have either passed their assessments or completed their interventions successfully
                           </p>
                         </div>
                       </div>
@@ -1817,6 +1866,22 @@ const TeacherDashboard = () => {
                 {/* Dynamic Custom Legend - Only show categories that are in the chart */}
                 {(() => {
                   const chartData = getCategoryPerformanceData(selectedReadingLevel);
+                  
+                  // Check if all categories have 0% intervention needs
+                  const hasAnyInterventionNeeds = chartData.some(levelData => {
+                    return Object.keys(levelData).some(key => {
+                      if (['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'].includes(key)) {
+                        return levelData[key] && levelData[key].percentage > 0;
+                      }
+                      return false;
+                    });
+                  });
+
+                  // Don't show legend if no intervention needs
+                  if (chartData.length === 0 || !hasAnyInterventionNeeds) {
+                    return null;
+                  }
+
                   const displayedCategories = chartData.length > 0 ? 
                     Object.keys(chartData[0]).filter(key => 
                       ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'].includes(key)
@@ -1962,33 +2027,95 @@ const TeacherDashboard = () => {
           <div className="teacher-intervention-section">
             <div className="teacher-intervention-header">
               <h2 className="teacher-intervention-title">Student Intervention Progress</h2>
-              <div className="teacher-intervention-filters">
-                <span className="teacher-filter-label">Reading Level:</span>
-                <div className="teacher-reading-level-pills">
-                  <button
-                    className={`teacher-level-pill ${interventionFilter === 'all' ? 'teacher-level-pill--active' : ''}`}
-                    onClick={() => setInterventionFilter('all')}
-                  >
-                    All ({interventionProgress.length})
-                  </button>
-                  {Array.from(new Set(interventionProgress.map(p => p.readingLevel)))
-                    .filter(level => level && level !== 'Not Assessed')
-                    .sort((a, b) => {
-                      const levelOrder = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
-                      return levelOrder.indexOf(a) - levelOrder.indexOf(b);
-                    })
-                    .map(level => {
-                      const count = interventionProgress.filter(p => p.readingLevel === level).length;
-                      return (
-                        <button
-                          key={level}
-                          className={`teacher-level-pill ${interventionFilter === level ? 'teacher-level-pill--active' : ''}`}
-                          onClick={() => setInterventionFilter(level)}
-                        >
-                          {level} ({count})
-                        </button>
-                      );
-                    })}
+              <div className="teacher-intervention-filters" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '15px',
+                marginBottom: '20px'
+              }}>
+                <div className="teacher-filter-group" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  flexWrap: 'wrap'
+                }}>
+                  <span className="teacher-filter-label">Reading Level:</span>
+                  <div className="teacher-reading-level-pills">
+                    <button
+                      className={`teacher-level-pill ${interventionFilter === 'all' ? 'teacher-level-pill--active' : ''}`}
+                      onClick={() => setInterventionFilter('all')}
+                    >
+                      All ({interventionProgress.length})
+                    </button>
+                    {Array.from(new Set(interventionProgress.map(p => p.readingLevel)))
+                      .filter(level => level && level !== 'Not Assessed')
+                      .sort((a, b) => {
+                        const levelOrder = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+                        return levelOrder.indexOf(a) - levelOrder.indexOf(b);
+                      })
+                      .map(level => {
+                        const count = interventionProgress.filter(p => p.readingLevel === level).length;
+                        return (
+                          <button
+                            key={level}
+                            className={`teacher-level-pill ${interventionFilter === level ? 'teacher-level-pill--active' : ''}`}
+                            onClick={() => setInterventionFilter(level)}
+                          >
+                            {level} ({count})
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+                
+                <div className="teacher-filter-group" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  flexWrap: 'wrap'
+                }}>
+                  <span className="teacher-filter-label">Student Name:</span>
+                  <div className="teacher-student-search" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <input
+                      type="text"
+                      placeholder="Search by name or ID..."
+                      value={interventionStudentFilter === 'all' ? '' : interventionStudentFilter}
+                      onChange={(e) => setInterventionStudentFilter(e.target.value || 'all')}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white',
+                        fontSize: '0.9rem',
+                        minWidth: '200px',
+                        outline: 'none'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                    />
+                    {interventionStudentFilter !== 'all' && (
+                      <button
+                        onClick={() => setInterventionStudentFilter('all')}
+                        style={{
+                          marginLeft: '8px',
+                          padding: '8px 12px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem'
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

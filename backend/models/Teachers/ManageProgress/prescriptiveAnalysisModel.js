@@ -504,7 +504,7 @@ const prescriptiveAnalysisSchema = new mongoose.Schema({
         primaryApproach: {
           type: String,
           enum: ['multisensory_structured', 'phonics_based', 'whole_language_support', 'balanced_literacy', 'orton_gillingham', 'systematic_explicit_instruction'],
-          required: true
+          required: false
         },
         specificTechniques: [interventionTechniqueSchema],
         intensityLevel: {

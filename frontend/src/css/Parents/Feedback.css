@@ -194,7 +194,32 @@
 
 .parent-feedback__teacher-info {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.parent-feedback__teacher-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  border: 2px solid #e5e7eb;
+}
+
+.parent-feedback__teacher-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.parent-feedback__teacher-avatar-placeholder {
+  color: #9ca3af;
 }
 
 .parent-feedback__teacher-name {
@@ -283,7 +308,7 @@
   border-radius: 16px;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
   max-width: 90vw;
-  max-height: 90vh;
+  max-height: 95vh;
   width: 900px;
   display: flex;
   flex-direction: column;
@@ -545,5 +570,279 @@
   
   .parent-feedback__modal-body {
     background-color: #1f2937;
+  }
+
+  .parent-feedback__subject-cell .parent-feedback__subject-text {
+    color: #93c5fd;
+  }
+
+  .parent-feedback__content-cell .parent-feedback__message-text {
+    color: #d1d5db;
+  }
+}
+
+/* Message Section in Modal */
+.parent-feedback__message-section {
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 0 2rem 1.5rem 2rem;
+  border: 1px solid #e2e8f0;
+}
+
+.parent-feedback__message-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.parent-feedback__message-subject,
+.parent-feedback__message-from,
+.parent-feedback__message-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.parent-feedback__message-subject strong,
+.parent-feedback__message-from strong,
+.parent-feedback__message-date strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.parent-feedback__message-subject span {
+  color: #3B4F81;
+  font-weight: 500;
+}
+
+.parent-feedback__message-from span,
+.parent-feedback__message-date span {
+  color: #6b7280;
+}
+
+.parent-feedback__message-content-box {
+  margin-top: 1rem;
+}
+
+.parent-feedback__message-content-box strong {
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.parent-feedback__message-text-full {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  line-height: 1.6;
+  font-size: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Dark mode support for message section */
+@media (prefers-color-scheme: dark) {
+  .parent-feedback__message-section {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .parent-feedback__message-subject strong,
+  .parent-feedback__message-from strong,
+  .parent-feedback__message-date strong,
+  .parent-feedback__message-content-box strong {
+    color: #e5e7eb;
+  }
+
+  .parent-feedback__message-subject span {
+    color: #93c5fd;
+  }
+
+  .parent-feedback__message-from span,
+  .parent-feedback__message-date span {
+    color: #9ca3af;
+  }
+
+  .parent-feedback__message-text-full {
+    background-color: #111827;
+    border-color: #374151;
+    color: #d1d5db;
+  }
+}
+
+/* Action buttons container */
+.parent-feedback__action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Message button styling */
+.parent-feedback__message-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.2);
+  white-space: nowrap;
+}
+
+.parent-feedback__message-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+/* PDF separator in modal */
+.parent-feedback__pdf-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0;
+  margin: 0 2rem;
+  border-top: 2px solid #e5e7eb;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Message actions (when viewing message only) */
+.parent-feedback__message-actions {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.parent-feedback__view-full-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #4a5494, #3B4F81);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.2);
+}
+
+.parent-feedback__view-full-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);
+}
+
+/* Dark mode support for new elements */
+@media (prefers-color-scheme: dark) {
+  .parent-feedback__message-btn {
+    background: linear-gradient(135deg, #065f46, #047857);
+    box-shadow: 0 2px 5px rgba(6, 95, 70, 0.3);
+  }
+
+  .parent-feedback__message-btn:hover {
+    background: linear-gradient(135deg, #047857, #065f46);
+    box-shadow: 0 4px 10px rgba(6, 95, 70, 0.4);
+  }
+
+  .parent-feedback__pdf-separator {
+    border-color: #374151;
+    color: #9ca3af;
+  }
+
+  .parent-feedback__message-actions {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .parent-feedback__view-full-btn {
+    background: linear-gradient(135deg, #1e3a8a, #1e40af);
+  }
+
+  .parent-feedback__view-full-btn:hover {
+    background: linear-gradient(135deg, #1e40af, #1d4ed8);
+  }
+}
+
+/* Responsive adjustments for modal message section */
+@media (max-width: 768px) {
+  .parent-feedback__message-section {
+    margin: 0 1rem 1rem 1rem;
+    padding: 1rem;
+  }
+
+  .parent-feedback__message-info {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .parent-feedback__message-text-full {
+    font-size: 0.8rem;
+    max-height: 150px;
+  }
+
+  .parent-feedback__action-buttons {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .parent-feedback__message-btn,
+  .parent-feedback__view-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.6rem 1rem;
+  }
+
+  .parent-feedback__pdf-separator {
+    margin: 0 1rem;
+  }
+
+  .parent-feedback__message-actions {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .parent-feedback__message-btn span,
+  .parent-feedback__view-btn span {
+    display: none;
+  }
+
+  .parent-feedback__message-btn,
+  .parent-feedback__view-btn {
+    padding: 0.6rem;
+    width: auto;
+    min-width: 44px;
+  }
+
+  .parent-feedback__action-buttons {
+    flex-direction: row;
+    justify-content: center;
   }
 }
