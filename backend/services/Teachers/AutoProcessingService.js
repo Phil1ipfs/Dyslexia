@@ -271,6 +271,18 @@ class AutoProcessingService {
         category  // Check only this specific category
       );
 
+      // Safety check: Ensure categoryResults exists
+      if (!categoryCompleteness || !categoryCompleteness.categoryResults) {
+        console.warn(`[AUTO PROCESSOR]        ⚠️ ${category}: No assessment data found (main_assessment may be missing)`);
+        return {
+          action: 'incomplete',
+          category: category,
+          answered: 0,
+          required: 0,
+          missing: 'No main_assessment data available'
+        };
+      }
+
       const categoryStatus = categoryCompleteness.categoryResults[category];
       if (!categoryStatus || !categoryStatus.isComplete) {
         return {

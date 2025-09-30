@@ -11,87 +11,116 @@ class DatabaseOptimizationService {
   static async createPerformanceIndexes() {
     try {
       console.log('[DB OPTIMIZE] 🚀 Creating performance indexes...');
-      const testDb = mongoose.connection.useDb('test');
+      const testDb = mongoose.connection.db;
+
+      const indexCreationResults = {
+        created: 0,
+        skipped: 0,
+        errors: []
+      };
+
+      // Helper function to safely create index
+      const safeCreateIndex = async (collection, keys, options) => {
+        try {
+          await testDb.collection(collection).createIndex(keys, options);
+          indexCreationResults.created++;
+        } catch (error) {
+          if (error.code === 85 || error.codeName === 'IndexOptionsConflict') {
+            // Index already exists with different name - skip
+            indexCreationResults.skipped++;
+          } else {
+            indexCreationResults.errors.push({ collection, error: error.message });
+          }
+        }
+      };
 
       // 1. Student Responses - Critical for scoring queries
       console.log('[DB OPTIMIZE] 📋 Creating student_responses indexes...');
-      await testDb.collection('student_responses').createIndex(
+      await safeCreateIndex('student_responses',
         { studentId: 1, category: 1, readingLevel: 1 },
         { name: 'scoring_lookup_idx', background: true }
       );
-      await testDb.collection('student_responses').createIndex(
+      await safeCreateIndex('student_responses',
         { studentId: 1, answeredAt: -1 },
         { name: 'latest_response_idx', background: true }
       );
-      await testDb.collection('student_responses').createIndex(
+      await safeCreateIndex('student_responses',
         { category: 1, readingLevel: 1, isCorrect: 1 },
         { name: 'category_performance_idx', background: true }
       );
 
       // 2. Intervention Responses - Fast intervention processing
       console.log('[DB OPTIMIZE] 🎯 Creating intervention_responses indexes...');
-      await testDb.collection('intervention_responses').createIndex(
+      await safeCreateIndex('intervention_responses',
         { studentId: 1, interventionAssessmentId: 1 },
         { name: 'intervention_scoring_idx', background: true }
       );
-      await testDb.collection('intervention_responses').createIndex(
+      await safeCreateIndex('intervention_responses',
         { interventionAssessmentId: 1, answeredAt: -1 },
         { name: 'intervention_completion_idx', background: true }
       );
 
       // 3. Category Results - Fast lookup and updates
       console.log('[DB OPTIMIZE] 📊 Creating category_results indexes...');
-      await testDb.collection('category_results').createIndex(
+      await safeCreateIndex('category_results',
         { studentId: 1, readingLevel: 1 },
         { name: 'student_progress_idx', background: true }
       );
-      await testDb.collection('category_results').createIndex(
+      await safeCreateIndex('category_results',
         { studentId: 1, 'categories.categoryName': 1 },
         { name: 'category_lookup_idx', background: true }
       );
-      await testDb.collection('category_results').createIndex(
+      await safeCreateIndex('category_results',
         { updatedAt: -1 },
         { name: 'recent_updates_idx', background: true }
       );
 
       // 4. Prescriptive Analysis - Fast regeneration checks
       console.log('[DB OPTIMIZE] 🧠 Creating prescriptive_analysis indexes...');
-      await testDb.collection('prescriptive_analysis').createIndex(
+      await safeCreateIndex('prescriptive_analysis',
         { categoryResultId: 1 },
         { name: 'analysis_lookup_idx', background: true, unique: true }
       );
-      await testDb.collection('prescriptive_analysis').createIndex(
+      await safeCreateIndex('prescriptive_analysis',
         { studentId: 1, createdAt: -1 },
         { name: 'student_analysis_idx', background: true }
       );
 
       // 5. IEP Reports - Fast report generation
       console.log('[DB OPTIMIZE] 📋 Creating iep_reports indexes...');
-      await testDb.collection('iep_reports').createIndex(
+      await safeCreateIndex('iep_reports',
         { studentNumber: 1, isActive: 1 },
         { name: 'active_iep_idx', background: true }
       );
-      await testDb.collection('iep_reports').createIndex(
+      await safeCreateIndex('iep_reports',
         { studentId: 1, basedOnAssessmentId: 1 },
         { name: 'iep_assessment_link_idx', background: true }
       );
 
       // 6. Intervention Assessments - Fast intervention lookup
       console.log('[DB OPTIMIZE] 💉 Creating intervention_assessment indexes...');
-      await testDb.collection('intervention_assessment').createIndex(
+      await safeCreateIndex('intervention_assessment',
         { studentId: 1, category: 1 },
         { name: 'intervention_student_idx', background: true }
       );
-      await testDb.collection('intervention_assessment').createIndex(
+      await safeCreateIndex('intervention_assessment',
         { prescriptiveAnalysisId: 1 },
         { name: 'intervention_analysis_idx', background: true }
       );
 
-      console.log('[DB OPTIMIZE] ✅ All performance indexes created successfully');
-      return { success: true, message: 'Performance indexes created' };
+      console.log(`[DB OPTIMIZE] ✅ Index creation complete: ${indexCreationResults.created} created, ${indexCreationResults.skipped} skipped`);
+      if (indexCreationResults.errors.length > 0) {
+        console.warn(`[DB OPTIMIZE] ⚠️ ${indexCreationResults.errors.length} errors:`, indexCreationResults.errors);
+      }
+
+      return {
+        success: true,
+        message: 'Performance indexes processed',
+        results: indexCreationResults
+      };
 
     } catch (error) {
-      console.error('[DB OPTIMIZE] ❌ Error creating indexes:', error);
+      console.error('[DB OPTIMIZE] ❌ Critical error creating indexes:', error);
       return { success: false, error: error.message };
     }
   }
@@ -102,8 +131,7 @@ class DatabaseOptimizationService {
   static async optimizeMongoDBSettings() {
     try {
       console.log('[DB OPTIMIZE] ⚙️ Optimizing MongoDB settings...');
-      const testDb = mongoose.connection.useDb('test');
-      const adminDb = testDb.admin();
+      const testDb = mongoose.connection.db;
 
       // Enable query profiling for slow queries (>100ms)
       await testDb.command({ profile: 2, slowms: 100 });
@@ -123,7 +151,7 @@ class DatabaseOptimizationService {
   static async analyzePerformance() {
     try {
       console.log('[DB OPTIMIZE] 📊 Analyzing database performance...');
-      const testDb = mongoose.connection.useDb('test');
+      const testDb = mongoose.connection.db;
 
       // Check collection sizes
       const stats = {};
