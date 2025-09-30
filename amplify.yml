@@ -13,10 +13,6 @@ frontend:
     build:
       commands:
         - echo "=== LITEREXIA AMPLIFY BUILD - BUILD ==="
-        - echo "Setting environment variables..."
-        - export REACT_APP_API_URL=https://literexia-backend.com/api
-        - export REACT_APP_BACKEND_URL=https://literexia-backend.com
-        - export NODE_ENV=production
         - echo "Building React application..."
         - npm --prefix frontend run build
         - echo "Build completed! Checking output..."
