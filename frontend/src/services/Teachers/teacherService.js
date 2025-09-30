@@ -20,12 +20,20 @@ const api = axios.create({
 // Add auth token to all requests
 api.interceptors.request.use(
   config => {
-    // Add the auth token to every request
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+    // Get token from user object stored by authService
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        const token = user?.token;
+        if (token) {
+          config.headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting token for teacherService:', error);
     }
-    
+
     console.log(`API Request: ${config.method?.toUpperCase() || 'GET'} ${config.url}`);
     return config;
   },
@@ -45,9 +53,10 @@ api.interceptors.response.use(
       console.error('API Error:', error.response.status, error.response.data);
 
       if (error.response.status === 401) {
-        // Unauthorized - redirect to login
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
+        // Unauthorized - clear user data and redirect to login
+        localStorage.removeItem('user');
+        localStorage.removeItem('userType');
+        localStorage.removeItem('userId');
         window.location.href = '/login';
       }
     } else if (error.request) {
