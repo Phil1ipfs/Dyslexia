@@ -780,6 +780,15 @@
   margin-top: 0.5rem;
 }
 
+.admin-parent-form-group.has-error .admin-parent-input {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.admin-parent-form-group.has-error .admin-parent-required {
+  color: #dc2626;
+}
+
 .admin-parent-file-input-wrapper {
   display: flex;
   align-items: center;
@@ -1270,6 +1279,90 @@
   
   .admin-parent-current-image {
     padding: 0.75rem;
+  }
+}
+
+/* ===== FORM VALIDATION SUMMARY ===== */
+.parent-form-validation-summary {
+  margin: 2rem 0 1.5rem 0;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 4px 15px rgba(59, 79, 129, 0.08);
+  animation: fadeIn 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add a subtle top border accent */
+.parent-form-validation-summary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #3B4F81;
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.parent-form-validation-summary .validation-summary-success {
+  border-color: #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.parent-form-validation-summary .summary-header {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.parent-form-validation-summary .summary-header.success {
+  color: #3B4F81;
+}
+
+.parent-form-validation-summary .summary-text strong {
+  color: #3B4F81;
+  font-weight: 600;
+}
+
+.parent-form-validation-summary .validation-summary-submit-btn {
+  background: linear-gradient(135deg, #3B4F81, #2a3a65);
+  color: white;
+  border: none;
+  padding: 0.875rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.2);
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.parent-form-validation-summary .validation-summary-submit-btn:hover {
+  background: linear-gradient(135deg, #2a3a65, #1e2a4a);
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.parent-form-validation-summary .validation-summary-submit-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

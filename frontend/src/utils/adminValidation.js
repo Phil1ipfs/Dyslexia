@@ -253,8 +253,8 @@ const adminValidation = {
         break;
 
       case 'parent':
-        if (userAge < 16) {
-          errors.push('Parents must be at least 16 years old');
+        if (userAge < 18) {
+          errors.push('Parents must be at least 18 years old');
         }
         if (userAge > 100) {
           errors.push('Please verify the birth date - age seems unusually high');

@@ -480,11 +480,15 @@ exports.createParent = async (req, res) => {
     }
 
     console.log('✅ [PARENT CREATION] Email is unique across ALL collections and user types');
+
     // 1. Generate password
     const password = generatePassword(8);
+
     // 2. Hash password
     const passwordHash = await bcrypt.hash(password, 10);
-    // 3. Create user in users_web.users (User already declared above)
+
+    // 3. Get User model and create user in users_web.users
+    const User = await getUserModel();
     const userDoc = new User({
       email: sanitizedData.email,
       passwordHash,
@@ -494,7 +498,8 @@ exports.createParent = async (req, res) => {
     await userDoc.save();
     console.log('✅ [PARENT ADMIN] User created in users_web.users');
 
-    // 4. Create parent profile in parent.parent_profile
+    // 4. Get profile collection and create parent profile in parent.parent_profile
+    const profileCollection = await getParentProfileCollection();
     const now = new Date();
     const profileImageUrl = req.file ? await uploadToS3(req.file, 'parent-profiles') : null;
     const profileDoc = {
