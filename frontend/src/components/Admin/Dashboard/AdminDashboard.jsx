@@ -16,6 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { API_BASE_URL } from '../../../config/apiConfig';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -56,8 +57,7 @@ const AdminDashboard = () => {
           }
         }
 
-        // Use environment variable for API base URL
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+        // Use imported API base URL from config
         const response = await fetch(`${API_BASE_URL}/admin/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`,
