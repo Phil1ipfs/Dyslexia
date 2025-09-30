@@ -37,7 +37,7 @@ const AuthService = {
         requestData.expectedRole = expectedRole;
       }
 
-      const response = await axios.post(`${API_URL}/api/auth/login`, requestData);
+      const response = await axios.post(`${API_URL}/auth/login`, requestData);
 
       if (response.data.token) {
         // Store user data with token - single source of truth
@@ -68,7 +68,7 @@ const AuthService = {
    */
   register: async (userData) => {
     try {
-      return await axios.post(`${API_URL}/api/auth/register`, userData);
+      return await axios.post(`${API_URL}/auth/register`, userData);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
