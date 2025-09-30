@@ -585,14 +585,21 @@ const ParentDashboard = () => {
                 <div className="parent-dashboard__info-card-label">First Name</div>
               </div>
               {isEditMode ? (
-                <input
-                  type="text"
-                  name="firstName"
-                  value={editFormData.firstName}
-                  onChange={handleEditChange}
-                  className="parent-dashboard__info-card-input"
-                  placeholder="Enter first name"
-                />
+                <div>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={editFormData.firstName}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.firstName ? 'error' : ''}`}
+                    placeholder="Enter first name"
+                  />
+                  {validationErrors.firstName && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.firstName}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="parent-dashboard__info-card-value">{personalInfo.firstName || 'Not provided'}</div>
               )}
@@ -604,14 +611,21 @@ const ParentDashboard = () => {
                 <div className="parent-dashboard__info-card-label">Last Name</div>
               </div>
               {isEditMode ? (
-                <input
-                  type="text"
-                  name="lastName"
-                  value={editFormData.lastName}
-                  onChange={handleEditChange}
-                  className="parent-dashboard__info-card-input"
-                  placeholder="Enter last name"
-                />
+                <div>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={editFormData.lastName}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.lastName ? 'error' : ''}`}
+                    placeholder="Enter last name"
+                  />
+                  {validationErrors.lastName && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.lastName}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="parent-dashboard__info-card-value">{personalInfo.lastName || 'Not provided'}</div>
               )}
@@ -623,34 +637,105 @@ const ParentDashboard = () => {
                 <div className="parent-dashboard__info-card-label">Middle Name</div>
               </div>
               {isEditMode ? (
-                <input
-                  type="text"
-                  name="middleName"
-                  value={editFormData.middleName}
-                  onChange={handleEditChange}
-                  className="parent-dashboard__info-card-input"
-                  placeholder="Enter middle name"
-                />
+                <div>
+                  <input
+                    type="text"
+                    name="middleName"
+                    value={editFormData.middleName}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.middleName ? 'error' : ''}`}
+                    placeholder="Enter middle name (optional)"
+                  />
+                  {validationErrors.middleName && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.middleName}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="parent-dashboard__info-card-value">{personalInfo.middleName || 'Not provided'}</div>
               )}
             </div>
-            
+
+            {/* Contact Number */}
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.22s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <Phone className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Contact Number</div>
+              </div>
+              {isEditMode ? (
+                <div>
+                  <input
+                    type="tel"
+                    name="contactNumber"
+                    value={editFormData.contactNumber}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.contactNumber ? 'error' : ''}`}
+                    placeholder="Enter contact number (e.g., 09123456789)"
+                  />
+                  {validationErrors.contactNumber && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.contactNumber}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.contactNumber || 'Not provided'}</div>
+              )}
+            </div>
+
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.25s'}}>
               <div className="parent-dashboard__info-card-header">
                 <Calendar className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Date of Birth</div>
               </div>
               {isEditMode ? (
-                <input
-                  type="date"
-                  name="dateOfBirth"
-                  value={editFormData.dateOfBirth}
-                  onChange={handleEditChange}
-                  className="parent-dashboard__info-card-input"
-                />
+                <div>
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={editFormData.dateOfBirth}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.dateOfBirth ? 'error' : ''}`}
+                  />
+                  {validationErrors.dateOfBirth && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.dateOfBirth}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="parent-dashboard__info-card-value">{personalInfo.dateOfBirth ? formatDate(personalInfo.dateOfBirth) : 'Not provided'}</div>
+              )}
+            </div>
+
+            {/* Gender */}
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.27s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <User className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Gender</div>
+              </div>
+              {isEditMode ? (
+                <div>
+                  <select
+                    name="gender"
+                    value={editFormData.gender}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.gender ? 'error' : ''}`}
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {validationErrors.gender && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.gender}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.gender || 'Not provided'}</div>
               )}
             </div>
             
@@ -660,19 +745,26 @@ const ParentDashboard = () => {
                 <div className="parent-dashboard__info-card-label">Civil Status</div>
               </div>
               {isEditMode ? (
-                <select
-                  name="civilStatus"
-                  value={editFormData.civilStatus}
-                  onChange={handleEditChange}
-                  className="parent-dashboard__info-card-input"
-                >
-                  <option value="">Select Civil Status</option>
-                  <option value="Single">Single</option>
-                  <option value="Married">Married</option>
-                  <option value="Divorced">Divorced</option>
-                  <option value="Widowed">Widowed</option>
-                  <option value="Separated">Separated</option>
-                </select>
+                <div>
+                  <select
+                    name="civilStatus"
+                    value={editFormData.civilStatus}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.civilStatus ? 'error' : ''}`}
+                  >
+                    <option value="">Select Civil Status</option>
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Widowed">Widowed</option>
+                    <option value="Separated">Separated</option>
+                  </select>
+                  {validationErrors.civilStatus && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.civilStatus}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="parent-dashboard__info-card-value">{personalInfo.civilStatus || 'Not provided'}</div>
               )}
@@ -684,17 +776,40 @@ const ParentDashboard = () => {
                 <div className="parent-dashboard__info-card-label">Address</div>
               </div>
               {isEditMode ? (
-                <textarea
-                  name="address"
-                  value={editFormData.address}
-                  onChange={handleEditChange}
-                  className="parent-dashboard__info-card-input parent-dashboard__info-card-textarea"
-                  placeholder="Enter address"
-                  rows="3"
-                />
+                <div>
+                  <textarea
+                    name="address"
+                    value={editFormData.address}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input parent-dashboard__info-card-textarea ${validationErrors.address ? 'error' : ''}`}
+                    placeholder="Enter address"
+                    rows="3"
+                  />
+                  {validationErrors.address && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.address}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="parent-dashboard__info-card-value">{personalInfo.address || 'Not provided'}</div>
               )}
+            </div>
+
+            {/* Email - Non-editable field */}
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.37s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <Mail className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Email Address</div>
+              </div>
+              <div className="parent-dashboard__info-card-value">
+                {personalInfo.email || 'Not provided'}
+                {isEditMode && (
+                  <div className="parent-dashboard__field-note">
+                    Email cannot be changed. Contact administration for assistance.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

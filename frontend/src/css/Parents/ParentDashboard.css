@@ -962,3 +962,50 @@
     animation: none;
   }
 }
+
+/* Validation Error Styles */
+.parent-dashboard__validation-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  line-height: 1.4;
+}
+
+.parent-dashboard__validation-error::before {
+  content: "⚠";
+  color: #dc2626;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* Input error state */
+.parent-dashboard__info-card-input.error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.parent-dashboard__info-card-input.error:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+/* Field note styles */
+.parent-dashboard__field-note {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 0.375rem;
+  padding: 0.375rem;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  border-left: 3px solid #d1d5db;
+}
