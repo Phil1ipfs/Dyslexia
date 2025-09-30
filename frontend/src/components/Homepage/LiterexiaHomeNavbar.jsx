@@ -48,12 +48,7 @@ function LiterexiaHomeNavbar() {
   };
 
   const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = '/app-debug.apk';
-    link.download = 'Literexia.apk';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    window.open('https://drive.google.com/uc?export=download&id=12zk_OyBrbiAxArTFpwPKGRAi3hk_zw5u', '_blank');
   };
 
   return (
