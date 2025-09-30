@@ -16,7 +16,7 @@ const ParentSidebar = ({ onLogout }) => {
   const [error, setError] = useState(null);
 
   // Base URL from environment variable or default
-  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  const BASE_URL = import.meta.env.VITE_API_URL || "https://api.literexia.com";
 
   useEffect(() => {
     const fetchParentProfile = async () => {

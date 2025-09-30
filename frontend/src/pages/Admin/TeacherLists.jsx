@@ -68,7 +68,7 @@ const CredentialsModal = ({ credentials, onClose }) => {
         recipientEmail: credentials.email
       });
 
-      const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
+      const response = await axios.post('https://api.literexia.com/api/admin/send-credentials', {
         email: credentials.email,
         password: credentials.password,
         userType: 'teacher',

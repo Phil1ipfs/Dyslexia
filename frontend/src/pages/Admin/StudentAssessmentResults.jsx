@@ -675,7 +675,7 @@ const StudentAssessmentResults = () => {
       let mainAssessment = null;
       try {
         const mainAssessmentDetailsResponse = await axios.get(
-          `http://localhost:5001/api/main-assessment`,
+          `https://api.literexia.com/api/main-assessment`,
           {
             params: {
               category: category,
@@ -794,7 +794,7 @@ const StudentAssessmentResults = () => {
 
             // Get intervention responses using the correct API endpoint with all required parameters
             const interventionResponse = await axios.get(
-              `http://localhost:5001/api/intervention-responses`, {
+              `https://api.literexia.com/api/intervention-responses`, {
                 params: {
                   studentId: studentId,
                   interventionAssessmentId: interventionAssessmentId,

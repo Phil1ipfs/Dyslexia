@@ -2,7 +2,7 @@
 
 // API configuration for the service
 const isProd = import.meta.env?.PROD || false;
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/';
+const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'https://api.literexia.com/';
 export const API_BASE_URL = API_BASE; // Use the environment variable directly
 
 // Content URLs (API_BASE_URL already includes /api)

@@ -66,7 +66,7 @@ const ParentDashboard = () => {
   const [validationErrors, setValidationErrors] = useState({});
   
   // Base URL from environment variable or default
-  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  const BASE_URL = import.meta.env.VITE_API_URL || "https://api.literexia.com";
 
   // Validation functions
   const validateField = (name, value) => {

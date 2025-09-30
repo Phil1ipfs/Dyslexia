@@ -49,7 +49,7 @@ const AdminProfile = () => {
       const currentUser = authService.getCurrentUser();
       const token = currentUser?.token || localStorage.getItem('authToken');
 
-      const response = await fetch('http://localhost:5001/api/admin/profile', {
+      const response = await fetch('https://api.literexia.com/api/admin/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -313,7 +313,7 @@ const AdminProfile = () => {
       const currentUser = authService.getCurrentUser();
       const token = currentUser?.token || localStorage.getItem('authToken');
 
-      const response = await fetch('http://localhost:5001/api/admin/change-password', {
+      const response = await fetch('https://api.literexia.com/api/admin/change-password', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -396,7 +396,7 @@ const AdminProfile = () => {
       const currentUser = authService.getCurrentUser();
       const token = currentUser?.token || localStorage.getItem('authToken');
 
-      const response = await fetch('http://localhost:5001/api/admin/upload-profile-image', {
+      const response = await fetch('https://api.literexia.com/api/admin/upload-profile-image', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -455,7 +455,7 @@ const AdminProfile = () => {
       };
 
       // Update admin profile in database
-      const response = await fetch('http://localhost:5001/api/admin/profile', {
+      const response = await fetch('https://api.literexia.com/api/admin/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -4,7 +4,7 @@
 import axios from 'axios';
 
 // Get backend URL from environment variables (without trailing slash)
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://api.literexia.com';
 console.log('🔍 AuthService DEBUG - Environment variables:', {
   VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
   VITE_API_URL: import.meta.env.VITE_API_URL,

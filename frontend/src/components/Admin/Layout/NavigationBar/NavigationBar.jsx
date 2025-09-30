@@ -79,7 +79,7 @@ const NavigationBar = ({ onLogout }) => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('http://localhost:5001/api/admin/profile', {
+      const response = await fetch('https://api.literexia.com/api/admin/profile', {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
