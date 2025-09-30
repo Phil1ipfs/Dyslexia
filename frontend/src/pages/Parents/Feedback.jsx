@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import '../../css/Parents/Feedback.css';
 import axios from 'axios';
-import teachersData from '../../../teachers.profile.json';
 
 const Feedback = () => {
   const [feedbacks, setFeedbacks] = useState([]);
