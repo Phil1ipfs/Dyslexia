@@ -674,6 +674,8 @@ const StudentAssessmentResults = () => {
       // Fetch main assessment questions for the category to enhance responses with question details
       let mainAssessment = null;
       try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const token = user?.token;
         const mainAssessmentDetailsResponse = await axios.get(
           `https://api.literexia.com/api/main-assessment`,
           {
@@ -682,7 +684,7 @@ const StudentAssessmentResults = () => {
               readingLevel: student?.readingLevel || 'High Emerging'
             },
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
+              Authorization: `Bearer ${token}`
             },
             timeout: 10000
           }
@@ -793,6 +795,8 @@ const StudentAssessmentResults = () => {
             console.log(`Intervention Assessment ID: ${interventionAssessmentId}`);
 
             // Get intervention responses using the correct API endpoint with all required parameters
+            const user = JSON.parse(localStorage.getItem('user'));
+            const token = user?.token;
             const interventionResponse = await axios.get(
               `https://api.literexia.com/api/intervention-responses`, {
                 params: {
@@ -802,7 +806,7 @@ const StudentAssessmentResults = () => {
                   revisionNumber: targetRevisionNumber
                 },
                 headers: {
-                  Authorization: `Bearer ${localStorage.getItem('token')}`
+                  Authorization: `Bearer ${token}`
                 }
               }
             );

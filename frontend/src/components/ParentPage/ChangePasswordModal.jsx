@@ -61,7 +61,8 @@ const ChangePasswordModal = ({ onClose }) => {
     }
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = user?.token;
       if (!token) {
         throw new Error('Authentication token not found');
       }

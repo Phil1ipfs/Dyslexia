@@ -20,9 +20,8 @@ const api = axios.create({
 // REQUEST INTERCEPTOR: attach bearer token + log
 api.interceptors.request.use(
   config => {
-    const token =
-      localStorage.getItem('token') ||
-      localStorage.getItem('authToken');
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token;
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }

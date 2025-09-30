@@ -23,9 +23,8 @@ const ParentSidebar = ({ onLogout }) => {
       try {
         setLoading(true);
         // Get auth token from localStorage
-        const token = localStorage.getItem('authToken') || 
-                     localStorage.getItem('token') || 
-                     JSON.parse(localStorage.getItem('userData'))?.token;
+        const user = JSON.parse(localStorage.getItem('user'));
+        const token = user?.token;
         
         if (!token) {
           throw new Error('No authentication token found');
