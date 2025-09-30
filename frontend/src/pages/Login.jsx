@@ -4,17 +4,30 @@ import '../css/login.css';
 import AuthService from '../services/authService';
 
 import logo from '../assets/images/Teachers/LITEREXIA.png';
-import { FiMail, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
+import { FiMail, FiEye, FiEyeOff, FiAlertCircle, FiLock, FiCheckCircle } from 'react-icons/fi';
 
 function ErrorDialog({ message, onClose }) {
   return (
     <div className="error-dialog-overlay fade-in">
       <div className="error-dialog-box pop-in">
         <div className="error-icon">
-          <FiAlertCircle size={24} color="#d9534f" />
+          <FiAlertCircle size={60} />
         </div>
         <p>{message}</p>
         <button className="dialog-close-btn" onClick={onClose}>OK</button>
+      </div>
+    </div>
+  );
+}
+
+function SuccessDialog({ message, onClose }) {
+  return (
+    <div className="error-dialog-overlay fade-in">
+      <div className="success-dialog-box pop-in">
+        <div className="success-icon">
+          <FiCheckCircle size={60} />
+        </div>
+        <p>{message}</p>
       </div>
     </div>
   );
@@ -29,6 +42,7 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [expectedRoleType, setExpectedRoleType] = useState(null);
 
   // Retrieve the expected role type from localStorage when component mounts
@@ -91,16 +105,22 @@ const Login = ({ onLogin }) => {
         onLogin();
       }
 
-      // Route based on user type
-      if (expectedRoleType === 'parent') {
-        navigate('/parent/dashboard');
-      } else if (expectedRoleType === 'teacher') {
-        navigate('/teacher/dashboard');
-      } else if (expectedRoleType === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        setError('Invalid account type selected');
-      }
+      // Show success message
+      setSuccess('Login successful! Redirecting...');
+
+      // Redirect after 1.5 seconds
+      setTimeout(() => {
+        // Route based on user type
+        if (expectedRoleType === 'parent') {
+          navigate('/parent/dashboard');
+        } else if (expectedRoleType === 'teacher') {
+          navigate('/teacher/dashboard');
+        } else if (expectedRoleType === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          setError('Invalid account type selected');
+        }
+      }, 1500);
     } catch (err) {
       console.error('Login error:', err);
       
@@ -140,15 +160,17 @@ const Login = ({ onLogin }) => {
       <button className="exit-button" onClick={() => navigate('/choose-account')}>X</button>
 
       {error && <ErrorDialog message={error} onClose={() => setError('')} />}
+      {success && <SuccessDialog message={success} />}
 
       <div className="login-card">
-        <h1 className="welcome-text">Welcome Back!</h1>
+        <h1 className="welcome-text">Maligayang Pag Balik!</h1>
         <p className="instruction-text">
-          Enter your email and password for {getAccountTypeLabel()} account
+          Ilagay ang iyong email at password
         </p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group icon-input">
+            <FiMail className="input-icon-left" />
             <input
               type="email"
               name="email"
@@ -159,10 +181,10 @@ const Login = ({ onLogin }) => {
               disabled={isLoading}
               data-testid="email-input"
             />
-            <FiMail className="input-icon" />
           </div>
 
           <div className="form-group icon-input">
+            <FiLock className="input-icon-left" />
             <input
               type={showPassword ? 'text' : 'password'}
               name="password"
@@ -175,13 +197,13 @@ const Login = ({ onLogin }) => {
             />
             {showPassword ? (
               <FiEyeOff
-                className="input-icon clickable"
+                className="input-icon-right clickable"
                 onClick={() => setShowPassword(false)}
                 data-testid="hide-password"
               />
             ) : (
               <FiEye
-                className="input-icon clickable"
+                className="input-icon-right clickable"
                 onClick={() => setShowPassword(true)}
                 data-testid="show-password"
               />
