@@ -5,9 +5,9 @@ const isProd = import.meta.env?.PROD || false;
 const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/';
 export const API_BASE_URL = API_BASE; // Use the environment variable directly
 
-// Content URLs
-export const CONTENT_IMAGE_BASE_URL = `${API_BASE_URL}/api/content/images`;
-export const CONTENT_AUDIO_BASE_URL = `${API_BASE_URL}/api/content/audio`;
+// Content URLs (API_BASE_URL already includes /api)
+export const CONTENT_IMAGE_BASE_URL = `${API_BASE_URL}/content/images`;
+export const CONTENT_AUDIO_BASE_URL = `${API_BASE_URL}/content/audio`;
 
 // Export other configuration values as needed
 export const DEFAULT_READING_LEVELS = [

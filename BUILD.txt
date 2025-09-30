@@ -1,0 +1,205 @@
+2025-09-30T02:24:21.920Z [INFO]: # Build environment configured with Standard build compute type: 8GiB Memory, 4vCPUs, 128GB Disk Space
+2025-09-30T02:24:23.225Z [INFO]: # Cloning repository: git@github.com:Phil1ipfs/Dyslexia.git
+2025-09-30T02:24:30.603Z [INFO]: 
+2025-09-30T02:24:30.705Z [INFO]: Cloning into 'Dyslexia'...
+2025-09-30T02:24:30.705Z [INFO]: # Switching to commit: 610ff93edc72c25665c9e2634c7106e25b051079
+2025-09-30T02:24:31.084Z [INFO]: Note: switching to '610ff93edc72c25665c9e2634c7106e25b051079'.
+                                 You are in 'detached HEAD' state. You can look around, make experimental
+                                 changes and commit them, and you can discard any commits you make in this
+                                 state without impacting any branches by switching back to a branch.
+                                 If you want to create a new branch to retain commits you create, you may
+                                 do so (now or later) by using -c with the switch command. Example:
+                                 git switch -c <new-branch-name>
+                                 Or undo this operation with:
+                                 git switch -
+                                 Turn off this advice by setting config variable advice.detachedHead to false
+                                 HEAD is now at 610ff93e Debug: Add console logging to verify environment variables in apiConfig
+2025-09-30T02:24:31.134Z [INFO]: Successfully cleaned up Git credentials
+2025-09-30T02:24:31.135Z [INFO]: # Checking for Git submodules at: /codebuild/output/src1877229818/src/Dyslexia/.gitmodules
+2025-09-30T02:24:31.144Z [INFO]: # Retrieving environment cache...
+2025-09-30T02:24:31.220Z [INFO]: # Retrieved environment cache
+2025-09-30T02:24:31.220Z [INFO]: ---- Setting Up SSM Secrets ----
+2025-09-30T02:24:31.220Z [INFO]: SSM params {"Path":"/amplify/d1et9fk8q5ajyl/rain/","WithDecryption":true}
+2025-09-30T02:24:31.261Z [WARNING]: !Failed to set up process.env.secrets
+2025-09-30T02:24:32.057Z [INFO]: # No package override configuration found.
+2025-09-30T02:24:32.062Z [INFO]: # Retrieving cache...
+2025-09-30T02:24:35.559Z [INFO]: # Extracting cache...
+2025-09-30T02:24:44.667Z [INFO]: # Extraction completed
+2025-09-30T02:24:44.787Z [INFO]: # Retrieved cache
+2025-09-30T02:25:10.121Z [INFO]: ## Starting Backend Build
+                                 # Starting phase: build
+                                 # Executing command: echo "Backend runs on separate EC2 server"
+                                 Backend runs on separate EC2 server
+2025-09-30T02:25:11.661Z [INFO]: # Completed phase: build
+                                 ## Completed Backend Build
+2025-09-30T02:25:11.666Z [INFO]: ## Starting Frontend Build
+                                 # Starting phase: preBuild
+2025-09-30T02:25:11.666Z [INFO]: # Executing command: echo "=== LITEREXIA AMPLIFY BUILD - PRE-BUILD ==="
+                                 === LITEREXIA AMPLIFY BUILD - PRE-BUILD ===
+                                 # Executing command: echo "Working directory:" && pwd
+                                 Working directory:
+                                 /codebuild/output/src1877229818/src/Dyslexia
+                                 # Executing command: echo "Checking frontend directory..."
+                                 Checking frontend directory...
+                                 # Executing command: ls -la frontend/
+2025-09-30T02:25:11.668Z [INFO]: total 356
+                                 drwxr-xr-x   6 amplify amplify    333 Sep 30 02:24 .
+                                 drwxr-xr-x  10 amplify amplify   4096 Sep 30 02:25 ..
+                                 -rw-r--r--   1 amplify amplify    218 Sep 30 02:24 .env
+                                 -rw-r--r--   1 amplify amplify    310 Sep 30 02:24 .gitignore
+                                 -rw-r--r--   1 amplify amplify  68536 Sep 30 02:24 README.md
+                                 -rw-r--r--   1 amplify amplify    837 Sep 30 02:24 index.html
+                                 -rw-r--r--   1 amplify amplify    289 Sep 30 02:24 manifest.json
+                                 drwxr-xr-x 324 amplify amplify  12288 Sep 30 02:24 node_modules
+                                 -rw-r--r--   1 amplify amplify 228593 Sep 30 02:24 package-lock.json
+                                 -rw-r--r--   1 amplify amplify   1736 Sep 30 02:24 package.json
+                                 drwxr-xr-x   3 amplify amplify    165 Sep 30 02:24 public
+                                 drwxr-xr-x  11 amplify amplify    205 Sep 30 02:24 src
+                                 -rw-r--r--   1 amplify amplify   4294 Sep 30 02:24 test.category_results.json
+                                 -rw-r--r--   1 amplify amplify   2936 Sep 30 02:24 test.intervention_responses.json
+                                 -rw-r--r--   1 amplify amplify   6638 Sep 30 02:24 test.student_responses.json
+                                 drwxr-xr-x   2 amplify amplify     33 Sep 30 02:24 vite-plugins
+                                 -rw-r--r--   1 amplify amplify   3086 Sep 30 02:24 vite.config.js
+2025-09-30T02:25:11.668Z [INFO]: # Executing command: echo "Installing dependencies..."
+2025-09-30T02:25:11.669Z [INFO]: Installing dependencies...
+                                 # Executing command: npm --prefix frontend ci
+2025-09-30T02:25:23.672Z [WARNING]: npm warn ERESOLVE overriding peer dependency
+2025-09-30T02:25:23.678Z [WARNING]: npm warn While resolving: react-side-effect@2.1.2
+                                    npm warn Found: react@19.1.0
+                                    npm warn node_modules/react
+                                    npm warn   react@"^19.1.0" from the root project
+                                    npm warn   50 more (@emotion/react, ...)
+                                    npm warn
+                                    npm warn Could not resolve dependency:
+                                    npm warn peer react@"^16.3.0 || ^17.0.0 || ^18.0.0" from react-side-effect@2.1.2
+                                    npm warn node_modules/react-helmet/node_modules/react-side-effect
+                                    npm warn   react-side-effect@"^2.1.0" from react-helmet@6.1.0
+                                    npm warn   node_modules/react-helmet
+                                    npm warn
+                                    npm warn Conflicting peer dependency: react@18.3.1
+                                    npm warn node_modules/react
+                                    npm warn   peer react@"^16.3.0 || ^17.0.0 || ^18.0.0" from react-side-effect@2.1.2
+                                    npm warn   node_modules/react-helmet/node_modules/react-side-effect
+                                    npm warn     react-side-effect@"^2.1.0" from react-helmet@6.1.0
+                                    npm warn     node_modules/react-helmet
+2025-09-30T02:25:32.878Z [INFO]: added 462 packages, and audited 463 packages in 19s
+2025-09-30T02:25:32.883Z [INFO]: 41 packages are looking for funding
+                                 run `npm fund` for details
+                                 6 vulnerabilities (3 low, 2 high, 1 critical)
+                                 To address all issues, run:
+                                 npm audit fix
+                                 Run `npm audit` for details.
+2025-09-30T02:25:32.901Z [INFO]: # Executing command: echo "Dependencies installed successfully"
+2025-09-30T02:25:32.901Z [INFO]: Dependencies installed successfully
+                                 # Completed phase: preBuild
+                                 # Starting phase: build
+                                 # Executing command: echo "=== LITEREXIA AMPLIFY BUILD - BUILD ==="
+                                 === LITEREXIA AMPLIFY BUILD - BUILD ===
+                                 # Executing command: echo "Building React application..."
+                                 Building React application...
+                                 # Executing command: npm --prefix frontend run build
+2025-09-30T02:25:33.003Z [INFO]: > frontend@0.1.0 build
+                                 > vite build
+2025-09-30T02:25:33.754Z [INFO]: vite v6.3.6 building for production...
+2025-09-30T02:25:33.820Z [INFO]: transforming...
+2025-09-30T02:25:46.844Z [INFO]: ✓ 2969 modules transformed.
+2025-09-30T02:25:48.767Z [WARNING]: [esbuild css minify]
+                                    ▲ [WARNING] Unexpected "/" [css-syntax-error]
+                                    <stdin>:73880:6:
+                                    73880 │ }* src/components/Layout/AdminLayout.css */
+                                    ╵       ^
+2025-09-30T02:25:49.134Z [INFO]: rendering chunks...
+2025-09-30T02:26:14.336Z [INFO]: computing gzip size...
+2025-09-30T02:26:14.599Z [INFO]: dist/assets/manifest-DOuBHUFh.json                            0.29 kB │ gzip:     0.20 kB
+2025-09-30T02:26:14.599Z [INFO]: dist/index.html                                               1.30 kB │ gzip:     0.58 kB
+                                 dist/assets/student1-BknluMjG.jpg                             4.84 kB
+                                 dist/_security_headers.txt                                    5.10 kB │ gzip:     1.40 kB
+                                 dist/assets/parent-BzhZdW3h.png                               5.35 kB
+                                 dist/assets/Group 4079-CG_5ub0W.png                           5.42 kB
+                                 dist/assets/students-CDjBR36V.png                             6.16 kB
+                                 dist/assets/Logout-DgohyJ4I.png                               6.78 kB
+                                 dist/assets/LITEREXIA-Ci6zswqp.png                            9.20 kB
+                                 dist/assets/Dashboard-CFWEPTAd.png                           18.75 kB
+                                 dist/assets/parent1-DY7obGzy.png                             19.94 kB
+2025-09-30T02:26:14.599Z [INFO]: dist/assets/teacher-SZ6i5LWl.png                             36.73 kB
+                                 dist/assets/chatbot-C7WVSNHD.png                             39.37 kB
+                                 dist/assets/ai-CF7r1AVM.png                                  40.10 kB
+                                 dist/assets/Progress-BhimOtz9.png                            42.12 kB
+                                 dist/assets/admin-Dip_RuH8.png                               42.37 kB
+                                 dist/assets/cradleLogoTrans-CF8gorN5.png                     43.71 kB
+                                 dist/assets/phone-CnVYEGFG.png                               46.51 kB
+                                 dist/assets/AtkinsonHyperlegible-Regular-x6Nv_yQN.ttf        53.50 kB
+                                 dist/assets/AtkinsonHyperlegible-Italic-DU9PyR0j.ttf         54.20 kB
+2025-09-30T02:26:14.599Z [INFO]: dist/assets/AtkinsonHyperlegible-Bold-DnVEso5e.ttf           54.44 kB
+                                 dist/assets/AtkinsonHyperlegible-BoldItalic-CqigmPLH.ttf     54.61 kB
+                                 dist/assets/flag-BeeaSe6-.png                                59.30 kB
+                                 dist/assets/path-CAcLkxhs.png                                74.56 kB
+                                 dist/assets/Feedback-DgNiviBt.png                            82.52 kB
+                                 dist/assets/penguin-WJhmpsYh.png                             85.12 kB
+                                 dist/assets/activitymanage-DiJ1vtUc.png                      85.44 kB
+                                 dist/assets/bear-Bnn4eNbf.png                                86.91 kB
+                                 dist/assets/cradleLogo-CO3JFTEq.jpg                          88.21 kB
+                                 dist/assets/hero-clouds2-DqYO0i9_.png                        88.73 kB
+                                 dist/assets/Poppins-Regular-Bnr16EOz.otf                     95.18 kB
+                                 dist/assets/Poppins-ExtraBold-C3mKXT6u.otf                   95.31 kB
+                                 dist/assets/Poppins-BlackItalic-C40gboen.otf                101.02 kB
+                                 dist/assets/background-2-C_UmPPB1.png                       105.88 kB
+                                 dist/assets/Poppins-BoldItalic-Cqw9I63D.otf                 106.22 kB
+                                 dist/assets/hero-clouds3-DsNq2DY9.png                       108.83 kB
+                                 dist/assets/bear-2-BNkCWxif.png                             109.37 kB
+                                 dist/assets/dyslexia-preview-TdU-jyXK.png                   119.79 kB
+2025-09-30T02:26:14.600Z [INFO]: dist/assets/Avatar-BD72MoNk.png                             128.16 kB
+                                 dist/assets/hero-clouds-CXLsNFK3.png                        130.93 kB
+                                 dist/assets/sealion-CqRcvPdc.png                            194.45 kB
+                                 dist/assets/elephant-BY1HK87z.png                           231.34 kB
+                                 dist/assets/star-sxWMPr32.png                               261.85 kB
+                                 dist/assets/hero-penguin-1yqOCv7V.png                       382.72 kB
+                                 dist/assets/feature-phone-BYQprdQp.png                      656.37 kB
+                                 dist/assets/Group 4076-BDRAc5NM.png                       1,176.99 kB
+                                 dist/assets/Group 4078-DOn3_FKu.png                       1,322.98 kB
+                                 dist/assets/main-DSoXZBdm.css                             1,124.95 kB │ gzip:   153.79 kB
+                                 dist/assets/vendor-CLSbD3MO.js                               12.34 kB │ gzip:     4.30 kB
+                                 dist/assets/router-BK4LYBT1.js                               34.50 kB │ gzip:    12.58 kB
+                                 dist/assets/utils-BLQyEm9L.js                                56.79 kB │ gzip:    21.65 kB
+2025-09-30T02:26:14.600Z [INFO]: dist/assets/ui-CaGB-UuY.js                                   61.16 kB │ gzip:    19.16 kB
+                                 dist/assets/index.es-keYhnywy.js                            155.54 kB │ gzip:    51.07 kB
+                                 dist/assets/charts-DJyqkuW7.js                              397.50 kB │ gzip:   103.09 kB
+                                 dist/assets/main-_70H_JD5.js                              4,453.38 kB │ gzip: 1,307.46 kB
+2025-09-30T02:26:14.600Z [WARNING]: (!) Some chunks are larger than 1000 kB after minification. Consider:
+                                    - Using dynamic import() to code-split the application
+                                    - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+                                    - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+2025-09-30T02:26:14.600Z [INFO]: ✓ built in 40.82s
+2025-09-30T02:26:14.748Z [INFO]: # Executing command: echo "Build completed! Checking output..."
+                                 Build completed! Checking output...
+2025-09-30T02:26:14.748Z [INFO]: # Executing command: ls -la frontend/dist/
+2025-09-30T02:26:14.752Z [INFO]: total 16524
+                                 drwxr-xr-x 4 amplify amplify      226 Sep 30 02:26 .
+                                 drwxr-xr-x 7 amplify amplify     4096 Sep 30 02:25 ..
+                                 -rw-r--r-- 1 amplify amplify     2829 Sep 30 02:25 .htaccess
+                                 -rw-r--r-- 1 amplify amplify 16868555 Sep 30 02:25 Kit_Nicholas_Rish_Mark_progress_report.pdf
+                                 -rw-r--r-- 1 amplify amplify     1658 Sep 30 02:25 _headers
+                                 -rw-r--r-- 1 amplify amplify      764 Sep 30 02:25 _redirects
+                                 -rw-r--r-- 1 amplify amplify     5099 Sep 30 02:26 _security_headers.txt
+                                 drwxr-xr-x 2 amplify amplify     4096 Sep 30 02:26 assets
+                                 -rw-r--r-- 1 amplify amplify    10867 Sep 30 02:25 cradle logo.png
+                                 drwxr-xr-x 2 amplify amplify       33 Sep 30 02:25 images
+                                 -rw-r--r-- 1 amplify amplify     1303 Sep 30 02:26 index.html
+                                 -rw-r--r-- 1 amplify amplify      312 Sep 30 02:25 manifest.json
+2025-09-30T02:26:14.752Z [INFO]: # Completed phase: build
+2025-09-30T02:26:14.752Z [INFO]: ## Completed Frontend Build
+2025-09-30T02:26:14.993Z [INFO]: ## Build completed successfully
+2025-09-30T02:26:14.994Z [INFO]: # Starting caching...
+2025-09-30T02:26:15.003Z [INFO]: # Creating cache artifact...
+2025-09-30T02:26:20.858Z [INFO]: # Created cache artifact
+2025-09-30T02:26:20.961Z [INFO]: # Uploading cache artifact...
+2025-09-30T02:26:24.106Z [INFO]: # Uploaded cache artifact
+2025-09-30T02:26:24.193Z [INFO]: # Caching completed
+2025-09-30T02:26:24.221Z [INFO]: # Starting build artifact upload process...
+2025-09-30T02:26:24.668Z [INFO]: # Uploading build artifact '__artifacts.zip'...
+2025-09-30T02:26:24.873Z [INFO]: # Build artifact upload completed
+2025-09-30T02:26:24.874Z [INFO]: # Starting environment caching...
+2025-09-30T02:26:24.874Z [INFO]: # Uploading environment cache artifact...
+2025-09-30T02:26:24.959Z [INFO]: # Uploaded environment cache artifact
+2025-09-30T02:26:24.960Z [INFO]: # Environment caching completed
+

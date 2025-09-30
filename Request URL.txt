@@ -1,0 +1,181 @@
+Request URL
+https://literexia.com/api/main-assessment/ping/
+Request Method
+GET
+Status Code
+404 Not Found
+Remote Address
+108.158.213.50:443
+Referrer Policy
+strict-origin-when-cross-origin
+alt-svc
+h3=":443"; ma=86400
+content-encoding
+br
+content-type
+text/html
+date
+Tue, 30 Sep 2025 02:02:30 GMT
+etag
+W/"986c317eefb4f0d82e8095678b82719d"
+last-modified
+Tue, 30 Sep 2025 01:53:59 GMT
+server
+AmazonS3
+vary
+accept-encoding
+via
+1.1 99cb2d66006e30a31c324742ead42212.cloudfront.net (CloudFront)
+x-amz-cf-id
+KXV-9uD2XrXrBFT-VTtnW1B5zQjkDBIsSMR59419ovX2KqbELng7Og==
+x-amz-cf-pop
+MNL52-P2
+x-cache
+Error from cloudfront
+:authority
+literexia.com
+:method
+GET
+:path
+/api/main-assessment/ping/
+:scheme
+https
+accept
+application/json, text/plain, */*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-GB,en;q=0.9,en-US;q=0.8
+priority
+u=1, i
+referer
+https://literexia.com/login/
+sec-ch-ua
+"Chromium";v="140", "Not=A?Brand";v="24", "Microsoft Edge";v="140"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"Windows"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+same-origin
+user-agent
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0
+
+
+Request URL
+https://literexia.com/login/
+Request Method
+GET
+Status Code
+404 Not Found
+Remote Address
+108.158.213.50:443
+Referrer Policy
+strict-origin-when-cross-origin
+alt-svc
+h3=":443"; ma=86400
+content-encoding
+br
+content-type
+text/html
+date
+Tue, 30 Sep 2025 02:02:27 GMT
+etag
+W/"986c317eefb4f0d82e8095678b82719d"
+last-modified
+Tue, 30 Sep 2025 01:53:59 GMT
+server
+AmazonS3
+vary
+accept-encoding
+via
+1.1 99cb2d66006e30a31c324742ead42212.cloudfront.net (CloudFront)
+x-amz-cf-id
+cpVPtaax4tgNgmWLxBBseD9ClAL5_mxcHnH40r5kCDnck6_h6gVIew==
+x-amz-cf-pop
+MNL52-P2
+x-cache
+Error from cloudfront
+:authority
+literexia.com
+:method
+GET
+:path
+/login/
+:scheme
+https
+accept
+text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-GB,en;q=0.9,en-US;q=0.8
+cache-control
+max-age=0
+priority
+u=0, i
+sec-ch-ua
+"Chromium";v="140", "Not=A?Brand";v="24", "Microsoft Edge";v="140"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"Windows"
+sec-fetch-dest
+document
+sec-fetch-mode
+navigate
+sec-fetch-site
+same-origin
+sec-fetch-user
+?1
+upgrade-insecure-requests
+1
+user-agent
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0
+
+GET https://literexia.com/login/ 404 (Not Found)
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+utils-BLQyEm9L.js:1   GET https://literexia.com/api/main-assessment/ping/ 404 (Not Found)
+(anonymous) @ utils-BLQyEm9L.js:1
+xhr @ utils-BLQyEm9L.js:1
+Xe @ utils-BLQyEm9L.js:1
+_request @ utils-BLQyEm9L.js:1
+request @ utils-BLQyEm9L.js:1
+nt.<computed> @ utils-BLQyEm9L.js:1
+(anonymous) @ utils-BLQyEm9L.js:1
+(anonymous) @ main-DWY4iu_E.js:28
+(anonymous) @ main-DWY4iu_E.js:28
+(anonymous) @ main-DWY4iu_E.js:28
+admin.png:1   GET https://literexia.com/assets/public/admin.png 404 (Not Found)
+login/:1  Error while trying to use the following icon from the Manifest: https://literexia.com/assets/public/admin.png (Download error or resource isn't a valid image)
+
+
+utils-BLQyEm9L.js:1 
+ 
+ POST https://18.139.217.179:5001/api/auth/login net::ERR_CERT_AUTHORITY_INVALID
+(anonymous)	@	utils-BLQyEm9L.js:1
+xhr	@	utils-BLQyEm9L.js:1
+Xe	@	utils-BLQyEm9L.js:1
+_request	@	utils-BLQyEm9L.js:1
+request	@	utils-BLQyEm9L.js:1
+(anonymous)	@	utils-BLQyEm9L.js:1
+(anonymous)	@	utils-BLQyEm9L.js:1
+login	@	main-DWY4iu_E.js:22
+onSubmit	@	main-DWY4iu_E.js:22
+UA	@	main-DWY4iu_E.js:22
+(anonymous)	@	main-DWY4iu_E.js:22
+Ut	@	main-DWY4iu_E.js:22
+qA	@	main-DWY4iu_E.js:22
+ou	@	main-DWY4iu_E.js:22
+au	@	main-DWY4iu_E.js:22
+
+
+

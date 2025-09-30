@@ -13,7 +13,7 @@ const AssessmentApiService = {
     try {
       const token = AuthService.getToken();
       // Use the most reliable path first
-      const response = await axios.get(`${API_BASE_URL}/api/content/categories`, {
+      const response = await axios.get(`${API_BASE_URL}/content/categories`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -22,7 +22,7 @@ const AssessmentApiService = {
       // More consistent fallback path
       try {
         const token = AuthService.getToken();
-        const response = await axios.get(`${API_BASE_URL}/api/teacher/progress/categories`, {
+        const response = await axios.get(`${API_BASE_URL}/teacher/progress/categories`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;
@@ -52,7 +52,7 @@ const AssessmentApiService = {
     try {
       const token = AuthService.getToken();
       // Use the most reliable path first
-      const response = await axios.get(`${API_BASE_URL}/api/teacher/progress/reading-levels`, {
+      const response = await axios.get(`${API_BASE_URL}/teacher/progress/reading-levels`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -74,7 +74,7 @@ const AssessmentApiService = {
     try {
       // Query all published assessments for this category and reading level
       const assessments = await axios.get(
-        `${API_BASE_URL}/api/teacher/progress/category-questions`,
+        `${API_BASE_URL}/teacher/progress/category-questions`,
         {
           params: {
             categoryId,
@@ -100,7 +100,7 @@ const AssessmentApiService = {
     try {
       const token = AuthService.getToken();
       // Add '/api' prefix to the URL
-      let url = `${API_BASE_URL}/api/teacher/progress/published-assessments`;
+      let url = `${API_BASE_URL}/teacher/progress/published-assessments`;
 
       // Add query parameters if provided
       const params = new URLSearchParams();
@@ -131,7 +131,7 @@ const AssessmentApiService = {
     try {
       const token = AuthService.getToken();
       // Fixed endpoint path
-      let url = `${API_BASE_URL}/api/teacher/customized-assessment/templates/${categoryId}`;
+      let url = `${API_BASE_URL}/teacher/customized-assessment/templates/${categoryId}`;
 
       // Add reading level as query parameter if provided
       if (readingLevel) {
@@ -172,7 +172,7 @@ const AssessmentApiService = {
       const token = AuthService.getToken();
       // Use the teacher-specific endpoint consistently
       const response = await axios.post(
-        `${API_BASE_URL}/api/teacher/progress/assign-categories`,
+        `${API_BASE_URL}/teacher/progress/assign-categories`,
         assignmentData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
