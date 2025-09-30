@@ -1,0 +1,60 @@
+[{
+  "_id": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "idNumber": 202533333,
+  "firstName": "Philip",
+  "middleName": "Casingal",
+  "lastName": "Pangilinan",
+  "age": "6",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Patience",
+  "address": "Mandaluyong",
+  "email": null,
+  "profileImageUrl": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/student-profiles/1748931720760_rfdryb.png",
+  "completedLessons": [],
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 20,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-03T06:22:02.826Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-29T06:35:59.095Z"
+  },
+  "lastAssessmentDate": "2025-08-18T12:03:31.912503",
+  "lastLogin": {
+    "$date": "2025-09-27T00:00:51.569Z"
+  },
+  "parentId": {
+    "$oid": "68db362e0d137afe55b1ea2e"
+  }
+},
+{
+  "_id": {
+    "$oid": "68da29ee5eae4190a785e511"
+  },
+  "idNumber": 202522233,
+  "firstName": "Kit",
+  "middleName": "T",
+  "lastName": "Santiago",
+  "age": 5,
+  "gender": "Female",
+  "gradeLevel": "Grade 1",
+  "section": "Patience",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "profileImageUrl": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/student-profiles/1759128045732_lq5lim.png",
+  "readingLevel": "Low Emerging",
+  "readingPercentage": 20,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-29T06:40:46.409Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-29T06:40:46.409Z"
+  },
+  "parentId": {
+    "$oid": "68db362e0d137afe55b1ea2e"
+  }
+}]

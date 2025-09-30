@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHorizontal, User, X } from 'lucide-react';
 import axios from 'axios';
+import adminValidation from '../../utils/adminValidation';
+import { InlineValidation, FormValidationSummary } from '../../components/Admin/ValidationErrorDisplay';
+import authService from '../../services/authService';
 import './TeacherLists.css';
 
 // Success Modal Component
@@ -47,18 +50,38 @@ const CredentialsModal = ({ credentials, onClose }) => {
     try {
       setIsSending(true);
       setSendStatus(null);
+
+      // Get current admin user from authService
+      const currentUser = authService.getCurrentUser();
+
+      // Extract admin information from auth service
+      const adminEmail = currentUser?.user?.email || currentUser?.email || 'admin@literexia.com';
+      const adminName = currentUser?.user?.name ||
+                       (currentUser?.user?.firstName && currentUser?.user?.lastName ?
+                        `${currentUser.user.firstName} ${currentUser.user.lastName}` :
+                        'Literexia Admin');
+
+      console.log('Sending teacher credentials with admin info:', {
+        adminEmail,
+        adminName,
+        recipientEmail: credentials.email
+      });
+
       const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
         email: credentials.email,
         password: credentials.password,
-        userType: 'teacher'
+        userType: 'teacher',
+        adminEmail: adminEmail,
+        adminName: adminName
       });
-      
+
       if (response.data.success) {
         setSendStatus({ type: 'success', message: 'Credentials sent successfully!' });
       } else {
         setSendStatus({ type: 'error', message: 'Failed to send credentials.' });
       }
     } catch (error) {
+      console.error('Error sending teacher credentials:', error);
       setSendStatus({ type: 'error', message: error.response?.data?.message || 'Failed to send credentials.' });
     } finally {
       setIsSending(false);
@@ -117,7 +140,9 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
+  const [validationResults, setValidationResults] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const totalSteps = 3;
 
   const steps = [
@@ -135,27 +160,135 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
     }
   ];
 
+  // Real-time validation function
+  const validateField = (fieldName, value) => {
+    console.log(`🔍 [TEACHER FORM] Validating field: ${fieldName}, value: ${value}`);
+
+    switch (fieldName) {
+      case 'firstName':
+        return adminValidation.validateName(value, 'First Name');
+      case 'lastName':
+        return adminValidation.validateName(value, 'Last Name');
+      case 'middleName':
+        return adminValidation.validateName(value, 'Middle Name', true);
+      case 'email':
+        return adminValidation.validateEmail(value);
+      case 'contact':
+        return adminValidation.validateContactNumber(value);
+      case 'address':
+        return adminValidation.validateText(value, 'Address', false, 200);
+      case 'position':
+        return adminValidation.validateText(value, 'Position', true, 50);
+      case 'dob':
+        return adminValidation.validateBirthdate(value, 'teacher', 'Date of Birth');
+      default:
+        return { isValid: true, errors: [] };
+    }
+  };
+
+  // Comprehensive form validation
+  const validateAllFields = () => {
+    console.log('🔍 [TEACHER FORM] Validating all fields...');
+
+    const newValidationResults = {};
+    let hasErrors = false;
+
+    // Validate all required fields
+    const fieldsToValidate = ['firstName', 'lastName', 'email', 'gender', 'dob', 'civilStatus', 'contact', 'position', 'address'];
+
+    fieldsToValidate.forEach(fieldName => {
+      const result = validateField(fieldName, formData[fieldName]);
+      newValidationResults[fieldName] = result;
+      if (!result.isValid) {
+        hasErrors = true;
+      }
+    });
+
+    // Handle optional middle name separately
+    if (formData.middleName && formData.middleName.trim()) {
+      const middleNameResult = validateField('middleName', formData.middleName);
+      newValidationResults.middleName = middleNameResult;
+      if (!middleNameResult.isValid) {
+        hasErrors = true;
+      }
+    } else {
+      // Middle name is empty and optional - that's valid
+      newValidationResults.middleName = { isValid: true, errors: [] };
+    }
+
+    // Validate gender separately
+    if (!formData.gender || !formData.gender.trim()) {
+      newValidationResults.gender = { isValid: false, errors: ['Gender is required'] };
+      hasErrors = true;
+    } else {
+      const validGenders = ['Male', 'Female', 'Other'];
+      if (!validGenders.includes(formData.gender.trim())) {
+        newValidationResults.gender = { isValid: false, errors: ['Gender must be Male, Female, or Other'] };
+        hasErrors = true;
+      } else {
+        newValidationResults.gender = { isValid: true, errors: [] };
+      }
+    }
+
+    // Validate civil status separately
+    if (!formData.civilStatus || !formData.civilStatus.trim()) {
+      newValidationResults.civilStatus = { isValid: false, errors: ['Civil Status is required'] };
+      hasErrors = true;
+    } else {
+      const validCivilStatuses = ['Single', 'Married', 'Widowed', 'Separated', 'Divorced'];
+      if (!validCivilStatuses.includes(formData.civilStatus.trim())) {
+        newValidationResults.civilStatus = { isValid: false, errors: ['Please select a valid civil status'] };
+        hasErrors = true;
+      } else {
+        newValidationResults.civilStatus = { isValid: true, errors: [] };
+      }
+    }
+
+    setValidationResults(newValidationResults);
+
+    console.log('🔍 [TEACHER FORM] Validation results:', { hasErrors, results: newValidationResults });
+
+    return !hasErrors;
+  };
+
   const validateStep = (step) => {
     const currentFields = steps[step - 1].fields;
-    const stepErrors = {};
+    const stepValidationResults = {};
     let isValid = true;
 
-    // Define required fields for validation (excluding middleName and profileImage)
-    const requiredFields = ['firstName', 'lastName', 'email', 'gender', 'dob', 'civilStatus', 'contact', 'position', 'address'];
-
     currentFields.forEach(field => {
-      if (requiredFields.includes(field) && (!formData[field] || formData[field].toString().trim() === '')) {
-        stepErrors[field] = `${getFieldLabel(field)} is required`;
-        isValid = false;
+      if (field === 'profileImage') return; // Skip file upload validation for now
+
+      // Handle optional fields
+      if (field === 'middleName') {
+        // Only validate middle name if it has content
+        if (formData[field] && formData[field].trim()) {
+          const result = validateField(field, formData[field]);
+          stepValidationResults[field] = result;
+          if (!result.isValid) {
+            isValid = false;
+          }
+        } else {
+          // Middle name is empty and optional - that's valid
+          stepValidationResults[field] = { isValid: true, errors: [] };
+        }
+        return;
       }
-      // Add specific validations if needed (e.g., email format)
-      if (field === 'email' && formData.email && !validateEmail(formData.email)) {
-        stepErrors[field] = `Please enter a valid email address`;
+
+      const result = validateField(field, formData[field]);
+      stepValidationResults[field] = result;
+
+      if (!result.isValid) {
         isValid = false;
       }
     });
 
-    setErrors(stepErrors);
+    // Update validation results for current step
+    setValidationResults(prev => ({
+      ...prev,
+      ...stepValidationResults
+    }));
+
     return isValid;
   };
 
@@ -237,12 +370,23 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
       ...prev,
       [name]: value
     }));
+
+    // Real-time validation
+    const validationResult = validateField(name, value);
+    setValidationResults(prev => ({
+      ...prev,
+      [name]: validationResult
+    }));
+
+    // Clear old-style errors when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
       }));
     }
+
+    console.log(`🔍 [TEACHER FORM] Real-time validation for ${name}:`, validationResult);
   };
 
   const handleFileChange = (e) => {
@@ -280,11 +424,35 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
       <div className="admin-teacher-form-section">
         {currentFields.map(field => {
           const isRequired = requiredFields.includes(field);
+          const validationResult = validationResults[field];
+          const hasValidationError = validationResult && !validationResult.isValid;
 
           if (field === 'profileImage') {
             return (
               <div key={field} className="admin-teacher-form-group full-width">
                 <label className="admin-teacher-optional">Profile Image (Optional)</label>
+                
+                {/* Show image preview - either current image or new image preview */}
+                {(formData.profileImageUrl || (formData.profileImage && typeof formData.profileImage === 'string') || (formData.profileImage && typeof formData.profileImage === 'object')) && (
+                  <div className="admin-teacher-current-image">
+                    <img 
+                      src={
+                        formData.profileImage && typeof formData.profileImage === 'object' 
+                          ? URL.createObjectURL(formData.profileImage)
+                          : (formData.profileImageUrl || formData.profileImage)
+                      } 
+                      alt="Profile preview"
+                      className="admin-teacher-profile-preview"
+                    />
+                    <p className="admin-teacher-image-label">
+                      {formData.profileImage && typeof formData.profileImage === 'object' 
+                        ? 'New Image Preview' 
+                        : 'Current Image'
+                      }
+                    </p>
+                  </div>
+                )}
+
                 <div className="admin-teacher-file-input-wrapper">
                   <input
                     type="file"
@@ -306,33 +474,38 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
 
           if (field === 'gender') {
             return (
-              <div key={field} className="admin-teacher-form-group">
+              <div key={field} className={`admin-teacher-form-group ${hasValidationError ? 'has-error' : ''}`}>
                 <label className="admin-teacher-required">Gender</label>
                 <select
                   name="gender"
-                  value={formData.gender}
+                  value={formData.gender || ''}
                   onChange={handleChange}
-                  className={`admin-teacher-input ${errors.gender ? 'error' : ''}`}
+                  className={`admin-teacher-input ${errors.gender || hasValidationError ? 'error' : ''}`}
                 >
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </select>
-                {errors.gender && <div className="admin-teacher-error-message">{errors.gender}</div>}
+                {/* Show validation errors first, then old error format */}
+                <InlineValidation
+                  validationResult={validationResult}
+                  fieldName="Gender"
+                />
+                {!hasValidationError && errors.gender && <div className="admin-teacher-error-message">{errors.gender}</div>}
               </div>
             );
           }
 
           if (field === 'civilStatus') {
             return (
-              <div key={field} className="admin-teacher-form-group">
+              <div key={field} className={`admin-teacher-form-group ${hasValidationError ? 'has-error' : ''}`}>
                 <label className="admin-teacher-required">Civil Status</label>
                 <select
                   name="civilStatus"
-                  value={formData.civilStatus}
+                  value={formData.civilStatus || ''}
                   onChange={handleChange}
-                  className={`admin-teacher-input ${errors.civilStatus ? 'error' : ''}`}
+                  className={`admin-teacher-input ${errors.civilStatus || hasValidationError ? 'error' : ''}`}
                 >
                   <option value="">Select Civil Status</option>
                   <option value="Single">Single</option>
@@ -341,20 +514,25 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
                   <option value="Separated">Separated</option>
                   <option value="Divorced">Divorced</option>
                 </select>
-                {errors.civilStatus && <div className="admin-teacher-error-message">{errors.civilStatus}</div>}
+                {/* Show validation errors first, then old error format */}
+                <InlineValidation
+                  validationResult={validationResult}
+                  fieldName="Civil Status"
+                />
+                {!hasValidationError && errors.civilStatus && <div className="admin-teacher-error-message">{errors.civilStatus}</div>}
               </div>
             );
           }
 
           if (field === 'position') {
             return (
-              <div key={field} className="admin-teacher-form-group">
+              <div key={field} className={`admin-teacher-form-group ${hasValidationError ? 'has-error' : ''}`}>
                 <label className="admin-teacher-required">Position</label>
                 <select
                   name="position"
-                  value={formData.position}
+                  value={formData.position || ''}
                   onChange={handleChange}
-                  className={`admin-teacher-input ${errors.position ? 'error' : ''}`}
+                  className={`admin-teacher-input ${errors.position || hasValidationError ? 'error' : ''}`}
                 >
                   <option value="">Select Position</option>
                   <option value="Grade 1 Teacher">Grade 1 Teacher</option>
@@ -364,7 +542,12 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
                   <option value="Grade 5 Teacher">Grade 5 Teacher</option>
                   <option value="Grade 6 Teacher">Grade 6 Teacher</option>
                 </select>
-                {errors.position && <div className="admin-teacher-error-message">{errors.position}</div>}
+                {/* Show validation errors first, then old error format */}
+                <InlineValidation
+                  validationResult={validationResult}
+                  fieldName="Position"
+                />
+                {!hasValidationError && errors.position && <div className="admin-teacher-error-message">{errors.position}</div>}
               </div>
             );
           }
@@ -373,19 +556,24 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
           const inputType = field === 'dob' ? 'date' : field === 'email' ? 'email' : field === 'contact' ? 'tel' : 'text';
 
           return (
-            <div key={field} className="admin-teacher-form-group">
+            <div key={field} className={`admin-teacher-form-group ${field === 'address' ? 'full-width' : ''} ${hasValidationError ? 'has-error' : ''}`}>
               <label className={isRequired ? "admin-teacher-required" : "admin-teacher-optional"}>
                 {getFieldLabel(field)} {!isRequired ? '(Optional)' : ''}
               </label>
               <input
                 type={inputType}
                 name={field}
-                value={formData[field]}
+                value={formData[field] || ''}
                 onChange={handleChange}
-                className={`admin-teacher-input ${errors[field] ? 'error' : ''}`}
+                className={`admin-teacher-input ${errors[field] || hasValidationError ? 'error' : ''}`}
                 placeholder={`Enter ${getFieldLabel(field).toLowerCase()}`}
               />
-              {errors[field] && <div className="admin-teacher-error-message">{errors[field]}</div>}
+              {/* Show validation errors first, then old error format */}
+              <InlineValidation
+                validationResult={validationResult}
+                fieldName={getFieldLabel(field)}
+              />
+              {!hasValidationError && errors[field] && <div className="admin-teacher-error-message">{errors[field]}</div>}
             </div>
           );
         })}
@@ -430,6 +618,25 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
         <form onSubmit={handleSubmit}>
           {renderFormFields()}
 
+          {/* Form Validation Summary - Shows on final step */}
+          {currentStep === totalSteps && (
+            <FormValidationSummary
+              validationResult={{
+                isValid: Object.keys(validationResults).length === 0 || Object.values(validationResults).every(result => result.isValid),
+                errors: Object.fromEntries(
+                  Object.entries(validationResults)
+                    .filter(([_, result]) => !result.isValid)
+                    .map(([field, result]) => [field, result.errors])
+                ),
+                hasWarnings: false
+              }}
+              isSubmitting={isSubmitting}
+              onSubmit={handleFinalSubmit}
+              submitButtonText={teacher ? 'Update Teacher' : 'Add Teacher'}
+              className="teacher-form-validation-summary"
+            />
+          )}
+
           <div className="admin-teacher-modal-footer">
             <div className="admin-teacher-modal-footer-buttons">
               {currentStep > 1 && (
@@ -442,13 +649,16 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
                   Previous
                 </button>
               )}
-              <button
-                type="submit"
-                className={`admin-teacher-btn admin-teacher-btn-primary ${isLoading ? 'admin-teacher-loading' : ''}`}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Saving...' : currentStep < totalSteps ? 'Next' : (teacher ? 'Update Teacher' : 'Add Teacher')}
-              </button>
+              {/* Only show Next/Submit button if not on final step or if using validation summary */}
+              {currentStep < totalSteps && (
+                <button
+                  type="submit"
+                  className={`admin-teacher-btn admin-teacher-btn-primary ${isLoading ? 'admin-teacher-loading' : ''}`}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : 'Next'}
+                </button>
+              )}
             </div>
           </div>
           {errors.apiError && <div className="admin-teacher-error-message" style={{ textAlign: 'center', marginTop: '10px' }}>{errors.apiError}</div>}

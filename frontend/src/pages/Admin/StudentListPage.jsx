@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHorizontal, User, X } from 'lucide-react';
 import axios from 'axios';
+import adminValidation from '../../utils/adminValidation';
+import { InlineValidation, FormValidationSummary } from '../../components/Admin/ValidationErrorDisplay';
 import './StudentListPage.css';
 
 const SuccessModal = ({ message, onClose }) => (
@@ -39,7 +41,7 @@ const ValidationErrorModal = ({ message, onClose }) => (
 const AddEditStudentModal = ({ student, onClose, onSave }) => {
   const [formData, setFormData] = useState(
     student ? { ...student } : {
-      idNumber: 2025, // Consider making this generated or handled by backend
+      idNumber: '', // Let admin enter ID number
       firstName: '',
       middleName: '',
       lastName: '',
@@ -54,7 +56,9 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
+  const [validationResults, setValidationResults] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const totalSteps = 3; // Define total steps for student form
 
   const steps = [
@@ -72,31 +76,121 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
     }
   ];
 
+  // Real-time validation function
+  const validateField = (fieldName, value) => {
+    console.log(`🔍 [STUDENT FORM] Validating field: ${fieldName}, value: ${value}`);
+
+    switch (fieldName) {
+      case 'idNumber':
+        return adminValidation.validateIdNumber(value);
+      case 'firstName':
+        return adminValidation.validateName(value, 'First Name');
+      case 'lastName':
+        return adminValidation.validateName(value, 'Last Name');
+      case 'middleName':
+        return adminValidation.validateName(value, 'Middle Name', true);
+      case 'age':
+        return adminValidation.validateAge(value);
+      case 'gradeLevel':
+        return adminValidation.validateGradeLevel(value);
+      case 'section':
+        return adminValidation.validateText(value, 'Section', true, 50);
+      case 'address':
+        return adminValidation.validateText(value, 'Address', false, 200);
+      default:
+        return { isValid: true, errors: [] };
+    }
+  };
+
+  // Comprehensive form validation
+  const validateAllFields = () => {
+    console.log('🔍 [STUDENT FORM] Validating all fields...');
+
+    const newValidationResults = {};
+    let hasErrors = false;
+
+    // Validate all required fields
+    const fieldsToValidate = ['idNumber', 'firstName', 'lastName', 'age', 'gradeLevel', 'section', 'address'];
+
+    fieldsToValidate.forEach(fieldName => {
+      const result = validateField(fieldName, formData[fieldName]);
+      newValidationResults[fieldName] = result;
+      if (!result.isValid) {
+        hasErrors = true;
+      }
+    });
+
+    // Handle optional middle name separately
+    if (formData.middleName && formData.middleName.trim()) {
+      const middleNameResult = validateField('middleName', formData.middleName);
+      newValidationResults.middleName = middleNameResult;
+      if (!middleNameResult.isValid) {
+        hasErrors = true;
+      }
+    } else {
+      // Middle name is empty and optional - that's valid
+      newValidationResults.middleName = { isValid: true, errors: [] };
+    }
+
+    // Validate gender separately
+    if (!formData.gender || !formData.gender.trim()) {
+      newValidationResults.gender = { isValid: false, errors: ['Gender is required'] };
+      hasErrors = true;
+    } else {
+      const validGenders = ['Male', 'Female', 'Other'];
+      if (!validGenders.includes(formData.gender.trim())) {
+        newValidationResults.gender = { isValid: false, errors: ['Gender must be Male, Female, or Other'] };
+        hasErrors = true;
+      } else {
+        newValidationResults.gender = { isValid: true, errors: [] };
+      }
+    }
+
+    setValidationResults(newValidationResults);
+
+    console.log('🔍 [STUDENT FORM] Validation results:', { hasErrors, results: newValidationResults });
+
+    return !hasErrors;
+  };
+
   const validateStep = (step) => {
     const currentFields = steps[step - 1].fields;
-    const stepErrors = {};
+    const stepValidationResults = {};
     let isValid = true;
 
-    // Define required fields for validation (excluding middleName and profileImage)
-    const requiredFields = ['idNumber', 'firstName', 'lastName', 'age', 'gender', 'gradeLevel', 'section', 'address'];
-
     currentFields.forEach(field => {
-      if (requiredFields.includes(field) && (!formData[field] || formData[field].toString().trim() === '')) {
-        stepErrors[field] = `${getFieldLabel(field)} is required`;
-        isValid = false;
+      if (field === 'profileImage') return; // Skip file upload validation for now
+
+      // Handle optional fields
+      if (field === 'middleName') {
+        // Only validate middle name if it has content
+        if (formData[field] && formData[field].trim()) {
+          const result = validateField(field, formData[field]);
+          stepValidationResults[field] = result;
+          if (!result.isValid) {
+            isValid = false;
+          }
+        } else {
+          // Middle name is empty and optional - that's valid
+          stepValidationResults[field] = { isValid: true, errors: [] };
+        }
+        return;
       }
-      // Add specific validations if needed (e.g., age and idNumber are numbers)
-      if (field === 'age' && formData.age && isNaN(formData.age)){
-        stepErrors[field] = `Age must be a number`;
-        isValid = false;
-      }
-      if (field === 'idNumber' && formData.idNumber && isNaN(formData.idNumber)){
-        stepErrors[field] = `ID Number must be a number`;
+
+      const result = validateField(field, formData[field]);
+      stepValidationResults[field] = result;
+
+      if (!result.isValid) {
         isValid = false;
       }
     });
 
-    setErrors(stepErrors);
+    // Update validation results for current step
+    setValidationResults(prev => ({
+      ...prev,
+      ...stepValidationResults
+    }));
+
     return isValid;
   };
 
@@ -174,22 +268,33 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
-    
+
     // Convert to number for idNumber and age fields
     if (name === 'idNumber' || name === 'age') {
       processedValue = value === '' ? '' : Number(value);
     }
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: processedValue
     }));
-     if (errors[name]) {
+
+    // Real-time validation
+    const validationResult = validateField(name, processedValue);
+    setValidationResults(prev => ({
+      ...prev,
+      [name]: validationResult
+    }));
+
+    // Clear old-style errors when user starts typing
+    if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
       }));
     }
+
+    console.log(`🔍 [STUDENT FORM] Real-time validation for ${name}:`, validationResult);
   };
 
   const handleFileChange = (e) => {
@@ -226,11 +331,35 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
       <div className="studentlist-form-section">
         {currentFields.map(field => {
           const isRequired = requiredFields.includes(field);
+          const validationResult = validationResults[field];
+          const hasValidationError = validationResult && !validationResult.isValid;
 
           if (field === 'profileImage') {
              return (
               <div key={field} className="studentlist-form-group full-width">
                 <label className="studentlist-optional">Profile Image (Optional)</label>
+                
+                {/* Show image preview - either current image or new image preview */}
+                {(formData.profileImageUrl || (formData.profileImage && typeof formData.profileImage === 'string') || (formData.profileImage && typeof formData.profileImage === 'object')) && (
+                  <div className="studentlist-current-image">
+                    <img 
+                      src={
+                        formData.profileImage && typeof formData.profileImage === 'object' 
+                          ? URL.createObjectURL(formData.profileImage)
+                          : (formData.profileImageUrl || formData.profileImage)
+                      } 
+                      alt="Profile preview"
+                      className="studentlist-profile-preview"
+                    />
+                    <p className="studentlist-image-label">
+                      {formData.profileImage && typeof formData.profileImage === 'object' 
+                        ? 'New Image Preview' 
+                        : 'Current Image'
+                      }
+                    </p>
+                  </div>
+                )}
+
                 <div className="studentlist-file-input-wrapper">
                   <input
                     type="file"
@@ -245,66 +374,88 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                     </div>
                   </div>
                 </div>
-                 {errors[field] && <div className="studentlist-error-message">{errors[field]}</div>}
+                {errors[field] && <div className="studentlist-error-message">{errors[field]}</div>}
               </div>
             );
           }
 
           if (field === 'gender') {
              return (
-              <div key={field} className="studentlist-form-group">
+              <div key={field} className={`studentlist-form-group ${hasValidationError ? 'has-error' : ''}`}>
                 <label className="studentlist-required">Gender</label>
                 <select
                   name="gender"
-                  value={formData.gender}
+                  value={formData.gender || ''}
                   onChange={handleChange}
-                  className={`studentlist-input ${errors.gender ? 'error' : ''}`}
+                  className={`studentlist-input ${errors.gender || hasValidationError ? 'error' : ''}`}
                 >
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </select>
-                {errors.gender && <div className="studentlist-error-message">{errors.gender}</div>}
+                {/* Show validation errors first, then old error format */}
+                <InlineValidation
+                  validationResult={validationResult}
+                  fieldName="Gender"
+                />
+                {!hasValidationError && errors.gender && <div className="studentlist-error-message">{errors.gender}</div>}
               </div>
             );
           }
 
           if (field === 'gradeLevel') {
             return (
-              <div key={field} className="studentlist-form-group">
+              <div key={field} className={`studentlist-form-group ${hasValidationError ? 'has-error' : ''}`}>
                 <label className="studentlist-required">Grade Level</label>
                 <select
                   name="gradeLevel"
-                  value={formData.gradeLevel}
+                  value={formData.gradeLevel || ''}
                   onChange={handleChange}
-                  className={`studentlist-input ${errors.gradeLevel ? 'error' : ''}`}
+                  className={`studentlist-input ${errors.gradeLevel || hasValidationError ? 'error' : ''}`}
                 >
                   <option value="">Select Grade Level</option>
                   <option value="Grade 1">Grade 1</option>
+                  <option value="Grade 2">Grade 2</option>
+                  <option value="Grade 3">Grade 3</option>
+                  <option value="Grade 4">Grade 4</option>
+                  <option value="Grade 5">Grade 5</option>
+                  <option value="Grade 6">Grade 6</option>
                 </select>
-                {errors.gradeLevel && <div className="studentlist-error-message">{errors.gradeLevel}</div>}
+                {/* Show validation errors first, then old error format */}
+                <InlineValidation
+                  validationResult={validationResult}
+                  fieldName="Grade Level"
+                />
+                {!hasValidationError && errors.gradeLevel && <div className="studentlist-error-message">{errors.gradeLevel}</div>}
               </div>
             );
           }
 
            if (field === 'section') {
             return (
-              <div key={field} className="studentlist-form-group">
+              <div key={field} className={`studentlist-form-group ${hasValidationError ? 'has-error' : ''}`}>
                 <label className="studentlist-required">Section</label>
                 <select
                   name="section"
-                  value={formData.section}
+                  value={formData.section || ''}
                   onChange={handleChange}
-                  className={`studentlist-input ${errors.section ? 'error' : ''}`}
+                  className={`studentlist-input ${errors.section || hasValidationError ? 'error' : ''}`}
                 >
                   <option value="">Select Section</option>
                   <option value="Honesty">Honesty</option>
                   <option value="Integrity">Integrity</option>
                   <option value="Patience">Patience</option>
                   <option value="Hope">Hope</option>
+                  <option value="Rose">Rose</option>
+                  <option value="Jasmine">Jasmine</option>
                 </select>
-                {errors.section && <div className="studentlist-error-message">{errors.section}</div>}
+                {/* Show validation errors first, then old error format */}
+                <InlineValidation
+                  validationResult={validationResult}
+                  fieldName="Section"
+                />
+                {!hasValidationError && errors.section && <div className="studentlist-error-message">{errors.section}</div>}
               </div>
             );
           }
@@ -313,19 +464,24 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
           const inputType = field === 'age' || field === 'idNumber' ? 'number' : 'text';
 
           return (
-            <div key={field} className="studentlist-form-group">
+            <div key={field} className={`studentlist-form-group ${hasValidationError ? 'has-error' : ''}`}>
               <label className={isRequired ? "studentlist-required" : "studentlist-optional"}>
                 {getFieldLabel(field)} {!isRequired ? '(Optional)' : ''}
               </label>
               <input
                 type={inputType}
                 name={field}
-                value={formData[field]}
+                value={formData[field] || ''}
                 onChange={handleChange}
-                className={`studentlist-input ${errors[field] ? 'error' : ''}`}
+                className={`studentlist-input ${errors[field] || hasValidationError ? 'error' : ''}`}
                 placeholder={`Enter ${getFieldLabel(field).toLowerCase()}`}
               />
-              {errors[field] && <div className="studentlist-error-message">{errors[field]}</div>}
+              {/* Show validation errors first, then old error format */}
+              <InlineValidation
+                validationResult={validationResult}
+                fieldName={getFieldLabel(field)}
+              />
+              {!hasValidationError && errors[field] && <div className="studentlist-error-message">{errors[field]}</div>}
             </div>
           );
         })}
@@ -370,6 +526,25 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
           <form onSubmit={handleSubmit}>
             {renderFormFields()}
 
+            {/* Form Validation Summary - Shows on final step */}
+            {currentStep === totalSteps && (
+              <FormValidationSummary
+                validationResult={{
+                  isValid: Object.keys(validationResults).length === 0 || Object.values(validationResults).every(result => result.isValid),
+                  errors: Object.fromEntries(
+                    Object.entries(validationResults)
+                      .filter(([_, result]) => !result.isValid)
+                      .map(([field, result]) => [field, result.errors])
+                  ),
+                  hasWarnings: false
+                }}
+                isSubmitting={isSubmitting}
+                onSubmit={handleFinalSubmit}
+                submitButtonText={student ? 'Update Student' : 'Add Student'}
+                className="student-form-validation-summary"
+              />
+            )}
+
             <div className="studentlist-modal-footer">
               <div className="studentlist-modal-footer-buttons">
                 {currentStep > 1 && (
@@ -382,13 +557,16 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                     Previous
                   </button>
                 )}
-                <button
-                  type="submit"
-                  className={`studentlist-btn studentlist-btn-primary ${isLoading ? 'studentlist-loading' : ''}`}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Saving...' : currentStep < totalSteps ? 'Next' : (student ? 'Update Student' : 'Add Student')}
-                </button>
+                {/* Only show Next/Submit button if not on final step or if using validation summary */}
+                {currentStep < totalSteps && (
+                  <button
+                    type="submit"
+                    className={`studentlist-btn studentlist-btn-primary ${isLoading ? 'studentlist-loading' : ''}`}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Saving...' : 'Next'}
+                  </button>
+                )}
               </div>
             </div>
               {errors.apiError && <div className="studentlist-error-message" style={{ textAlign: 'center', marginTop: '10px' }}>{errors.apiError}</div>}

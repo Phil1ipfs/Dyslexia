@@ -879,6 +879,52 @@
   justify-content: flex-end;
 }
 
+/* Adjust footer spacing when validation summary is present */
+.studentlist-modal-form:has(.student-form-validation-summary) .studentlist-modal-footer {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: none;
+}
+
+/* ===== PROFILE IMAGE PREVIEW ===== */
+.studentlist-current-image {
+  margin-bottom: 1rem;
+  text-align: center;
+  padding: 1rem;
+  border: 2px dashed #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+}
+
+.studentlist-profile-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #3B4F81;
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.15);
+  margin-bottom: 0.5rem;
+}
+
+.studentlist-image-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Responsive design for profile image */
+@media (max-width: 768px) {
+  .studentlist-profile-preview {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .studentlist-current-image {
+    padding: 0.75rem;
+  }
+}
+
 .studentlist-modal-footer-buttons {
   display: flex;
   gap: 1rem;
@@ -1144,6 +1190,138 @@
   color: #4b5563;
   margin: 0 0 2rem;
   line-height: 1.6;
+}
+
+/* ===== FORM VALIDATION SUMMARY ===== */
+.student-form-validation-summary {
+  margin: 2rem 0 1.5rem 0;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 4px 15px rgba(59, 79, 129, 0.08);
+  animation: fadeIn 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add a subtle top border accent */
+.student-form-validation-summary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #3B4F81;
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.student-form-validation-summary .validation-summary-success {
+  border-color: #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.student-form-validation-summary .summary-header {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.student-form-validation-summary .summary-header.success {
+  color: #3B4F81;
+}
+
+.student-form-validation-summary .summary-text strong {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #3B4F81;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.student-form-validation-summary .summary-text span {
+  font-size: 0.9rem;
+  color: #6b7280;
+  opacity: 0.9;
+}
+
+.student-form-validation-summary .submit-button-container {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.student-form-validation-summary .submit-button {
+  background: #3B4F81;
+  color: white;
+  border: 2px solid #3B4F81;
+  padding: 0.875rem 2.5rem;
+  border-radius: 0.625rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(59, 79, 129, 0.3);
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.student-form-validation-summary .submit-button:hover {
+  background: #2c3e50;
+  border-color: #2c3e50;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 79, 129, 0.4);
+}
+
+.student-form-validation-summary .submit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.3);
+}
+
+.student-form-validation-summary .submit-button.submitting {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  cursor: wait;
+  transform: none;
+}
+
+.student-form-validation-summary .submit-button.disabled {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(156, 163, 175, 0.2);
+}
+
+/* Success state icon styling */
+.student-form-validation-summary .summary-header.success svg {
+  color: #3B4F81;
+  filter: drop-shadow(0 2px 4px rgba(59, 79, 129, 0.2));
+}
+
+/* Responsive design for form validation */
+@media (max-width: 768px) {
+  .student-form-validation-summary {
+    margin: 1.5rem 0 1rem 0;
+    padding: 1.25rem;
+  }
+  
+  .student-form-validation-summary .submit-button {
+    padding: 0.75rem 2rem;
+    min-width: 160px;
+    font-size: 0.9rem;
+  }
+  
+  .student-form-validation-summary .summary-text strong {
+    font-size: 1rem;
+  }
+  
+  .student-form-validation-summary .summary-text span {
+    font-size: 0.85rem;
+  }
 }
 
 /* ===== CONFIRM DELETE MODAL ===== */

@@ -460,18 +460,29 @@ function TeacherProfile() {
         }
       }
 
-      // Emergency contact name validation (if provided)
-      if (formData.emergencyContact?.name && formData.emergencyContact.name.trim()) {
+      // Emergency contact validation - if number is provided, name is required
+      if (formData.emergencyContact?.number && formData.emergencyContact.number.trim()) {
+        if (!formData.emergencyContact?.name || !formData.emergencyContact.name.trim()) {
+          return setErrorDialog({ show: true, message: "Emergency contact name is required when contact number is provided." });
+        }
+        
         const emergencyNameError = validateName(formData.emergencyContact.name, 'Emergency contact name');
         if (emergencyNameError) {
           return setErrorDialog({ show: true, message: emergencyNameError });
         }
       }
 
+      // If emergency contact name is provided, number is also required
+      if (formData.emergencyContact?.name && formData.emergencyContact.name.trim()) {
+        if (!formData.emergencyContact?.number || !formData.emergencyContact.number.trim()) {
+          return setErrorDialog({ show: true, message: "Emergency contact number is required when contact name is provided." });
+        }
+      }
+
       // Email validation removed - email field is read-only and cannot be changed
 
       // Contact number validation
-      if (!formData.contact.trim()) {
+      if (!formData.contact || !formData.contact.trim()) {
         return setErrorDialog({ show: true, message: "Contact number is required." });
       }
 
@@ -480,6 +491,16 @@ function TeacherProfile() {
           show: true,
           message: "Please enter a valid Philippine phone number (e.g., +63 912 345 6789 or 0912 345 6789)."
         });
+      }
+
+      // Position validation
+      if (!formData.position || !formData.position.trim()) {
+        return setErrorDialog({ show: true, message: "Position is required." });
+      }
+
+      // Civil Status validation
+      if (!formData.civilStatus || !formData.civilStatus.trim()) {
+        return setErrorDialog({ show: true, message: "Civil Status is required." });
       }
 
       // Emergency contact number validation (if provided)
@@ -764,13 +785,14 @@ function TeacherProfile() {
                   />
                 </div>
                 <div className="lit-input-group">
-                  <span className="lit-input-label">Position:</span>
+                  <span className="lit-input-label">Position: <span className="lit-required">*</span></span>
                   <select
                     name="position"
                     value={formData.position || ""}
                     onChange={handleChange}
                     disabled={!isEditing}
                     aria-label="Position"
+                    required
                   >
                     <option value="">Select Position</option>
                     <option value="Grade 1 Teacher">Grade 1 Teacher</option>
@@ -783,6 +805,9 @@ function TeacherProfile() {
                     <option value="Assistant Principal">Assistant Principal</option>
                     <option value="Principal">Principal</option>
                   </select>
+                  {isEditing && (!formData.position || !formData.position.trim()) &&
+                    <span className="lit-input-error">Position is required</span>
+                  }
                 </div>
               </div>
             </div>
@@ -806,7 +831,7 @@ function TeacherProfile() {
           <h4 className="lit-subtitle">Personal Information</h4>
           <div className="lit-info-grid">
             <div className="lit-input-group">
-              <label htmlFor="teacher-first-name">First Name</label>
+              <label htmlFor="teacher-first-name">First Name <span className="lit-required">*</span></label>
               <input
                 id="teacher-first-name"
                 type="text"
@@ -816,8 +841,9 @@ function TeacherProfile() {
                 readOnly={!isEditing}
                 placeholder="First Name"
                 aria-label="First Name"
+                required
               />
-              {isEditing && !formData.firstName?.trim() &&
+              {isEditing && (!formData.firstName || !formData.firstName.trim()) &&
                 <span className="lit-input-error">First Name is required</span>
               }
             </div>
@@ -837,7 +863,7 @@ function TeacherProfile() {
             </div>
 
             <div className="lit-input-group">
-              <label htmlFor="teacher-last-name">Last Name</label>
+              <label htmlFor="teacher-last-name">Last Name <span className="lit-required">*</span></label>
               <input
                 id="teacher-last-name"
                 type="text"
@@ -847,15 +873,16 @@ function TeacherProfile() {
                 readOnly={!isEditing}
                 placeholder="Last Name"
                 aria-label="Last Name"
+                required
               />
-              {isEditing && !formData.lastName?.trim() &&
+              {isEditing && (!formData.lastName || !formData.lastName.trim()) &&
                 <span className="lit-input-error">Last Name is required</span>
               }
             </div>
 
 
             <div className="lit-input-group">
-              <label htmlFor="teacher-contact">Contact Number</label>
+              <label htmlFor="teacher-contact">Contact Number <span className="lit-required">*</span></label>
               <input
                 id="teacher-contact"
                 type="text"
@@ -865,7 +892,11 @@ function TeacherProfile() {
                 readOnly={!isEditing}
                 placeholder="Contact Number"
                 aria-label="Contact Number"
+                required
               />
+              {isEditing && (!formData.contact || !formData.contact.trim()) &&
+                <span className="lit-input-error">Contact Number is required</span>
+              }
               {isEditing && formData.contact && !isValidPhoneNumber(formData.contact) &&
                 <span className="lit-input-error">Enter valid Philippine number</span>
               }
@@ -904,7 +935,7 @@ function TeacherProfile() {
             </div>
 
             <div className="lit-input-group">
-              <label htmlFor="teacher-civil-status">Civil Status</label>
+              <label htmlFor="teacher-civil-status">Civil Status <span className="lit-required">*</span></label>
               <select
                 id="civil-status"
                 name="civilStatus"
@@ -912,6 +943,7 @@ function TeacherProfile() {
                 onChange={handleChange}
                 disabled={!isEditing}
                 aria-label="Civil Status"
+                required
               >
                 <option value="">Select Civil Status</option>
                 <option value="Single">Single</option>
@@ -920,6 +952,9 @@ function TeacherProfile() {
                 <option value="Separated">Separated</option>
                 <option value="Widowed">Widowed</option>
               </select>
+              {isEditing && (!formData.civilStatus || !formData.civilStatus.trim()) &&
+                <span className="lit-input-error">Civil Status is required</span>
+              }
             </div>
 
             <div className="lit-input-group lit-full-width">

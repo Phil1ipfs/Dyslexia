@@ -1,14 +1,15 @@
 // src/pages/Parents/ParentDashboard.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
   MapPin,
   Heart,
   Book,
+  BookOpen,
   Lock,
   X,
   CheckCircle,
@@ -18,7 +19,10 @@ import {
   School,
   ClipboardList,
   BarChart2,
-  Home
+  Home,
+  Edit,
+  Save,
+  XCircle
 } from 'lucide-react';
 import parent1 from "../../assets/images/Parents/parent1.png";
 import student1 from "../../assets/images/Parents/student1.jpg";
@@ -46,9 +50,123 @@ const ParentDashboard = () => {
   const [error, setError] = useState(null);
   const [children, setChildren] = useState([]);
   const [animated, setAnimated] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    contactNumber: "",
+    address: "",
+    civilStatus: "",
+    dateOfBirth: "",
+    gender: "",
+    profileImageUrl: ""
+  });
+  const [validationErrors, setValidationErrors] = useState({});
   
   // Base URL from environment variable or default
   const BASE_URL = "http://localhost:5001"; // Hardcoded for local development
+
+  // Validation functions
+  const validateField = (name, value) => {
+    const errors = {};
+
+    switch (name) {
+      case 'firstName':
+      case 'lastName':
+        if (!value || value.trim() === '') {
+          errors[name] = `${name === 'firstName' ? 'First' : 'Last'} name is required`;
+        } else if (!/^[a-zA-Z\s'.-]+$/.test(value)) {
+          errors[name] = `${name === 'firstName' ? 'First' : 'Last'} name can only contain letters, spaces, apostrophes, and hyphens`;
+        } else if (value.length < 2) {
+          errors[name] = `${name === 'firstName' ? 'First' : 'Last'} name must be at least 2 characters long`;
+        } else if (value.length > 50) {
+          errors[name] = `${name === 'firstName' ? 'First' : 'Last'} name must be less than 50 characters`;
+        }
+        break;
+
+      case 'middleName':
+        if (value && !/^[a-zA-Z\s'.-]*$/.test(value)) {
+          errors[name] = 'Middle name can only contain letters, spaces, apostrophes, and hyphens';
+        } else if (value && value.length > 50) {
+          errors[name] = 'Middle name must be less than 50 characters';
+        }
+        break;
+
+      case 'contactNumber':
+        if (!value || value.trim() === '') {
+          errors[name] = 'Contact number is required';
+        } else if (!/^(\+63|0)[0-9]{10}$/.test(value.replace(/\s+/g, ''))) {
+          errors[name] = 'Please enter a valid Philippine phone number (e.g., 09123456789 or +639123456789)';
+        }
+        break;
+
+      case 'address':
+        if (!value || value.trim() === '') {
+          errors[name] = 'Address is required';
+        } else if (value.length < 10) {
+          errors[name] = 'Address must be at least 10 characters long';
+        } else if (value.length > 200) {
+          errors[name] = 'Address must be less than 200 characters';
+        }
+        break;
+
+      case 'dateOfBirth':
+        if (!value) {
+          errors[name] = 'Date of birth is required';
+        } else {
+          const birthDate = new Date(value);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+
+          if (birthDate > today) {
+            errors[name] = 'Date of birth cannot be in the future';
+          } else if (age < 18) {
+            errors[name] = 'You must be at least 18 years old';
+          } else if (age > 100) {
+            errors[name] = 'Please enter a valid date of birth';
+          }
+        }
+        break;
+
+      case 'gender':
+        if (!value || value.trim() === '') {
+          errors[name] = 'Gender is required';
+        }
+        break;
+
+      case 'civilStatus':
+        if (!value || value.trim() === '') {
+          errors[name] = 'Civil status is required';
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    return errors;
+  };
+
+  // Validate all form data
+  const validateForm = (formData) => {
+    let allErrors = {};
+
+    Object.keys(formData).forEach(key => {
+      if (key !== 'profileImageUrl') { // Skip validation for profileImageUrl
+        const fieldErrors = validateField(key, formData[key]);
+        allErrors = { ...allErrors, ...fieldErrors };
+      }
+    });
+
+    return allErrors;
+  };
 
   // Fetch parent profile data when component mounts
   useEffect(() => {
@@ -160,13 +278,140 @@ const ParentDashboard = () => {
     }
   };
 
-  // Handle input changes
-  const handleChange = (e) => {
+  // Handle input changes for edit mode with real-time validation
+  const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setPersonalInfo((prevInfo) => ({
-      ...prevInfo,
+
+    // Update form data
+    setEditFormData((prevData) => ({
+      ...prevData,
       [name]: value,
     }));
+
+    // Real-time validation
+    const fieldErrors = validateField(name, value);
+    setValidationErrors((prevErrors) => {
+      const newErrors = { ...prevErrors };
+
+      // Remove or add error for this field
+      if (Object.keys(fieldErrors).length === 0) {
+        delete newErrors[name];
+      } else {
+        newErrors[name] = fieldErrors[name];
+      }
+
+      return newErrors;
+    });
+  };
+
+  // Enter edit mode
+  const enterEditMode = () => {
+    setEditFormData({
+      firstName: personalInfo.firstName || "",
+      middleName: personalInfo.middleName || "",
+      lastName: personalInfo.lastName || "",
+      contactNumber: personalInfo.contactNumber || "",
+      address: personalInfo.address || "",
+      civilStatus: personalInfo.civilStatus || "",
+      dateOfBirth: personalInfo.dateOfBirth || "",
+      gender: personalInfo.gender || "",
+      profileImageUrl: personalInfo.profileImageUrl || ""
+    });
+    setIsEditMode(true);
+  };
+
+  // Cancel edit mode
+  const cancelEditMode = () => {
+    setIsEditMode(false);
+    setValidationErrors({});
+    setEditFormData({
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      contactNumber: "",
+      address: "",
+      civilStatus: "",
+      dateOfBirth: "",
+      gender: "",
+      profileImageUrl: ""
+    });
+  };
+
+  // Save profile changes
+  const saveProfileChanges = async () => {
+    // Validate form before saving
+    const formErrors = validateForm(editFormData);
+    setValidationErrors(formErrors);
+
+    // If there are validation errors, don't proceed with save
+    if (Object.keys(formErrors).length > 0) {
+      console.log('Validation errors found:', formErrors);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+
+      if (!token) {
+        setError("No authentication token found. Please log in again.");
+        return;
+      }
+
+      // Prepare data for API call - exclude email
+      const updateData = {
+        firstName: editFormData.firstName.trim(),
+        middleName: editFormData.middleName.trim(),
+        lastName: editFormData.lastName.trim(),
+        contactNumber: editFormData.contactNumber.replace(/\s+/g, ''), // Remove spaces from phone number
+        address: editFormData.address.trim(),
+        civilStatus: editFormData.civilStatus,
+        dateOfBirth: editFormData.dateOfBirth,
+        gender: editFormData.gender,
+        profileImageUrl: editFormData.profileImageUrl
+      };
+
+      console.log('Updating profile with data:', updateData);
+
+      const response = await axios.put(`${BASE_URL}/api/parents/profile`, updateData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data) {
+        // Update local state with saved data
+        setPersonalInfo({
+          ...personalInfo,
+          firstName: updateData.firstName,
+          middleName: updateData.middleName,
+          lastName: updateData.lastName,
+          contactNumber: updateData.contactNumber,
+          address: updateData.address,
+          civilStatus: updateData.civilStatus,
+          dateOfBirth: updateData.dateOfBirth,
+          gender: updateData.gender,
+          profileImageUrl: updateData.profileImageUrl
+        });
+
+        // Exit edit mode, clear validation errors, and show success message
+        setIsEditMode(false);
+        setValidationErrors({});
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 3000);
+
+        console.log('Profile updated successfully');
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      const errorMessage = error.response?.data?.message ||
+                          error.message ||
+                          "Error updating profile";
+      setError(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // After fetching parent profile, if personalInfo.children exists and is non-empty, fetch each child's student profile
@@ -285,13 +530,43 @@ const ParentDashboard = () => {
               </div>
             </div>
             <div className="parent-dashboard__profile-actions">
-              <button 
-                className="parent-dashboard__change-password-btn" 
-                onClick={() => setShowChangePassword(true)}
-              >
-                <Lock size={18} />
-                <span>Change Password</span>
-              </button>
+              {!isEditMode ? (
+                <>
+                  <button
+                    className="parent-dashboard__edit-profile-btn"
+                    onClick={enterEditMode}
+                  >
+                    <Edit size={18} />
+                    <span>Edit Profile</span>
+                  </button>
+                  <button
+                    className="parent-dashboard__change-password-btn"
+                    onClick={() => setShowChangePassword(true)}
+                  >
+                    <Lock size={18} />
+                    <span>Change Password</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="parent-dashboard__save-btn"
+                    onClick={saveProfileChanges}
+                    disabled={isSaving}
+                  >
+                    <Save size={18} />
+                    <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                  <button
+                    className="parent-dashboard__cancel-btn"
+                    onClick={cancelEditMode}
+                    disabled={isSaving}
+                  >
+                    <XCircle size={18} />
+                    <span>Cancel</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -309,7 +584,25 @@ const ParentDashboard = () => {
                 <User className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">First Name</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.firstName || 'Not provided'}</div>
+              {isEditMode ? (
+                <div>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={editFormData.firstName}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.firstName ? 'error' : ''}`}
+                    placeholder="Enter first name"
+                  />
+                  {validationErrors.firstName && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.firstName}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.firstName || 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.15s'}}>
@@ -317,7 +610,25 @@ const ParentDashboard = () => {
                 <User className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Last Name</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.lastName || 'Not provided'}</div>
+              {isEditMode ? (
+                <div>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={editFormData.lastName}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.lastName ? 'error' : ''}`}
+                    placeholder="Enter last name"
+                  />
+                  {validationErrors.lastName && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.lastName}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.lastName || 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.2s'}}>
@@ -325,15 +636,107 @@ const ParentDashboard = () => {
                 <User className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Middle Name</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.middleName || 'Not provided'}</div>
+              {isEditMode ? (
+                <div>
+                  <input
+                    type="text"
+                    name="middleName"
+                    value={editFormData.middleName}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.middleName ? 'error' : ''}`}
+                    placeholder="Enter middle name (optional)"
+                  />
+                  {validationErrors.middleName && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.middleName}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.middleName || 'Not provided'}</div>
+              )}
             </div>
-            
+
+            {/* Contact Number */}
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.22s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <Phone className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Contact Number</div>
+              </div>
+              {isEditMode ? (
+                <div>
+                  <input
+                    type="tel"
+                    name="contactNumber"
+                    value={editFormData.contactNumber}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.contactNumber ? 'error' : ''}`}
+                    placeholder="Enter contact number (e.g., 09123456789)"
+                  />
+                  {validationErrors.contactNumber && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.contactNumber}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.contactNumber || 'Not provided'}</div>
+              )}
+            </div>
+
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.25s'}}>
               <div className="parent-dashboard__info-card-header">
                 <Calendar className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Date of Birth</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.dateOfBirth ? formatDate(personalInfo.dateOfBirth) : 'Not provided'}</div>
+              {isEditMode ? (
+                <div>
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={editFormData.dateOfBirth}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.dateOfBirth ? 'error' : ''}`}
+                  />
+                  {validationErrors.dateOfBirth && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.dateOfBirth}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.dateOfBirth ? formatDate(personalInfo.dateOfBirth) : 'Not provided'}</div>
+              )}
+            </div>
+
+            {/* Gender */}
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.27s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <User className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Gender</div>
+              </div>
+              {isEditMode ? (
+                <div>
+                  <select
+                    name="gender"
+                    value={editFormData.gender}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.gender ? 'error' : ''}`}
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {validationErrors.gender && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.gender}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.gender || 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.3s'}}>
@@ -341,7 +744,30 @@ const ParentDashboard = () => {
                 <Heart className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Civil Status</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.civilStatus || 'Not provided'}</div>
+              {isEditMode ? (
+                <div>
+                  <select
+                    name="civilStatus"
+                    value={editFormData.civilStatus}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input ${validationErrors.civilStatus ? 'error' : ''}`}
+                  >
+                    <option value="">Select Civil Status</option>
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Widowed">Widowed</option>
+                    <option value="Separated">Separated</option>
+                  </select>
+                  {validationErrors.civilStatus && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.civilStatus}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.civilStatus || 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.35s'}}>
@@ -349,7 +775,41 @@ const ParentDashboard = () => {
                 <MapPin className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Address</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.address || 'Not provided'}</div>
+              {isEditMode ? (
+                <div>
+                  <textarea
+                    name="address"
+                    value={editFormData.address}
+                    onChange={handleEditChange}
+                    className={`parent-dashboard__info-card-input parent-dashboard__info-card-textarea ${validationErrors.address ? 'error' : ''}`}
+                    placeholder="Enter address"
+                    rows="3"
+                  />
+                  {validationErrors.address && (
+                    <div className="parent-dashboard__validation-error">
+                      {validationErrors.address}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.address || 'Not provided'}</div>
+              )}
+            </div>
+
+            {/* Email - Non-editable field */}
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.37s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <Mail className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Email Address</div>
+              </div>
+              <div className="parent-dashboard__info-card-value">
+                {personalInfo.email || 'Not provided'}
+                {isEditMode && (
+                  <div className="parent-dashboard__field-note">
+                    Email cannot be changed. Contact administration for assistance.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -371,9 +831,9 @@ const ParentDashboard = () => {
                 >
                   <div className="parent-dashboard__child-header">
                     <div className="parent-dashboard__child-avatar">
-                      {child.profileImage ? (
+                      {child.profileImageUrl ? (
                         <img 
-                          src={child.profileImage} 
+                          src={child.profileImageUrl} 
                           alt={`${child.firstName || ''} ${child.lastName || ''}`} 
                           className="parent-dashboard__child-avatar-img"
                         />
@@ -406,10 +866,20 @@ const ParentDashboard = () => {
                     
                     <div className="parent-dashboard__child-detail">
                       <Calendar size={16} />
-                      <span className="parent-dashboard__child-detail-label">Enrollment Date:</span>
-                      <span className="parent-dashboard__child-detail-value">
-                        {child.enrollmentDate ? formatDate(child.enrollmentDate) : 'Not specified'}
-                      </span>
+                      <span className="parent-dashboard__child-detail-label">Age:</span>
+                      <span className="parent-dashboard__child-detail-value">{child.age || 'Not specified'}</span>
+                    </div>
+                    
+                    <div className="parent-dashboard__child-detail">
+                      <User size={16} />
+                      <span className="parent-dashboard__child-detail-label">Gender:</span>
+                      <span className="parent-dashboard__child-detail-value">{child.gender || 'Not specified'}</span>
+                    </div>
+                    
+                    <div className="parent-dashboard__child-detail">
+                      <BookOpen size={16} />
+                      <span className="parent-dashboard__child-detail-label">Reading Level:</span>
+                      <span className="parent-dashboard__child-detail-value">{child.readingLevel || 'Not assessed'}</span>
                     </div>
                   </div>
                   

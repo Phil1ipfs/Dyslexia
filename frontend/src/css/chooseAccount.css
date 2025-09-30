@@ -103,3 +103,151 @@
   object-fit: cover;
   z-index: 0;
 }
+
+/* Custom Dialog Styles */
+.custom-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.custom-dialog {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fA 100%);
+  border-radius: 20px;
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideInScale 0.3s ease-out;
+  overflow: hidden;
+  border: 3px solid #FDE37C;
+}
+
+.custom-dialog-header {
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3a65 100%);
+  color: white;
+  padding: 20px 30px;
+  text-align: center;
+  border-bottom: 3px solid #FDE37C;
+}
+
+.custom-dialog-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.custom-dialog-content {
+  padding: 30px;
+  text-align: center;
+  background: white;
+}
+
+.custom-dialog-content p {
+  color: #333;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.custom-dialog-actions {
+  padding: 20px 30px 30px;
+  text-align: center;
+  background: white;
+}
+
+.custom-dialog-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.custom-dialog-btn-primary {
+  background: linear-gradient(135deg, #FDE37C 0%, #f0c965 100%);
+  color: #3B4F81;
+  box-shadow: 0 5px 15px rgba(253, 227, 124, 0.4);
+}
+
+.custom-dialog-btn-primary:hover {
+  background: linear-gradient(135deg, #f0c965 0%, #e6b84f 100%);
+  box-shadow: 0 7px 20px rgba(253, 227, 124, 0.6);
+  transform: translateY(-2px);
+}
+
+.custom-dialog-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(253, 227, 124, 0.4);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .custom-dialog {
+    margin: 20px;
+    max-width: calc(100% - 40px);
+  }
+
+  .custom-dialog-header {
+    padding: 15px 20px;
+  }
+
+  .custom-dialog-header h3 {
+    font-size: 1.3rem;
+  }
+
+  .custom-dialog-content {
+    padding: 20px;
+  }
+
+  .custom-dialog-content p {
+    font-size: 1rem;
+  }
+
+  .custom-dialog-actions {
+    padding: 15px 20px 20px;
+  }
+
+  .custom-dialog-btn {
+    padding: 10px 25px;
+    font-size: 0.95rem;
+    min-width: 120px;
+  }
+}

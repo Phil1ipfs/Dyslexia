@@ -214,6 +214,55 @@
     font-size: 0.875rem;
     margin: 0;
   }
+
+  .assessment-results__category-levels {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    margin: 0.25rem 0 0 0;
+    font-style: italic;
+  }
+
+  /* ===== CATEGORY BREAKDOWN ===== */
+  .assessment-results__category-breakdown {
+    margin-top: 0.5rem;
+  }
+
+  .assessment-results__breakdown-details {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(59, 79, 129, 0.05);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(59, 79, 129, 0.1);
+  }
+
+  .assessment-results__breakdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .assessment-results__breakdown-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .assessment-results__breakdown-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #3B4F81;
+    background: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #eaeff8;
+    min-width: 1.5rem;
+    text-align: center;
+  }
   
   /* ===== SEARCH AND FILTERS ===== */
   .assessment-results__filters-container {
@@ -504,6 +553,20 @@
   
   .assessment-results__category-score-value {
     font-weight: 600;
+  }
+  
+  .assessment-results__intervention-indicator {
+    font-weight: 700;
+    margin-left: 0.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .assessment-results__intervention-completed {
+    color: #059669;
+  }
+  
+  .assessment-results__intervention-pending {
+    color: #d97706;
   }
   
   .assessment-results__view-details-btn {

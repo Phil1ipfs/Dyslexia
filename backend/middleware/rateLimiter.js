@@ -48,25 +48,57 @@ const aggressiveLoginLimiter = rateLimit({
   }
 });
 
-// General API rate limiter
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    console.warn(`[SECURITY] API rate limit exceeded for IP: ${req.ip}, path: ${req.path}`);
-    res.status(429).json({
-      error: 'Too many requests from this IP, please try again later',
-      retryAfter: '15 minutes',
-      code: 'API_RATE_LIMIT_EXCEEDED'
+// Environment-aware API rate limiter
+const createApiLimiter = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (!isProduction) {
+    // Development: Very lenient rate limiting
+    console.log('🔧 [RATE LIMITER] Development mode: Using lenient rate limits');
+    return rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 1000, // limit each IP to 1000 requests per windowMs (very high for development)
+      message: {
+        error: 'Rate limit exceeded (development mode)',
+        retryAfter: '15 minutes'
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: (req, res) => {
+        console.warn(`[DEV] API rate limit exceeded for IP: ${req.ip}, path: ${req.path}`);
+        res.status(429).json({
+          error: 'Rate limit exceeded (development mode)',
+          retryAfter: '15 minutes',
+          code: 'DEV_API_RATE_LIMIT_EXCEEDED'
+        });
+      }
+    });
+  } else {
+    // Production: Strict rate limiting
+    console.log('🔒 [RATE LIMITER] Production mode: Using strict rate limits');
+    return rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // limit each IP to 100 requests per windowMs
+      message: {
+        error: 'Too many requests from this IP, please try again later',
+        retryAfter: '15 minutes'
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: (req, res) => {
+        console.warn(`[SECURITY] API rate limit exceeded for IP: ${req.ip}, path: ${req.path}`);
+        res.status(429).json({
+          error: 'Too many requests from this IP, please try again later',
+          retryAfter: '15 minutes',
+          code: 'API_RATE_LIMIT_EXCEEDED'
+        });
+      }
     });
   }
-});
+};
+
+// Create the appropriate rate limiter based on environment
+const apiLimiter = createApiLimiter();
 
 // Account-specific rate limiter (by email)
 const createAccountLimiter = (maxAttempts = 3, windowMs = 60 * 60 * 1000) => {
