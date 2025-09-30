@@ -82,7 +82,9 @@ const TeacherDashboard = () => {
    * @returns {Object} Headers with authorization token
    */
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('authToken');
+    // Get token from user object stored by authService
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token;
     return {
       headers: {
         'Authorization': `Bearer ${token}`,
