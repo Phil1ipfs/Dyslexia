@@ -1280,11 +1280,33 @@ exports.getPreAssessmentUserResponses = async (req, res) => {
     console.log('⭐ Searching for responses with studentId:', user.idNumber);
     
     // Find all user responses for this student using their idNumber
-    const userResponses = await userResponsesCollection.find({ 
-      studentId: user.idNumber 
-    }).toArray();
+    console.log('⭐ Searching for responses with query:', { studentId: user.idNumber });
     
-    console.log('⭐ Found', userResponses.length, 'user responses for student');
+    // Try multiple possible studentId formats
+    const possibleStudentIds = [
+      user.idNumber,
+      parseInt(user.idNumber),
+      user.idNumber?.toString(),
+      user._id,
+      user._id?.toString()
+    ].filter(id => id !== null && id !== undefined);
+    
+    console.log('⭐ Trying possible student IDs:', possibleStudentIds);
+    
+    let userResponses = [];
+    for (const possibleId of possibleStudentIds) {
+      const responses = await userResponsesCollection.find({ 
+        studentId: possibleId 
+      }).toArray();
+      
+      if (responses.length > 0) {
+        console.log(`⭐ Found ${responses.length} responses with studentId:`, possibleId);
+        userResponses = responses;
+        break;
+      }
+    }
+    
+    console.log('⭐ Final result: Found', userResponses.length, 'user responses for student');
     
     if (userResponses.length === 0) {
       console.log('⭐ No user responses found for studentId:', user.idNumber);

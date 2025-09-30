@@ -577,15 +577,28 @@ class PreAssessmentService {
    */
   getPreAssessmentUserResponses = async (studentId) => {
     try {
+      console.log('🔍 PreAssessmentService: Fetching user responses for studentId:', studentId);
+      console.log('🔍 PreAssessmentService: API URL:', `${API_URL}/student/${studentId}/pre-assessment-user-responses`);
+      
       const response = await axios.get(
-        `${this.apiUrl}/student/${studentId}/pre-assessment-user-responses`,
+        `${API_URL}/student/${studentId}/pre-assessment-user-responses`,
         this.getAuthHeaders()
       );
+      
+      console.log('🔍 PreAssessmentService: Response received:', response.status, response.data?.length || 0, 'responses');
+      
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
+      console.error('🔍 PreAssessmentService: Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
       // If 404, the student hasn't taken the assessment yet
       if (error.response && error.response.status === 404) {
         return {
