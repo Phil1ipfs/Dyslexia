@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const AdminPrescriptiveAnalysisService = require('../services/AdminPrescriptiveAnalysisService');
 
 const getDashboardStats = async (req, res) => {
     try {
@@ -60,6 +61,159 @@ const getDashboardStats = async (req, res) => {
     }
 };
 
+/**
+ * Get comprehensive prescriptive analysis for Grade 1 students
+ * Analyzes performance data using BKT and IRT models
+ */
+const getPrescriptiveAnalysis = async (req, res) => {
+    try {
+        console.log('[ADMIN CONTROLLER] Starting prescriptive analysis request...');
+
+        // Get comprehensive prescriptive analysis
+        const analysisResult = await AdminPrescriptiveAnalysisService.getComprehensivePrescriptiveAnalysis();
+
+        console.log('[ADMIN CONTROLLER] ✅ Prescriptive analysis completed successfully');
+
+        res.json({
+            success: true,
+            message: 'Prescriptive analysis generated successfully',
+            data: analysisResult,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('[ADMIN CONTROLLER] ❌ Error in prescriptive analysis:', error);
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to generate prescriptive analysis',
+            details: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+};
+
+/**
+ * Get category-specific analysis for a particular reading skill
+ */
+const getCategoryAnalysis = async (req, res) => {
+    try {
+        const { category } = req.params;
+
+        console.log(`[ADMIN CONTROLLER] Getting category analysis for: ${category}`);
+
+        // Validate category
+        const validCategories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
+        if (!validCategories.includes(category)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid category',
+                validCategories: validCategories
+            });
+        }
+
+        // Get full analysis and extract category-specific data
+        const fullAnalysis = await AdminPrescriptiveAnalysisService.getComprehensivePrescriptiveAnalysis();
+        const categoryData = fullAnalysis.categoryAnalysis[category];
+
+        if (!categoryData) {
+            return res.status(404).json({
+                success: false,
+                error: `No data found for category: ${category}`
+            });
+        }
+
+        res.json({
+            success: true,
+            category: category,
+            data: categoryData,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error(`[ADMIN CONTROLLER] ❌ Error in category analysis for ${req.params.category}:`, error);
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get category analysis',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Get section-specific analysis for classroom insights
+ */
+const getSectionAnalysis = async (req, res) => {
+    try {
+        const { section } = req.params;
+
+        console.log(`[ADMIN CONTROLLER] Getting section analysis for: ${section}`);
+
+        // Get full analysis and extract section-specific data
+        const fullAnalysis = await AdminPrescriptiveAnalysisService.getComprehensivePrescriptiveAnalysis();
+        const sectionData = fullAnalysis.sectionAnalysis[section];
+
+        if (!sectionData) {
+            return res.status(404).json({
+                success: false,
+                error: `No data found for section: ${section}`,
+                availableSections: Object.keys(fullAnalysis.sectionAnalysis)
+            });
+        }
+
+        res.json({
+            success: true,
+            section: section,
+            data: sectionData,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error(`[ADMIN CONTROLLER] ❌ Error in section analysis for ${req.params.section}:`, error);
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get section analysis',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Get skill mastery overview using BKT analysis
+ */
+const getSkillMasteryAnalysis = async (req, res) => {
+    try {
+        console.log('[ADMIN CONTROLLER] Getting skill mastery analysis...');
+
+        // Get full analysis and extract skill mastery data
+        const fullAnalysis = await AdminPrescriptiveAnalysisService.getComprehensivePrescriptiveAnalysis();
+        const skillMasteryData = fullAnalysis.skillMasteryAnalysis;
+
+        res.json({
+            success: true,
+            data: skillMasteryData,
+            modelUsed: 'Bayesian Knowledge Tracing (BKT)',
+            description: 'Skill mastery analysis using BKT mathematical model to assess student knowledge acquisition',
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('[ADMIN CONTROLLER] ❌ Error in skill mastery analysis:', error);
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get skill mastery analysis',
+            details: error.message
+        });
+    }
+};
+
 module.exports = {
-    getDashboardStats
+    getDashboardStats,
+    getPrescriptiveAnalysis,
+    getCategoryAnalysis,
+    getSectionAnalysis,
+    getSkillMasteryAnalysis
 }; 

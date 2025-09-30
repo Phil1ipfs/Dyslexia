@@ -1,0 +1,1324 @@
+[{
+  "_id": {
+    "$oid": "68d986daf4a3ae0ffd7cca55"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "studentNumber": "202533333",
+  "readingLevel": "Low Emerging",
+  "overallScore": 20,
+  "objectives": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "lesson": "Letter Recognition and Sound Correspondence",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "extensive",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 20,
+      "passingThreshold": 75,
+      "assessmentScore": 20,
+      "totalQuestions": 15,
+      "correctAnswers": 3,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": {
+        "$oid": "68d8e1f938ddfda4de670f76"
+      },
+      "interventionName": "Alphabet Knowledge Intervention",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 3,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-28T07:22:38.258Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68d99bc160ea95d3909d753e"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 67,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-28T07:25:08.282Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68d99bc160ea95d3909d753f"
+          }
+        },
+        {
+          "attemptNumber": 3,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-28T08:20:36.824Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 3,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68d99bc160ea95d3909d7540"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 80,
+      "interventionCreatedAt": {
+        "$date": "2025-09-28T08:20:36.824Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-28T20:34:09.974Z"
+      },
+      "_id": {
+        "$oid": "68d99bc160ea95d3909d753d"
+      }
+    }
+  ],
+  "basedOnAssessmentId": {
+    "$oid": "68d8e0b738ddfda4de670e59"
+  },
+  "isActive": false,
+  "academicYear": "2025",
+  "progressionFrom": null,
+  "progressionDate": null,
+  "completedAt": {
+    "$date": "2025-09-28T20:35:56.073Z"
+  },
+  "completionReason": "Progressed to High Emerging",
+  "createdAt": {
+    "$date": "2025-09-28T19:04:58.084Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-28T20:35:56.074Z"
+  },
+  "__v": 7
+},
+{
+  "_id": {
+    "$oid": "68d9a56715426803457aa899"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "studentNumber": "202533333",
+  "readingLevel": "High Emerging",
+  "overallScore": 100,
+  "objectives": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "lesson": "Letter Recognition and Sound Correspondence",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "moderate",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 67,
+      "passingThreshold": 75,
+      "assessmentScore": 67,
+      "totalQuestions": 30,
+      "correctAnswers": 20,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": {
+        "$oid": "68d9d0a900776503aa20cc1a"
+      },
+      "interventionName": "Alphabet Knowledge Intervention",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 6,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-28T07:22:38.258Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68d9d80eee35c4712de05188"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-28T07:25:08.282Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68d9d80eee35c4712de05189"
+          }
+        },
+        {
+          "attemptNumber": 3,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-28T08:20:36.824Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 3,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68d9d80eee35c4712de0518a"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 67,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T00:44:07.299Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-29T00:51:26.415Z"
+      },
+      "_id": {
+        "$oid": "68d9d80eee35c4712de05187"
+      }
+    },
+    {
+      "categoryName": "Phonological Awareness",
+      "lesson": "Sound Awareness and Discrimination",
+      "status": "mastered",
+      "completed": true,
+      "supportLevel": "minimal",
+      "remarks": "",
+      "mainAssessmentRemarks": "The student have pased the asdessment and such with all of it for the teacher",
+      "score": 100,
+      "passingThreshold": 75,
+      "assessmentScore": 100,
+      "totalQuestions": 6,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 15,
+      "correctMatches": 15,
+      "isCompleted": true,
+      "isPassed": true,
+      "hasIntervention": false,
+      "interventionId": null,
+      "interventionName": "",
+      "interventionStatus": "not_needed",
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "interventionHistory": [],
+      "latestInterventionScore": 0,
+      "latestInterventionPassed": false,
+      "interventionImprovement": 0,
+      "interventionCreatedAt": null,
+      "lastUpdated": {
+        "$date": "2025-09-29T00:51:50.737Z"
+      },
+      "_id": {
+        "$oid": "68d9d80eee35c4712de0518e"
+      }
+    }
+  ],
+  "basedOnAssessmentId": {
+    "$oid": "68d9a56715426803457aa895"
+  },
+  "isActive": false,
+  "academicYear": "2025",
+  "progressionFrom": "Low Emerging",
+  "progressionDate": {
+    "$date": "2025-09-28T21:15:19.489Z"
+  },
+  "completedAt": {
+    "$date": "2025-09-29T00:59:04.476Z"
+  },
+  "completionReason": "Progressed to Developing",
+  "createdAt": {
+    "$date": "2025-09-28T21:15:19.490Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-29T00:59:04.477Z"
+  },
+  "__v": 45,
+  "lastModifiedBy": {
+    "$oid": "6816482b816c9582b244bff7"
+  }
+},
+{
+  "_id": {
+    "$oid": "68da023cb25ce091dd6a8124"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "studentNumber": "202533333",
+  "readingLevel": "Developing",
+  "overallScore": 100,
+  "objectives": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "lesson": "Letter Recognition and Sound Correspondence",
+      "status": "mastered",
+      "completed": true,
+      "supportLevel": "minimal",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 100,
+      "passingThreshold": 75,
+      "assessmentScore": 100,
+      "totalQuestions": 15,
+      "correctAnswers": 15,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": true,
+      "hasIntervention": false,
+      "interventionId": null,
+      "interventionName": "",
+      "interventionStatus": null,
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "interventionHistory": [],
+      "latestInterventionScore": 0,
+      "latestInterventionPassed": false,
+      "interventionImprovement": 0,
+      "interventionCreatedAt": null,
+      "lastUpdated": {
+        "$date": "2025-09-29T04:16:24.529Z"
+      },
+      "_id": {
+        "$oid": "68da023cb25ce091dd6a8125"
+      }
+    },
+    {
+      "categoryName": "Phonological Awareness",
+      "lesson": "Sound Awareness and Discrimination",
+      "status": "mastered",
+      "completed": true,
+      "supportLevel": "minimal",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 100,
+      "passingThreshold": 75,
+      "assessmentScore": 100,
+      "totalQuestions": 6,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 14,
+      "correctMatches": 14,
+      "isCompleted": true,
+      "isPassed": true,
+      "hasIntervention": false,
+      "interventionId": null,
+      "interventionName": "",
+      "interventionStatus": null,
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "interventionHistory": [],
+      "latestInterventionScore": 0,
+      "latestInterventionPassed": false,
+      "interventionImprovement": 0,
+      "interventionCreatedAt": null,
+      "lastUpdated": {
+        "$date": "2025-09-29T04:16:24.530Z"
+      },
+      "_id": {
+        "$oid": "68da023cb25ce091dd6a812c"
+      }
+    },
+    {
+      "categoryName": "Decoding",
+      "lesson": "Word Decoding and Sound Blending",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "extensive",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 33,
+      "passingThreshold": 75,
+      "assessmentScore": 33,
+      "totalQuestions": 15,
+      "correctAnswers": 5,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": {
+        "$oid": "68d9fabe3033646ef94ad577"
+      },
+      "interventionName": "Decoding Intervention - Passed",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 2,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 33,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T03:22:25.667Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68da08189f6ad881220d498b"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T03:28:42.814Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68da08189f6ad881220d498c"
+          }
+        },
+        {
+          "attemptNumber": 3,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T03:32:17.267Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68da08189f6ad881220d498d"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 67,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T03:22:25.667Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-29T04:16:24.530Z"
+      },
+      "_id": {
+        "$oid": "68da023cb25ce091dd6a812d"
+      }
+    }
+  ],
+  "basedOnAssessmentId": {
+    "$oid": "68d9f4951425f6afd02b7872"
+  },
+  "isActive": false,
+  "academicYear": "2025",
+  "progressionFrom": null,
+  "progressionDate": null,
+  "completedAt": {
+    "$date": "2025-09-29T04:16:56.856Z"
+  },
+  "completionReason": "Progressed to Transitioning",
+  "createdAt": {
+    "$date": "2025-09-29T03:51:24.143Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-29T04:16:56.857Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "68da08389f6ad881220d49e4"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "studentNumber": "202533333",
+  "readingLevel": "Transitioning",
+  "overallScore": 100,
+  "objectives": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "lesson": "Mastering Alphabet Knowledge",
+      "status": "not_started",
+      "completed": false,
+      "supportLevel": "minimal",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 0,
+      "passingThreshold": 75,
+      "assessmentScore": 33,
+      "totalQuestions": 15,
+      "correctAnswers": 5,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": null,
+      "interventionName": "Alphabet Knowledge Intervention - Passed",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 1,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T05:49:13.296Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68da282c5eae4190a785c69f"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 67,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T05:49:13.296Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-29T06:33:16.539Z"
+      },
+      "_id": {
+        "$oid": "68da08389f6ad881220d49e5"
+      }
+    },
+    {
+      "categoryName": "Phonological Awareness",
+      "lesson": "Mastering Phonological Awareness",
+      "status": "not_started",
+      "completed": false,
+      "supportLevel": "moderate",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 0,
+      "passingThreshold": 75,
+      "assessmentScore": 0,
+      "totalQuestions": 6,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 15,
+      "correctMatches": 1,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": null,
+      "interventionName": "Phonological Awareness Intervention - Passed",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 1,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 50,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:09:13.270Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "BAKIT BA GANIT",
+          "_id": {
+            "$oid": "68da282c5eae4190a785c6a0"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:12:46.006Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68da282c5eae4190a785c6a1"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 100,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T06:09:13.270Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-29T06:33:16.539Z"
+      },
+      "_id": {
+        "$oid": "68da08389f6ad881220d49e6"
+      }
+    },
+    {
+      "categoryName": "Decoding",
+      "lesson": "Mastering Decoding",
+      "status": "not_started",
+      "completed": false,
+      "supportLevel": "minimal",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 0,
+      "passingThreshold": 75,
+      "assessmentScore": 47,
+      "totalQuestions": 15,
+      "correctAnswers": 7,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": null,
+      "interventionName": "Decoding Intervention - Passed",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 1,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 33,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:25:27.490Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68da282c5eae4190a785c6a2"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:28:57.663Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68da282c5eae4190a785c6a3"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 53,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T06:25:27.490Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-29T06:33:16.539Z"
+      },
+      "_id": {
+        "$oid": "68da08389f6ad881220d49e7"
+      }
+    },
+    {
+      "categoryName": "Word Recognition",
+      "lesson": "Mastering Word Recognition",
+      "status": "not_started",
+      "completed": false,
+      "supportLevel": "minimal",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 0,
+      "passingThreshold": 75,
+      "assessmentScore": 100,
+      "totalQuestions": 15,
+      "correctAnswers": 15,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": true,
+      "hasIntervention": false,
+      "interventionId": null,
+      "interventionName": "",
+      "interventionStatus": null,
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "interventionHistory": [],
+      "latestInterventionScore": 0,
+      "latestInterventionPassed": false,
+      "interventionImprovement": 0,
+      "interventionCreatedAt": null,
+      "lastUpdated": {
+        "$date": "2025-09-29T06:33:16.539Z"
+      },
+      "_id": {
+        "$oid": "68da08389f6ad881220d49e8"
+      }
+    }
+  ],
+  "basedOnAssessmentId": {
+    "$oid": "68da08389f6ad881220d49e0"
+  },
+  "isActive": false,
+  "academicYear": "2025",
+  "progressionFrom": "Developing",
+  "progressionDate": {
+    "$date": "2025-09-29T04:16:56.903Z"
+  },
+  "completedAt": {
+    "$date": "2025-09-29T06:35:59.377Z"
+  },
+  "completionReason": "Progressed to At Grade Level",
+  "createdAt": {
+    "$date": "2025-09-29T04:16:56.904Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-29T06:35:59.378Z"
+  },
+  "__v": 2,
+  "lastModifiedBy": {
+    "$oid": "6816482b816c9582b244bff7"
+  }
+},
+{
+  "_id": {
+    "$oid": "68da28cf5eae4190a785c9ad"
+  },
+  "studentId": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "studentNumber": "202533333",
+  "readingLevel": "At Grade Level",
+  "overallScore": 100,
+  "objectives": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "lesson": "Letter Recognition and Sound Correspondence",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "extensive",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 40,
+      "passingThreshold": 75,
+      "assessmentScore": 40,
+      "totalQuestions": 15,
+      "correctAnswers": 6,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": {
+        "$oid": "68da2c6c48229fd8eab32b02"
+      },
+      "interventionName": "Alphabet Knowledge Intervention",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 9,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-28T07:22:38.258Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37622"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-28T07:25:08.282Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37623"
+          }
+        },
+        {
+          "attemptNumber": 3,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-28T08:20:36.824Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 3,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37624"
+          }
+        },
+        {
+          "attemptNumber": 4,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T00:23:42.896Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37625"
+          }
+        },
+        {
+          "attemptNumber": 5,
+          "score": 67,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T00:41:37.298Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37626"
+          }
+        },
+        {
+          "attemptNumber": 6,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T00:44:07.299Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 3,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37627"
+          }
+        },
+        {
+          "attemptNumber": 7,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T05:49:13.149Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37628"
+          }
+        },
+        {
+          "attemptNumber": 8,
+          "score": 33,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:59:11.027Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37629"
+          }
+        },
+        {
+          "attemptNumber": 9,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T07:00:57.508Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a3762a"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 60,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T07:00:57.508Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-30T05:22:14.465Z"
+      },
+      "_id": {
+        "$oid": "68db690692f72e22b2a37621"
+      }
+    },
+    {
+      "categoryName": "Phonological Awareness",
+      "lesson": "Sound Awareness and Discrimination",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "extensive",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 0,
+      "passingThreshold": 75,
+      "assessmentScore": 0,
+      "totalQuestions": 6,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 15,
+      "correctMatches": 1,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": {
+        "$oid": "68da2f4bac4062854db90155"
+      },
+      "interventionName": "Phonological Awareness Intervention",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 4,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 50,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:09:13.270Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a3762c"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:12:45.861Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a3762d"
+          }
+        },
+        {
+          "attemptNumber": 3,
+          "score": 25,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T07:04:57.518Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a3762e"
+          }
+        },
+        {
+          "attemptNumber": 4,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T07:06:57.510Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a3762f"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 100,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T07:06:57.510Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-30T05:22:14.465Z"
+      },
+      "_id": {
+        "$oid": "68db690692f72e22b2a3762b"
+      }
+    },
+    {
+      "categoryName": "Decoding",
+      "lesson": "Word Decoding and Sound Blending",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "extensive",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 40,
+      "passingThreshold": 75,
+      "assessmentScore": 40,
+      "totalQuestions": 15,
+      "correctAnswers": 6,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": {
+        "$oid": "68da323cac4062854db966d1"
+      },
+      "interventionName": "Decoding Intervention",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 7,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 33,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T03:22:25.667Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37631"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T03:28:42.814Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37632"
+          }
+        },
+        {
+          "attemptNumber": 3,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T03:32:17.127Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 3,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37633"
+          }
+        },
+        {
+          "attemptNumber": 4,
+          "score": 33,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:25:27.490Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37634"
+          }
+        },
+        {
+          "attemptNumber": 5,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T06:28:57.496Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37635"
+          }
+        },
+        {
+          "attemptNumber": 6,
+          "score": 33,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T07:17:27.593Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37636"
+          }
+        },
+        {
+          "attemptNumber": 7,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T07:19:11.156Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37637"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 60,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T07:19:11.156Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-30T05:22:14.465Z"
+      },
+      "_id": {
+        "$oid": "68db690692f72e22b2a37630"
+      }
+    },
+    {
+      "categoryName": "Word Recognition",
+      "lesson": "Sight Word Recognition and Vocabulary",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "moderate",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 53,
+      "passingThreshold": 75,
+      "assessmentScore": 53,
+      "totalQuestions": 15,
+      "correctAnswers": 8,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": {
+        "$oid": "68da3447ac4062854db9b3af"
+      },
+      "interventionName": "Word Recognition Intervention",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 2,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 0,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-29T07:29:57.536Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a37639"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T07:31:41.781Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 2,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a3763a"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 47,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T07:31:41.781Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-30T05:22:14.465Z"
+      },
+      "_id": {
+        "$oid": "68db690692f72e22b2a37638"
+      }
+    },
+    {
+      "categoryName": "Reading Comprehension",
+      "lesson": "Reading Comprehension and Text Understanding",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "extensive",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 0,
+      "passingThreshold": 75,
+      "assessmentScore": 0,
+      "totalQuestions": 10,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": true,
+      "interventionId": {
+        "$oid": "68da379dac4062854dba4b9e"
+      },
+      "interventionName": "Reading Comprehension Intervention",
+      "interventionStatus": "completed_passed",
+      "interventionAttempts": 1,
+      "interventionCompleted": true,
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-29T07:43:57.557Z"
+          },
+          "reason": "intervention_attempt",
+          "revisionNumber": 1,
+          "teacherRemarks": "",
+          "_id": {
+            "$oid": "68db690692f72e22b2a3763c"
+          }
+        }
+      ],
+      "latestInterventionScore": 100,
+      "latestInterventionPassed": true,
+      "interventionImprovement": 100,
+      "interventionCreatedAt": {
+        "$date": "2025-09-29T07:43:57.557Z"
+      },
+      "lastUpdated": {
+        "$date": "2025-09-30T05:22:14.465Z"
+      },
+      "_id": {
+        "$oid": "68db690692f72e22b2a3763b"
+      }
+    }
+  ],
+  "basedOnAssessmentId": {
+    "$oid": "68da28cf5eae4190a785c9a9"
+  },
+  "isActive": true,
+  "academicYear": "2025",
+  "progressionFrom": "Transitioning",
+  "progressionDate": {
+    "$date": "2025-09-29T06:35:59.420Z"
+  },
+  "completedAt": null,
+  "completionReason": null,
+  "createdAt": {
+    "$date": "2025-09-29T06:35:59.421Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-30T06:43:35.071Z"
+  },
+  "__v": 21,
+  "lastModifiedBy": {
+    "$oid": "68db3189d1588ca37bb1ce9b"
+  }
+},
+{
+  "_id": {
+    "$oid": "68da3a89ac4062854dba9b81"
+  },
+  "studentId": {
+    "$oid": "68da29ee5eae4190a785e511"
+  },
+  "studentNumber": "202522233",
+  "readingLevel": "Low Emerging",
+  "overallScore": 7,
+  "objectives": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "lesson": "Letter Recognition and Sound Correspondence",
+      "status": "in_progress",
+      "completed": false,
+      "supportLevel": "extensive",
+      "remarks": "",
+      "mainAssessmentRemarks": "",
+      "score": 7,
+      "passingThreshold": 75,
+      "assessmentScore": 7,
+      "totalQuestions": 15,
+      "correctAnswers": 1,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "isCompleted": true,
+      "isPassed": false,
+      "hasIntervention": false,
+      "interventionId": null,
+      "interventionName": "",
+      "interventionStatus": "not_needed",
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "interventionHistory": [],
+      "latestInterventionScore": 0,
+      "latestInterventionPassed": false,
+      "interventionImprovement": 0,
+      "interventionCreatedAt": null,
+      "lastUpdated": {
+        "$date": "2025-09-30T05:22:14.629Z"
+      },
+      "_id": {
+        "$oid": "68db690692f72e22b2a37642"
+      }
+    }
+  ],
+  "basedOnAssessmentId": {
+    "$oid": "68da3a88ac4062854dba9b71"
+  },
+  "isActive": true,
+  "academicYear": "2025",
+  "progressionFrom": null,
+  "progressionDate": null,
+  "completedAt": null,
+  "completionReason": null,
+  "createdAt": {
+    "$date": "2025-09-29T07:51:37.228Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-30T06:43:35.165Z"
+  },
+  "__v": 12
+}]
