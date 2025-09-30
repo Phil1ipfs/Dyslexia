@@ -423,8 +423,9 @@
 }
 
 .user-responses__response-value.correct {
-  background: #d1fae5;
-  color: #065f46;
+  background: #d1fae5 !important;
+  color: #1f2937 !important;
+  font-weight: 600 !important;
 }
 
 .user-responses__response-value.incorrect {
@@ -473,6 +474,12 @@
   border-color: #bbf7d0;
 }
 
+.user-responses__matching-pair.correct .user-responses__audio-text,
+.user-responses__matching-pair.correct .user-responses__match-text {
+  color: #1f2937 !important;
+  font-weight: 600 !important;
+}
+
 .user-responses__matching-pair.incorrect {
   background: #fef2f2;
   border-color: #fecaca;
@@ -513,7 +520,7 @@
 }
 
 .user-responses__match-icon.correct {
-  color: #059669;
+  color: #1f2937 !important;
 }
 
 .user-responses__match-icon.incorrect {
@@ -560,9 +567,10 @@
 }
 
 .user-responses__letter.correct {
-  background: #d1fae5;
-  border-color: #10b981;
-  color: #065f46;
+  background: #d1fae5 !important;
+  border-color: #10b981 !important;
+  color: #1f2937 !important;
+  font-weight: 700 !important;
 }
 
 /* Options Grid */
@@ -601,9 +609,10 @@
 }
 
 .user-responses__option.correct {
-  background: #d1fae5;
-  border-color: #10b981;
-  color: #065f46;
+  background: #d1fae5 !important;
+  border-color: #10b981 !important;
+  color: #1f2937 !important;
+  font-weight: 600 !important;
 }
 
 .user-responses__option.selected {
@@ -613,9 +622,10 @@
 }
 
 .user-responses__option.correct.selected {
-  background: #bbf7d0;
-  border-color: #059669;
-  color: #064e3b;
+  background: #bbf7d0 !important;
+  border-color: #059669 !important;
+  color: #1f2937 !important;
+  font-weight: 600 !important;
 }
 
 /* Reading Comprehension */

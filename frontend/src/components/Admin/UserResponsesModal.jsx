@@ -44,7 +44,8 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
       }
       
       if (assessmentResponse.success) {
-        console.log('🔍 UserResponsesModal: Setting pre-assessment data');
+        console.log('🔍 UserResponsesModal: Setting pre-assessment data:', assessmentResponse.data);
+        console.log('🔍 UserResponsesModal: Pre-assessment questions count:', assessmentResponse.data?.questions?.length || 0);
         setPreAssessmentData(assessmentResponse.data);
       } else {
         console.warn('🔍 UserResponsesModal: Failed to fetch pre-assessment data:', assessmentResponse.message);
@@ -122,8 +123,13 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
 
   // Helper function to get question data from pre-assessment
   const getQuestionData = (questionId) => {
-    if (!preAssessmentData?.questions) return null;
-    return preAssessmentData.questions.find(q => q.questionId === questionId);
+    if (!preAssessmentData?.questions) {
+      console.log('🔍 getQuestionData: No preAssessmentData.questions available');
+      return null;
+    }
+    const questionData = preAssessmentData.questions.find(q => q.questionId === questionId);
+    console.log('🔍 getQuestionData: Looking for questionId:', questionId, 'Found:', questionData);
+    return questionData;
   };
 
   const renderResponseContent = (response) => {
@@ -150,7 +156,13 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
   const renderAlphabetKnowledgeResponse = (response) => {
     const { response: responseData, isCorrect, questionId } = response;
     const questionData = getQuestionData(questionId);
+    console.log('🔍 renderAlphabetKnowledgeResponse: questionId:', questionId, 'questionData:', questionData);
     const correctOption = questionData?.options?.find(opt => opt.isCorrect);
+    
+    // Map the response option ID to the actual option text
+    const studentAnswerOptionId = Array.isArray(responseData) ? responseData[0] : responseData;
+    const studentAnswerOption = questionData?.options?.find(opt => opt.optionId === studentAnswerOptionId);
+    const studentAnswerText = studentAnswerOption ? studentAnswerOption.optionText : studentAnswerOptionId;
     
     return (
       <div className="user-responses__response-content">
@@ -163,6 +175,11 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
                 <strong>Target:</strong> {questionData.questionValue}
               </div>
             )}
+            {questionData.questionImage && (
+              <div className="user-responses__question-image">
+                <img src={questionData.questionImage} alt="Question" className="user-responses__image" />
+              </div>
+            )}
           </div>
         )}
         
@@ -170,7 +187,7 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
           <div className="user-responses__response-item">
             <span className="user-responses__response-label">Student's Answer:</span>
             <span className={`user-responses__response-value ${isCorrect ? 'correct' : 'incorrect'}`}>
-              {Array.isArray(responseData) ? responseData[0] : responseData}
+              {studentAnswerText}
             </span>
           </div>
           
@@ -183,6 +200,26 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
             </div>
           )}
         </div>
+        
+        {questionData?.options && (
+          <div className="user-responses__options">
+            <h4>Available Options:</h4>
+            <div className="user-responses__options-grid">
+              {questionData.options.map((option, index) => (
+                <span 
+                  key={index} 
+                  className={`user-responses__option ${
+                    option.isCorrect ? 'correct' : ''
+                  } ${
+                    option.optionId === studentAnswerOptionId ? 'selected' : ''
+                  }`}
+                >
+                  {option.optionText}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -190,6 +227,7 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
   const renderPhonologicalAwarenessResponse = (response) => {
     const { response: responseData, correctMatches, totalMatches, isCorrect, questionId } = response;
     const questionData = getQuestionData(questionId);
+    console.log('🔍 renderPhonologicalAwarenessResponse: questionId:', questionId, 'questionData:', questionData);
     const correctPairs = questionData?.questionSet?.correctPairs || [];
     
     return (
@@ -404,39 +442,51 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
         {sentenceQuestions.length > 0 && (
           <div className="user-responses__comprehension-questions">
             <h4>Comprehension Questions:</h4>
-            {sentenceQuestions.map((question, index) => (
-              <div key={index} className="user-responses__comprehension-question">
-                <div className="user-responses__question-text">
-                  <strong>Q{index + 1}:</strong> {question.questionText}
-                </div>
-                <div className="user-responses__response-comparison">
-                  <div className="user-responses__response-item">
-                    <span className="user-responses__response-label">Student's Answer:</span>
-                    <span className={`user-responses__response-value ${isCorrect ? 'correct' : 'incorrect'}`}>
-                      {Array.isArray(responseData) ? responseData[index] || 'No answer' : responseData}
-                    </span>
+            {sentenceQuestions.map((question, index) => {
+              // Get the student's answer for this specific question
+              const studentAnswer = Array.isArray(responseData) ? responseData[index] || 'No answer' : responseData;
+              
+              // Check if this specific answer is correct
+              const isThisAnswerCorrect = question.acceptableAnswers 
+                ? question.acceptableAnswers.some(acceptable => 
+                    acceptable.toLowerCase().trim() === studentAnswer.toLowerCase().trim()
+                  ) || question.correctAnswer.toLowerCase().trim() === studentAnswer.toLowerCase().trim()
+                : question.correctAnswer.toLowerCase().trim() === studentAnswer.toLowerCase().trim();
+              
+              return (
+                <div key={index} className="user-responses__comprehension-question">
+                  <div className="user-responses__question-text">
+                    <strong>Q{index + 1}:</strong> {question.questionText}
                   </div>
-                  <div className="user-responses__response-item">
-                    <span className="user-responses__response-label">Correct Answer:</span>
-                    <span className="user-responses__response-value correct">
-                      {question.correctAnswer}
-                    </span>
-                  </div>
-                </div>
-                {question.acceptableAnswers && question.acceptableAnswers.length > 0 && (
-                  <div className="user-responses__acceptable-answers">
-                    <span className="user-responses__response-label">Acceptable Answers:</span>
-                    <div className="user-responses__acceptable-list">
-                      {question.acceptableAnswers.map((answer, answerIndex) => (
-                        <span key={answerIndex} className="user-responses__acceptable-answer">
-                          {answer}
-                        </span>
-                      ))}
+                  <div className="user-responses__response-comparison">
+                    <div className="user-responses__response-item">
+                      <span className="user-responses__response-label">Student's Answer:</span>
+                      <span className={`user-responses__response-value ${isThisAnswerCorrect ? 'correct' : 'incorrect'}`}>
+                        {studentAnswer}
+                      </span>
+                    </div>
+                    <div className="user-responses__response-item">
+                      <span className="user-responses__response-label">Correct Answer:</span>
+                      <span className="user-responses__response-value correct">
+                        {question.correctAnswer}
+                      </span>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
+                  {question.acceptableAnswers && question.acceptableAnswers.length > 0 && (
+                    <div className="user-responses__acceptable-answers">
+                      <span className="user-responses__response-label">Acceptable Answers:</span>
+                      <div className="user-responses__acceptable-list">
+                        {question.acceptableAnswers.map((answer, answerIndex) => (
+                          <span key={answerIndex} className="user-responses__acceptable-answer">
+                            {answer}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -14,8 +14,8 @@ const upload = multer({
 });
 
 // Pre-assessment routes
-router.get('/assessments', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getAllPreAssessments);
-router.get('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getPreAssessmentById);
+router.get('/assessments', authenticateToken, authorize('teacher', 'guro', 'admin'), preAssessmentController.getAllPreAssessments);
+router.get('/assessments/:id', authenticateToken, authorize('teacher', 'guro', 'admin'), preAssessmentController.getPreAssessmentById);
 router.post('/assessments', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.createPreAssessment);
 router.put('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.updatePreAssessment);
 router.delete('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deletePreAssessment);
