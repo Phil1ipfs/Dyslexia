@@ -584,7 +584,18 @@ const ParentDashboard = () => {
                 <User className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">First Name</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.firstName || 'Not provided'}</div>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  name="firstName"
+                  value={editFormData.firstName}
+                  onChange={handleEditChange}
+                  className="parent-dashboard__info-card-input"
+                  placeholder="Enter first name"
+                />
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.firstName || 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.15s'}}>
@@ -592,7 +603,18 @@ const ParentDashboard = () => {
                 <User className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Last Name</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.lastName || 'Not provided'}</div>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  name="lastName"
+                  value={editFormData.lastName}
+                  onChange={handleEditChange}
+                  className="parent-dashboard__info-card-input"
+                  placeholder="Enter last name"
+                />
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.lastName || 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.2s'}}>
@@ -600,7 +622,18 @@ const ParentDashboard = () => {
                 <User className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Middle Name</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.middleName || 'Not provided'}</div>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  name="middleName"
+                  value={editFormData.middleName}
+                  onChange={handleEditChange}
+                  className="parent-dashboard__info-card-input"
+                  placeholder="Enter middle name"
+                />
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.middleName || 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.25s'}}>
@@ -608,7 +641,17 @@ const ParentDashboard = () => {
                 <Calendar className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Date of Birth</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.dateOfBirth ? formatDate(personalInfo.dateOfBirth) : 'Not provided'}</div>
+              {isEditMode ? (
+                <input
+                  type="date"
+                  name="dateOfBirth"
+                  value={editFormData.dateOfBirth}
+                  onChange={handleEditChange}
+                  className="parent-dashboard__info-card-input"
+                />
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.dateOfBirth ? formatDate(personalInfo.dateOfBirth) : 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.3s'}}>
@@ -616,7 +659,23 @@ const ParentDashboard = () => {
                 <Heart className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Civil Status</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.civilStatus || 'Not provided'}</div>
+              {isEditMode ? (
+                <select
+                  name="civilStatus"
+                  value={editFormData.civilStatus}
+                  onChange={handleEditChange}
+                  className="parent-dashboard__info-card-input"
+                >
+                  <option value="">Select Civil Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                  <option value="Separated">Separated</option>
+                </select>
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.civilStatus || 'Not provided'}</div>
+              )}
             </div>
             
             <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.35s'}}>
@@ -624,7 +683,18 @@ const ParentDashboard = () => {
                 <MapPin className="parent-dashboard__info-card-icon" />
                 <div className="parent-dashboard__info-card-label">Address</div>
               </div>
-              <div className="parent-dashboard__info-card-value">{personalInfo.address || 'Not provided'}</div>
+              {isEditMode ? (
+                <textarea
+                  name="address"
+                  value={editFormData.address}
+                  onChange={handleEditChange}
+                  className="parent-dashboard__info-card-input parent-dashboard__info-card-textarea"
+                  placeholder="Enter address"
+                  rows="3"
+                />
+              ) : (
+                <div className="parent-dashboard__info-card-value">{personalInfo.address || 'Not provided'}</div>
+              )}
             </div>
           </div>
         </div>

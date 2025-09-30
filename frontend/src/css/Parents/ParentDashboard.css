@@ -174,7 +174,8 @@
 .parent-dashboard__profile-actions {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 2rem;
+  align-items: stretch;
 }
 
 .parent-dashboard__change-password-btn {
@@ -182,7 +183,7 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -278,6 +279,37 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: #3B4F81;
+}
+
+/* Input field styles for edit mode */
+.parent-dashboard__info-card-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #3B4F81;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.parent-dashboard__info-card-input:focus {
+  outline: none;
+  border-color: #4a5494;
+  box-shadow: 0 0 0 3px rgba(74, 84, 148, 0.1);
+}
+
+.parent-dashboard__info-card-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.parent-dashboard__info-card-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
 }
 
 /* Children Section */
@@ -755,7 +787,7 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -764,7 +796,6 @@
   font-size: 0.875rem;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
-  margin-right: 0.75rem;
 }
 
 .parent-dashboard__edit-profile-btn:hover {
@@ -778,7 +809,7 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -806,7 +837,7 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
