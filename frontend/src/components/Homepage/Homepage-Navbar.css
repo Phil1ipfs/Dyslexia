@@ -26,8 +26,9 @@
 /* Logo and subtext */
 .literexia-home-brand {
   display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 1.5rem !important;
 }
 
 .literexia-home-logo {
@@ -51,6 +52,35 @@
 .literexia-home-navbar.scrolled .literexia-home-tagline {
   font-size: 1rem !important;
   opacity: 0.9 !important;
+}
+
+/* Download button styling */
+.literexia-home-downloadbtn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: white !important;
+  color: #1C2E56 !important;
+  border: none !important;
+  padding: 0.7rem 1.5rem !important;
+  border-radius: 25px !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+  transition: all 0.3s ease !important;
+  white-space: nowrap !important;
+}
+
+.literexia-home-downloadbtn:hover {
+  background-color: #FFCE09 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+
+.literexia-home-downloadbtn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
 }
 
 /* Navigation links */
@@ -199,7 +229,22 @@
   .literexia-home-mobilebtn {
     display: flex !important;
   }
-  
+
+  .literexia-home-brand {
+    gap: 1rem !important;
+  }
+
+  .literexia-home-downloadbtn {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .literexia-home-downloadbtn svg {
+    width: 16px !important;
+    height: 16px !important;
+    margin-right: 6px !important;
+  }
+
   .literexia-home-menu {
     position: fixed !important;
     top: 70px !important;
@@ -216,16 +261,37 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
     z-index: 999 !important;
   }
-  
+
   .literexia-home-menu.active {
     transform: translateY(0) !important;
     opacity: 1 !important;
     background-color: #3B4F81 !important;
   }
-  
+
   .literexia-home-loginbtn {
     margin: 0.5rem 0 0 0 !important;
     width: 80% !important;
     text-align: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .literexia-home-brand {
+    gap: 0.5rem !important;
+  }
+
+  .literexia-home-logo {
+    height: 24px !important;
+  }
+
+  .literexia-home-downloadbtn {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .literexia-home-downloadbtn svg {
+    width: 14px !important;
+    height: 14px !important;
+    margin-right: 4px !important;
   }
 }
