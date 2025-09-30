@@ -17,8 +17,8 @@ class MainAssessmentService {
    */
   checkApiAvailability = async () => {
     try {
-      // Use the working main-assessment endpoint to check availability
-      await axios.get('/api/main-assessment?limit=1', this.getAuthHeaders());
+      // Use the ping endpoint which requires NO authentication
+      await axios.get('/api/main-assessment/ping');
       this.apiInitialized = true;
       console.log('Main Assessment API is available');
       return true;
