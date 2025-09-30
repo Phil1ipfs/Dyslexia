@@ -11,7 +11,7 @@ const ContentApiService = {
     try {
       const token = AuthService.getToken();
       // Add '/api' prefix to the URL
-      let url = `${API_BASE_URL}/api/teacher/content/letters`;
+      let url = `${API_BASE_URL}/teacher/content/letters`;
   
       if (type) {
         url += `?type=${type}`;
@@ -31,7 +31,7 @@ const ContentApiService = {
   getSyllables: async () => {
     try {
       const token = AuthService.getToken();
-      const response = await axios.get(`${API_BASE_URL}/api/teacher/content/syllables`, {
+      const response = await axios.get(`${API_BASE_URL}/teacher/content/syllables`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -44,7 +44,7 @@ const ContentApiService = {
   getWords: async (category) => {
     try {
       const token = AuthService.getToken();
-      let url = `${API_BASE_URL}/api/teacher/content/words`;
+      let url = `${API_BASE_URL}/teacher/content/words`;
 
       if (category) {
         url += `?category=${category}`;
@@ -63,7 +63,7 @@ const ContentApiService = {
   getSentences: async () => {
     try {
       const token = AuthService.getToken();
-      const response = await axios.get(`${API_BASE_URL}/api/teacher/content/sentences`, {
+      const response = await axios.get(`${API_BASE_URL}/teacher/content/sentences`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -76,7 +76,7 @@ const ContentApiService = {
   getShortStories: async () => {
     try {
       const token = AuthService.getToken();
-      const response = await axios.get(`${API_BASE_URL}/api/teacher/content/shortstories`, {
+      const response = await axios.get(`${API_BASE_URL}/teacher/content/shortstories`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;

@@ -3,6 +3,12 @@ const express = require('express');
 const router = express.Router();
 const InterventionController = require('../../../controllers/Teachers/ManageProgress/interventionController');
 const { auth, authorize } = require('../../../middleware/auth');
+const {
+  studentValidation,
+  assessmentValidation,
+  paginationValidation,
+  sanitizeRequest
+} = require('../../../middleware/validationMiddleware');
 const mongoose = require('mongoose');
 const multer = require('multer');
 
@@ -217,7 +223,7 @@ router.post('/upload-url', auth, authorize('teacher', 'admin'),
 );
 
 // Record a response to an intervention question
-router.post('/responses', auth, authorize('teacher', 'admin', 'student'), 
+router.post('/responses', sanitizeRequest, assessmentValidation.questionResponse, auth, authorize('teacher', 'admin', 'student'),
   async (req, res) => {
     try {
       await interventionController.recordResponse(req, res);

@@ -7,7 +7,6 @@ import logo from '../assets/images/Teachers/LITEREXIA.png';
 import parentIcon from '../assets/icons/Teachers/parent.png';
 import teacherIcon from '../assets/icons/Teachers/teacher.png';
 import adminIcon from '../assets/icons/Teachers/admin.png';
-import wave from '../assets/images/Teachers/wave.png';
 
 const ChooseAccountType = () => {
   const navigate = useNavigate();
@@ -24,11 +23,11 @@ const ChooseAccountType = () => {
   useEffect(() => {
     const fetchRoleTypes = async () => {
       try {
-        const BASE = import.meta.env.VITE_API_BASE_URL || 
-                    (import.meta.env.DEV ? 'http://localhost:5001/' : '');
-        
+        const BASE = import.meta.env.VITE_API_BASE_URL ||
+                    (import.meta.env.DEV ? 'http://localhost:5001/api' : '');
+
         // Try to fetch role definitions from API
-        const response = await fetch(`${BASE}/api/roles`, {
+        const response = await fetch(`${BASE}/roles`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });

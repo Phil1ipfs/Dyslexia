@@ -1,9 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const {
+  studentValidation,
+  objectIdValidation,
+  assessmentValidation,
+  paginationValidation,
+  sanitizeRequest
+} = require('../../middleware/validationMiddleware');
 
 // Get intervention responses for a specific student and intervention
-router.get('/', async (req, res) => {
+router.get('/', paginationValidation, async (req, res) => {
   try {
     const { studentId, interventionAssessmentId, revisionNumber, category } = req.query;
     

@@ -13,7 +13,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.post(
-        `${API_BASE_URL}/api/customized-assessment`,
+        `${API_BASE_URL}/customized-assessment`,
         assessmentData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -32,7 +32,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.get(
-        `${API_BASE_URL}/api/customized-assessment/${id}`,
+        `${API_BASE_URL}/customized-assessment/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       return response.data;
@@ -50,7 +50,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.get(
-        `${API_BASE_URL}/api/customized-assessment/student/${studentId}`,
+        `${API_BASE_URL}/customized-assessment/student/${studentId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       return response.data;
@@ -69,7 +69,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.put(
-        `${API_BASE_URL}/api/customized-assessment/${id}`,
+        `${API_BASE_URL}/customized-assessment/${id}`,
         updateData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -88,7 +88,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.delete(
-        `${API_BASE_URL}/api/customized-assessment/${id}`,
+        `${API_BASE_URL}/customized-assessment/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       return response.data;
@@ -107,7 +107,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.post(
-        `${API_BASE_URL}/api/customized-assessment/${assessmentId}/question`,
+        `${API_BASE_URL}/customized-assessment/${assessmentId}/question`,
         { question },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -128,7 +128,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.put(
-        `${API_BASE_URL}/api/customized-assessment/${assessmentId}/question/${questionId}`,
+        `${API_BASE_URL}/customized-assessment/${assessmentId}/question/${questionId}`,
         { question },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -148,7 +148,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.delete(
-        `${API_BASE_URL}/api/customized-assessment/${assessmentId}/question/${questionId}`,
+        `${API_BASE_URL}/customized-assessment/${assessmentId}/question/${questionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       return response.data;
@@ -166,7 +166,7 @@ const CustomizedAssessmentApiService = {
     try {
       const token = AuthService.getToken();
       const response = await axios.post(
-        `${API_BASE_URL}/api/customized-assessment/clone-question`,
+        `${API_BASE_URL}/customized-assessment/clone-question`,
         cloneData,
         { headers: { Authorization: `Bearer ${token}` } }
       );

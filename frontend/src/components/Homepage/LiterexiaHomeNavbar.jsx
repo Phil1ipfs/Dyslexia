@@ -51,7 +51,6 @@ function LiterexiaHomeNavbar() {
     <nav className={`literexia-home-navbar ${scrolled ? "scrolled" : ""}`}>
       <div className="literexia-home-brand">
         <img src={logo} alt="Literexia" className="literexia-home-logo" />
-        <p className="literexia-home-tagline">Filipino Reading Comprehension Dyslexia</p>
       </div>
       
       <ul className={`literexia-home-menu ${mobileMenuOpen ? "active" : ""}`}>

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import '../../css/Admin/AssessmentResults/StudentAssessmentResults.css';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 const StudentAssessmentResults = () => {
   const { id } = useParams();
@@ -24,11 +25,7 @@ const StudentAssessmentResults = () => {
         setLoading(true);
         
         // Fetch student data by idNumber
-        const studentResponse = await axios.get(`http://localhost:5001/api/admin/manage/students/idNumber/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const studentResponse = await axios.get(`${API_BASE_URL}/admin/manage/students/idNumber/${id}`);
         
         if (!studentResponse.data.success) {
           throw new Error('Failed to fetch student data');
@@ -37,11 +34,7 @@ const StudentAssessmentResults = () => {
         const studentData = studentResponse.data.data;
 
         // Fetch assessment results for the student
-        const assessmentResponse = await axios.get(`http://localhost:5001/api/admin/assessment-results/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const assessmentResponse = await axios.get(`${API_BASE_URL}/admin/assessment-results/${id}`);
         
         if (!assessmentResponse.data.success) {
           throw new Error('Failed to fetch assessment results');
@@ -612,16 +605,10 @@ const StudentAssessmentResults = () => {
     try {
       setLoadingResponses(prev => ({ ...prev, [category]: true }));
       
-      // Fetch main assessment responses (BEFORE INTERVENTION)
-      const mainResponse = await axios.get(`http://localhost:5001/api/admin/student-responses/${studentId}/${category}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await axios.get(`${API_BASE_URL}/admin/student-responses/${studentId}/${category}`);
       
-      let mainAssessmentResponses = [];
-      if (mainResponse.data.success) {
-        const allResponses = (mainResponse.data.data || []).map(item => {
+      if (response.data.success) {
+        const sanitized = (response.data.data || []).map(item => {
           const { correctMatches, totalMatches, matches, ...rest } = item || {};
           return { ...rest, responseType: 'main_assessment' };
         });

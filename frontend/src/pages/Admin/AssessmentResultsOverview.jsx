@@ -5,6 +5,7 @@ import {
   Book, Award, Layers, CheckCircle, AlertTriangle, Info
 } from 'lucide-react';
 import axios from 'axios'; // Import axios
+import { API_BASE_URL } from '../../config/apiConfig';
 import '../../css/Admin/AssessmentResults/AssessmentResultsOverview.css';
 
 const AssessmentResultsOverview = () => {
@@ -24,8 +25,8 @@ const AssessmentResultsOverview = () => {
       try {
         setLoading(true);
         const [studentsRes, resultsRes] = await Promise.all([
-          axios.get('http://localhost:5001/api/admin/manage/students'),
-          axios.get('http://localhost:5001/api/admin/category-results')
+          axios.get(`${API_BASE_URL}/admin/manage/students`),
+          axios.get(`${API_BASE_URL}/admin/category-results`)
         ]);
 
         if (studentsRes.data.success && resultsRes.data.success) {

@@ -5,6 +5,7 @@ import axios from 'axios';
 import adminValidation from '../../utils/adminValidation';
 import { InlineValidation, FormValidationSummary } from '../../components/Admin/ValidationErrorDisplay';
 import authService from '../../services/authService';
+import { API_BASE_URL } from '../../config/apiConfig';
 import './TeacherLists.css';
 
 // Success Modal Component
@@ -793,7 +794,7 @@ useEffect(() => {
   const fetchTeachers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5001/api/admin/manage/teachers');
+      const response = await axios.get(`${API_BASE_URL}/admin/manage/teachers`);
       if (response.data.success) {
         setTeachers(response.data.data);
         setFilteredTeachers(response.data.data);
@@ -858,7 +859,7 @@ const deleteTeacher = async () => {
   if (!selectedTeacher) return;
   try {
     setLoading(true);
-    const response = await axios.delete(`http://localhost:5001/api/admin/manage/teachers/${selectedTeacher._id}`);
+    const response = await axios.delete(`${API_BASE_URL}/admin/manage/teachers/${selectedTeacher._id}`);
     if (response.data.success) {
       const updatedList = teachers.filter(t => t._id !== selectedTeacher._id);
       setTeachers(updatedList);
@@ -885,7 +886,7 @@ const handleAddTeacher = async (formData) => {
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) data.append(key, value);
     });
-    const response = await axios.post('http://localhost:5001/api/admin/manage/teachers', data, {
+    const response = await axios.post(`${API_BASE_URL}/admin/manage/teachers`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     if (response.data.success) {
@@ -919,7 +920,7 @@ const handleEditTeacherSubmit = async (formData) => {
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) data.append(key, value);
     });
-    const response = await axios.put(`http://localhost:5001/api/admin/manage/teachers/${formData._id}`, data, {
+    const response = await axios.put(`${API_BASE_URL}/admin/manage/teachers/${formData._id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     if (response.data.success) {

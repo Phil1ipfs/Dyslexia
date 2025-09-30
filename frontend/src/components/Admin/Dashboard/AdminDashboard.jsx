@@ -34,23 +34,31 @@ const AdminDashboard = () => {
         setLoading(true);
         setError(null);
         console.log('Fetching dashboard data...');
-        
-        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No auth token found');
+
+        // Get token from user object stored by authService
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          throw new Error('No user data found - please login');
         }
 
-        // Try to get user data to verify admin role
-        const userDataStr = localStorage.getItem('userData');
-        if (userDataStr) {
-          const userData = JSON.parse(userDataStr);
+        const user = JSON.parse(userStr);
+        const token = user?.token;
+        if (!token) {
+          throw new Error('No auth token found - please login');
+        }
+
+        // Verify admin role from user object
+        const userData = user?.user;
+        if (userData) {
           const roles = Array.isArray(userData.roles) ? userData.roles : [userData.roles];
           if (!roles.includes('admin')) {
             throw new Error('User is not authorized to view admin dashboard');
           }
         }
 
-        const response = await fetch('http://localhost:5001/api/admin/stats', {
+        // Use environment variable for API base URL
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+        const response = await fetch(`${API_BASE_URL}/admin/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

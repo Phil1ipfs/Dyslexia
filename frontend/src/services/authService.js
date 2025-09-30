@@ -3,40 +3,47 @@
 // Import axios for HTTP requests
 import axios from 'axios';
 
-// Get backend URL from environment variables
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/';
+// Get backend URL from environment variables (without trailing slash)
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+console.log('🔍 AuthService DEBUG - Environment variables:', {
+  VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  PROD: import.meta.env.PROD,
+  DEV: import.meta.env.DEV,
+  API_URL: API_URL
+});
 
 const AuthService = {
   /**
    * Login user with email and password
    * @param {string} email - User email
    * @param {string} password - User password
-   * @param {string} expectedRole - Expected user role (optional)
+   * @param {string} expectedRole - Expected user role (optional, for backward compatibility)
    * @returns {Promise} Promise with login result
    */
-  login: async (email, password, expectedRole) => {
+  login: async (email, password, expectedRole = null) => {
     try {
-      // Get expected role from parameter or localStorage
-      const role = expectedRole || localStorage.getItem('userType') || 'teacher';
-      
-      console.log('AuthService login - sending request with:', { 
-        email, 
-        expectedRole: role 
+      console.log('AuthService login - sending request with:', {
+        email,
+        useAutoDetection: !expectedRole
       });
-      
-      const response = await axios.post(`${API_URL}/api/auth/login`, { 
-        email, 
-        password,
-        expectedRole: role
-      });
-      
-      if (response.data.token) {
-        localStorage.setItem('user', JSON.stringify(response.data));
-        // Also store the token directly for compatibility
-        localStorage.setItem('authToken', response.data.token);
-        localStorage.setItem('token', response.data.token);
+
+      // Prepare request payload
+      const requestData = { email, password };
+
+      // Only include expectedRole if it's explicitly provided (for backward compatibility)
+      if (expectedRole) {
+        requestData.expectedRole = expectedRole;
       }
-      
+
+      const response = await axios.post(`${API_URL}/api/auth/login`, requestData);
+
+      if (response.data.token) {
+        // Store user data with token - single source of truth
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
+
       return response.data;
     } catch (error) {
       console.error('Login error:', error);
@@ -48,9 +55,8 @@ const AuthService = {
    * Logout current user
    */
   logout: () => {
+    // Clear all auth-related data
     localStorage.removeItem('user');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('token');
     localStorage.removeItem('userType');
     localStorage.removeItem('userId');
   },
@@ -93,24 +99,7 @@ const AuthService = {
   getToken: () => {
     try {
       const user = AuthService.getCurrentUser();
-      if (!user || !user.token) {
-        // First try to get token from localStorage directly
-        const directToken = localStorage.getItem('token') || localStorage.getItem('authToken');
-        if (directToken) return directToken;
-        
-        // If still no token, check if there's a raw user string
-        const rawUser = localStorage.getItem('user');
-        if (rawUser) {
-          try {
-            const parsedUser = JSON.parse(rawUser);
-            return parsedUser.token || null;
-          } catch (e) {
-            console.warn('Failed to parse user JSON from localStorage');
-          }
-        }
-        return null;
-      }
-      return user.token;
+      return user?.token || null;
     } catch (error) {
       console.error('Error retrieving auth token:', error);
       return null;

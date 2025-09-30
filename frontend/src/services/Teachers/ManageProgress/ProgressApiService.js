@@ -1,7 +1,7 @@
 // services/Teachers/ManageProgress/ProgressApiService.js 
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
-import AuthService from '../../AuthService';
+import AuthService from '../../authService';
 
 const ProgressApiService = {
   /**

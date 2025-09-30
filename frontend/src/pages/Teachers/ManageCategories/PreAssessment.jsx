@@ -839,9 +839,27 @@ const PreAssessment = () => {
       ],
       sentenceQuestions: [
         { questionText: '', correctAnswer: '', acceptableAnswers: [] }
-      ]
+      ],
+
+      // For phonological awareness (malapantig questions)
+      questionSet: {
+        audioTexts: [],
+        matchingOptions: [],
+        correctPairs: []
+      },
+
+      // For decoding questions
+      displaySequence: [],
+      blankPosition: null,
+      dragElements: [],
+      correctSequence: [],
+
+      // For word recognition questions
+      displayWord: '',
+      blankOptions: [],
+      correctAnswer: []
     });
-    
+
     setEditingQuestionIndex(-1);
     setShowQuestionEditor(true);
   };

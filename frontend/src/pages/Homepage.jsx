@@ -34,7 +34,6 @@ import methodElephant from "../assets/icons/Homepage/elephant.png";
 import methodLion from "../assets/icons/Homepage/sealion.png";
 
 // Why Choose Us assets
-import laptopPenguin from "../assets/icons/Homepage/laptop.png";
 import starIcon from "../assets/icons/Homepage/star.png";
 
 function Homepage() {
@@ -237,14 +236,7 @@ function Homepage() {
       <section className="why-literexia-section reveal" id="why Choose">
         <h2 className="why-literexia-heading">Why choose Literexia?</h2>
 
-        {/* Centered laptop image */}
-        <div className="why-laptop-wrapper">
-          <img
-            src={laptopPenguin}
-            alt="Laptop with Penguin"
-            className="why-laptop-image"
-          />
-        </div>
+    
 
         {/* Four-star features */}
         <div className="why-literexia-grid">

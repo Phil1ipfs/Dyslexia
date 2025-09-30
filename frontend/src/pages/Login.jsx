@@ -4,7 +4,6 @@ import '../css/login.css';
 import AuthService from '../services/authService';
 
 import logo from '../assets/images/Teachers/LITEREXIA.png';
-import wave from '../assets/images/Teachers/wave.png';
 import { FiMail, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 
 function ErrorDialog({ message, onClose }) {
@@ -204,7 +203,6 @@ const Login = ({ onLogin }) => {
         </form>
       </div>
 
-      <img src={wave} alt="Wave" className="bottom-wave" />
     </div>
   );
 };
