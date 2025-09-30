@@ -36,6 +36,7 @@ const AdminProfile = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showEmailPassword, setShowEmailPassword] = useState(false);
+  const [originalEmail, setOriginalEmail] = useState('');
 
   useEffect(() => {
     fetchAdminProfile();
@@ -70,6 +71,9 @@ const AdminProfile = () => {
           civilStatus: data.data.civilStatus || '',
           profileImageUrl: data.data.profileImageUrl || ''
         });
+
+        // Store original email for change detection
+        setOriginalEmail(data.data.email || '');
 
         // Clear any previous error messages on successful load
         setMessage({ type: '', text: '' });

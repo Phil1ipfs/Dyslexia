@@ -1,7 +1,7 @@
 // src/components/Admin/Layout/NavigationBar/NavigationBar.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import authService from '../../../services/authService';
+import authService from '../../../../services/authService';
 import {
   Home,
   Users,
@@ -31,72 +31,164 @@ const NavigationBar = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchAdminProfile = async () => {
+  const handleLogout = useCallback(async () => {
+    try {
+      // Clear admin data immediately for better UX
+      setAdminData(null);
+      setLoading(true);
+      setError(null);
+
+      // Use authService logout method
+      await authService.logout();
+
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('authStateChanged', {
+        detail: { action: 'logout' }
+      }));
+
+      // Call the provided onLogout callback
+      if (onLogout) {
+        onLogout();
+      }
+    } catch (err) {
+      console.error('Error during logout:', err);
+      // Still proceed with logout even if there's an error
+      if (onLogout) {
+        onLogout();
+      }
+    }
+  }, [onLogout]);
+
+  const fetchAdminProfile = useCallback(async () => {
+    try {
+      console.log('Starting admin profile fetch...');
+      setLoading(true);
+      setError(null);
+
+      // Get the auth token from authService first, then fallback to localStorage
+      let token = authService.getToken();
+      if (!token) {
+        token = localStorage.getItem('authToken') ||
+               localStorage.getItem('token') ||
+               JSON.parse(localStorage.getItem('userData'))?.token;
+      }
+
+      console.log('Auth token:', token ? 'Found' : 'Not found');
+
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('http://localhost:5001/api/admin/profile', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Response status:', response.status);
+
+      if (response.status === 401) {
+        // Token expired or invalid
+        console.warn('Authentication failed - token may be expired');
+        authService.logout();
+        setError('Session expired. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
+      let data;
       try {
-        console.log('Starting admin profile fetch...');
-        
-        // Get the auth token from all possible storage locations
-        const token = localStorage.getItem('authToken') || 
-                     localStorage.getItem('token') || 
-                     JSON.parse(localStorage.getItem('userData'))?.token;
-        
-        console.log('Auth token:', token ? 'Found' : 'Not found');
-        
-        if (!token) {
-          throw new Error('No authentication token found');
+        data = JSON.parse(responseText);
+        console.log('Parsed response data:', data);
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+        throw new Error('Invalid response format');
+      }
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('Access denied. Insufficient permissions.');
         }
-        
-        const response = await fetch('http://localhost:5001/api/admin/profile', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
 
-        console.log('Response status:', response.status);
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
+      if (!data.success || !data.data) {
+        console.error('Invalid response structure:', data);
+        throw new Error('Invalid response structure');
+      }
 
-        let data;
-        try {
-          data = JSON.parse(responseText);
-          console.log('Parsed response data:', data);
-        } catch (e) {
-          console.error('Failed to parse response:', e);
-          throw new Error('Invalid response format');
-        }
+      const profileData = data.data;
+      console.log('Setting admin profile data:', profileData);
 
-        if (!response.ok) {
-          throw new Error(data.message || `HTTP error! status: ${response.status}`);
-        }
+      if (!profileData.firstName || !profileData.lastName) {
+        console.error('Missing name data:', profileData);
+        throw new Error('Profile data missing required fields');
+      }
 
-        if (!data.success || !data.data) {
-          console.error('Invalid response structure:', data);
-          throw new Error('Invalid response structure');
-        }
+      setAdminData(profileData);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error in profile fetch:', err);
 
-        const profileData = data.data;
-        console.log('Setting admin profile data:', profileData);
+      // Handle different types of errors
+      if (err.message.includes('No authentication token')) {
+        setError('Please log in to continue');
+      } else if (err.message.includes('Session expired')) {
+        setError('Session expired. Please log in again.');
+      } else if (err.message.includes('Access denied')) {
+        setError('Access denied. Please contact administrator.');
+      } else if (err.message.includes('Invalid response format')) {
+        setError('Server communication error. Please try again.');
+      } else {
+        setError(err.message || 'Failed to load profile data');
+      }
 
-        if (!profileData.firstName || !profileData.lastName) {
-          console.error('Missing name data:', profileData);
-          throw new Error('Profile data missing required fields');
-        }
+      setLoading(false);
+    }
+  }, []);
 
-        setAdminData(profileData);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error in profile fetch:', err);
-        setError(err.message);
-        setLoading(false);
+  useEffect(() => {
+    fetchAdminProfile();
+  }, [fetchAdminProfile]);
+
+  // Listen for profile updates from other components
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log('Profile update event received - refreshing admin data');
+      fetchAdminProfile();
+    };
+
+    const handleAuthStateChange = () => {
+      console.log('Auth state change event received - refreshing admin data');
+      fetchAdminProfile();
+    };
+
+    // Listen for custom events
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    window.addEventListener('authStateChanged', handleAuthStateChange);
+
+    // Listen for storage changes (in case user logs in/out from another tab)
+    const handleStorageChange = (e) => {
+      if (e.key === 'authToken' || e.key === 'token' || e.key === 'userData') {
+        console.log('Auth storage changed - refreshing admin data');
+        fetchAdminProfile();
       }
     };
 
-    fetchAdminProfile();
-  }, []);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+      window.removeEventListener('authStateChanged', handleAuthStateChange);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [fetchAdminProfile]);
 
   const navigationItems = [
     {
@@ -178,9 +270,13 @@ const NavigationBar = ({ onLogout }) => {
           <div className="admin-sidebar__profile">
             <div className="admin-sidebar__avatar">
               {adminData?.profileImageUrl ? (
-                <img 
-                  src={adminData.profileImageUrl} 
-                  alt={`${adminData.firstName} ${adminData.lastName}`} 
+                <img
+                  src={adminData.profileImageUrl}
+                  alt={`${adminData.firstName} ${adminData.lastName}`}
+                  onError={(e) => {
+                    console.warn('Profile image failed to load');
+                    e.target.style.display = 'none';
+                  }}
                 />
               ) : (
                 <div className="admin-sidebar__avatar-placeholder">
@@ -190,11 +286,42 @@ const NavigationBar = ({ onLogout }) => {
             </div>
             <div className="admin-sidebar__user-info">
               <h3 className="admin-sidebar__name">
-                {loading ? 'Loading...' : 
-                error ? `Error: ${error}` : 
+                {loading ? 'Loading...' :
+                error ? (
+                  <span style={{ color: '#ff6b6b', fontSize: '0.85em' }}>
+                    {error.includes('Session expired') || error.includes('Please log in') ?
+                      'Session Expired' :
+                      error.includes('Server communication') ?
+                        'Connection Error' :
+                        'Error Loading Profile'
+                    }
+                  </span>
+                ) :
                 adminData ? `${adminData.firstName} ${adminData.lastName}` : 'Admin User'}
               </h3>
-              <p className="admin-sidebar__role">Administrator</p>
+              <p className="admin-sidebar__role">
+                {error && (error.includes('Session expired') || error.includes('Please log in')) ?
+                  'Please refresh and log in again' :
+                  'Administrator'
+                }
+              </p>
+              {error && !error.includes('Session expired') && !error.includes('Please log in') && (
+                <button
+                  onClick={fetchAdminProfile}
+                  style={{
+                    fontSize: '0.75em',
+                    padding: '4px 8px',
+                    marginTop: '4px',
+                    background: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Retry
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -248,9 +375,10 @@ const NavigationBar = ({ onLogout }) => {
 
         {/* Footer section */}
         <div className="admin-sidebar__footer">
-          <button 
-            onClick={onLogout} 
+          <button
+            onClick={handleLogout}
             className="admin-sidebar__logout-btn"
+            disabled={loading && !adminData}
           >
             <LogOut className="admin-sidebar__icon" />
             <span className="admin-sidebar__label">Logout</span>
