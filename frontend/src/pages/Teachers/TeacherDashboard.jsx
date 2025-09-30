@@ -83,14 +83,35 @@ const TeacherDashboard = () => {
    */
   const getAuthHeaders = () => {
     // Get token from user object stored by authService
-    const user = JSON.parse(localStorage.getItem('user'));
-    const token = user?.token;
-    return {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        console.error('No user found in localStorage - user not logged in');
+        navigate('/login');
+        return null;
       }
-    };
+
+      const user = JSON.parse(userStr);
+      const token = user?.token;
+
+      if (!token) {
+        console.error('No token found in user object:', user);
+        navigate('/login');
+        return null;
+      }
+
+      console.log('Auth headers prepared with token:', token.substring(0, 20) + '...');
+      return {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+    } catch (error) {
+      console.error('Error getting auth headers:', error);
+      navigate('/login');
+      return null;
+    }
   };
 
   const openInterventionDetail = (intervention) => {
@@ -816,10 +837,17 @@ const TeacherDashboard = () => {
     try {
       console.log('Fetching dashboard data from MongoDB...');
 
+      // Get auth headers first - will redirect to login if not authenticated
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders) {
+        console.error('No auth headers available - redirecting to login');
+        return; // getAuthHeaders already handles navigation
+      }
+
       // Fetch students data from MongoDB
       let usersData = [];
       try {
-        const usersResponse = await fetch(`${API_BASE_URL}/admin/manage/students`, getAuthHeaders());
+        const usersResponse = await fetch(`${API_BASE_URL}/admin/manage/students`, authHeaders);
         if (usersResponse.ok) {
           const responseData = await usersResponse.json();
           usersData = responseData.data || responseData; // Handle different response formats
@@ -835,7 +863,7 @@ const TeacherDashboard = () => {
       // Fetch category results data from MongoDB
       let categoryResultsData = [];
       try {
-        const categoryResultsResponse = await fetch(`${API_BASE_URL}/admin/category-results`, getAuthHeaders());
+        const categoryResultsResponse = await fetch(`${API_BASE_URL}/admin/category-results`, authHeaders);
         if (categoryResultsResponse.ok) {
           const responseData = await categoryResultsResponse.json();
           categoryResultsData = responseData.data || responseData; // Handle different response formats
