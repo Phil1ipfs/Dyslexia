@@ -41,7 +41,7 @@ import {
 import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
 import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
 import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
-import AuthService from '../../../services/AuthService';
+import AuthService from '../../../services/authService';
 import { API_BASE_URL } from '../../../services/config';
 import { pdf } from '@react-pdf/renderer';
 import IEPReportPDFRenderer from './IEPReportPDFRenderer';
