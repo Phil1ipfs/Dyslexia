@@ -24,7 +24,11 @@ const StudentAssessmentResults = () => {
         setLoading(true);
         
         // Fetch student data by idNumber
-        const studentResponse = await axios.get(`http://localhost:5001/api/admin/manage/students/idNumber/${id}`);
+        const studentResponse = await axios.get(`http://localhost:5001/api/admin/manage/students/idNumber/${id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
         
         if (!studentResponse.data.success) {
           throw new Error('Failed to fetch student data');
@@ -33,7 +37,11 @@ const StudentAssessmentResults = () => {
         const studentData = studentResponse.data.data;
 
         // Fetch assessment results for the student
-        const assessmentResponse = await axios.get(`http://localhost:5001/api/admin/assessment-results/${id}`);
+        const assessmentResponse = await axios.get(`http://localhost:5001/api/admin/assessment-results/${id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
         
         if (!assessmentResponse.data.success) {
           throw new Error('Failed to fetch assessment results');
@@ -217,11 +225,11 @@ const StudentAssessmentResults = () => {
           if (questionDetails?.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
             if (Array.isArray(response)) {
               return response.map(optionId => {
-                const option = questionDetails.choiceOptions.find(opt => opt.optionId === optionId);
+                const option = questionDetails.choiceOptions.find(opt => opt.optionId === String(optionId));
                 return option ? option.optionText : optionId;
               }).join(', ');
             } else {
-              const option = questionDetails.choiceOptions.find(opt => opt.optionId === response);
+              const option = questionDetails.choiceOptions.find(opt => opt.optionId === String(response));
               return option ? option.optionText : response;
             }
           }
@@ -404,26 +412,18 @@ const StudentAssessmentResults = () => {
       switch (category) {
         case 'Alphabet Knowledge':
           // For Alphabet Knowledge, convert option numbers to option text
-          console.log('[DEBUG] Alphabet Knowledge formatting:', {
-            response,
-            questionDetails,
-            choiceOptions: questionDetails?.choiceOptions
-          });
-          
           if (questionDetails?.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
             if (Array.isArray(response)) {
               return response.map(optionId => {
-                const option = questionDetails.choiceOptions.find(opt => opt.optionId === optionId);
-                console.log('[DEBUG] Finding option for ID:', optionId, 'Found:', option);
+                const option = questionDetails.choiceOptions.find(opt => opt.optionId === String(optionId));
                 return option ? option.optionText : optionId;
               }).join(', ');
             } else {
-              const option = questionDetails.choiceOptions.find(opt => opt.optionId === response);
-              console.log('[DEBUG] Finding option for ID:', response, 'Found:', option);
+              const option = questionDetails.choiceOptions.find(opt => opt.optionId === String(response));
               return option ? option.optionText : response;
             }
           }
-          console.log('[DEBUG] No choiceOptions found, returning raw response:', response);
+          // If no choiceOptions, return raw response
           return Array.isArray(response) ? response.join(', ') : response;
 
         case 'Phonological Awareness':
@@ -580,7 +580,11 @@ const StudentAssessmentResults = () => {
       setLoadingResponses(prev => ({ ...prev, [category]: true }));
       
       // Fetch main assessment responses (BEFORE INTERVENTION)
-      const mainResponse = await axios.get(`http://localhost:5001/api/admin/student-responses/${studentId}/${category}`);
+      const mainResponse = await axios.get(`http://localhost:5001/api/admin/student-responses/${studentId}/${category}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       
       let mainAssessmentResponses = [];
       if (mainResponse.data.success) {
@@ -657,15 +661,14 @@ const StudentAssessmentResults = () => {
               category: category,
               readingLevel: student?.readingLevel || 'High Emerging'
             },
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            },
             timeout: 10000
           }
         );
 
         mainAssessment = mainAssessmentDetailsResponse.data?.data?.[0];
-        console.log(`[DEBUG] Main Assessment for ${category}:`, mainAssessment ? 'Found' : 'Not found');
-        if (mainAssessment) {
-          console.log(`[DEBUG] Main Assessment questions count:`, mainAssessment.questions?.length || 0);
-        }
       } catch (error) {
         console.error(`[DEBUG] Error fetching main assessment for ${category}:`, error);
       }
@@ -674,13 +677,6 @@ const StudentAssessmentResults = () => {
       if (mainAssessment && mainAssessmentResponses.length > 0) {
         mainAssessmentResponses = mainAssessmentResponses.map(response => {
           const questionDetails = mainAssessment?.questions?.find(q => q.questionId === response.questionId);
-          
-          console.log('[DEBUG] Enhancing response:', {
-            questionId: response.questionId,
-            response: response.response,
-            foundQuestionDetails: !!questionDetails,
-            choiceOptions: questionDetails?.choiceOptions
-          });
 
           return {
             ...response,
@@ -706,8 +702,6 @@ const StudentAssessmentResults = () => {
             } : null
           };
         });
-
-        console.log(`[DEBUG] Enhanced ${mainAssessmentResponses.length} main assessment responses with question details`);
       }
 
       // Fetch intervention responses (AFTER INTERVENTION)
@@ -735,8 +729,8 @@ const StudentAssessmentResults = () => {
             const targetRevisionNumber = targetAttempt.attemptNumber;
             const interventionAssessmentId = targetAttempt.interventionId.$oid || targetAttempt.interventionId;
 
-            console.log(`🎯 Target revision number for ${category}: ${targetRevisionNumber}`);
-            console.log(`🆔 Intervention Assessment ID: ${interventionAssessmentId}`);
+            console.log(`Target revision number for ${category}: ${targetRevisionNumber}`);
+            console.log(`Intervention Assessment ID: ${interventionAssessmentId}`);
 
             // Get intervention responses using the correct API endpoint with all required parameters
             const interventionResponse = await axios.get(
@@ -746,6 +740,9 @@ const StudentAssessmentResults = () => {
                   interventionAssessmentId: interventionAssessmentId,
                   category: category,
                   revisionNumber: targetRevisionNumber
+                },
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`
                 }
               }
             );
@@ -797,6 +794,8 @@ const StudentAssessmentResults = () => {
                       // Handle different question types
                       correctAnswer: getCorrectAnswerFromQuestion(questionDetails, category),
                       options: getOptionsFromQuestion(questionDetails, category),
+                      // Include choiceOptions for formatting responses
+                      choiceOptions: questionDetails.choiceOptions,
                       // Reading Comprehension special handling
                       passages: questionDetails.passages || [],
                       sentenceQuestions: questionDetails.sentenceQuestions || []
@@ -1128,9 +1127,9 @@ const StudentAssessmentResults = () => {
                   <div className="student-assessment__questions-sections">
                     {/* Main Assessment Results (BEFORE INTERVENTION) */}
                     <div className="student-assessment__main-assessment-section">
-                      <h5 className="student-assessment__response-section-title">
-                        📝 Main Assessment Results (BEFORE INTERVENTION)
-                      </h5>
+                        <h5 className="student-assessment__response-section-title">
+                          Main Assessment Results (BEFORE INTERVENTION)
+                        </h5>
                   <div className="student-assessment__questions-list">
                         {questionResponses[selectedCategory.categoryName]?.mainAssessment &&
                          questionResponses[selectedCategory.categoryName].mainAssessment.length > 0 ? (
@@ -1140,11 +1139,15 @@ const StudentAssessmentResults = () => {
                           className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'}`}
                         >
                           <div className="student-assessment__question-header">
+                            <div className="student-assessment__question-header-left">
                             <span className="student-assessment__question-number">Q{index + 1}</span>
                             <span className="student-assessment__question-id">{response.questionId}</span>
-                            <div className={`student-assessment__question-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                              {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                              {response.isCorrect ? 'Correct' : 'Incorrect'}
+                            </div>
+                            <div className="student-assessment__question-header-right">
+                              <div className={`student-assessment__intervention-status-badge ${response.isCorrect ? 'passed' : 'failed'}`}>
+                                {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                {response.isCorrect ? 'Correct' : 'Incorrect'}
+                              </div>
                             </div>
                           </div>
                           
@@ -1274,9 +1277,7 @@ const StudentAssessmentResults = () => {
 
                                   {/* Question metadata */}
                                   <div className="student-assessment__question-metadata">
-                                    <div className="student-assessment__question-type">
-                                      <strong>Question Type:</strong> {response.questionDetails.questionType}
-                                    </div>
+                                    {/* Question type removed for all categories */}
                                   </div>
                                 </div>
                               )}
@@ -1312,8 +1313,8 @@ const StudentAssessmentResults = () => {
                     {/* Intervention Results (AFTER INTERVENTION) */}
                     {questionResponses[selectedCategory.categoryName]?.hasIntervention && (
                       <div className="student-assessment__intervention-section">
-                        <h5 className="student-assessment__response-section-title">
-                          🎯 Intervention Results (AFTER INTERVENTION)
+                          <h5 className="student-assessment__response-section-title">
+                            Intervention Results (AFTER INTERVENTION)
                           {questionResponses[selectedCategory.categoryName]?.intervention?.[0]?.interventionRevision && (
                             <span className="student-assessment__revision-info">
                               - Revision {questionResponses[selectedCategory.categoryName].intervention[0].interventionRevision}
@@ -1345,15 +1346,19 @@ const StudentAssessmentResults = () => {
                                 className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'} intervention-response`}
                               >
                                 <div className="student-assessment__question-header">
-                                  <span className="student-assessment__question-number">Q{index + 1}</span>
-                                  <span className="student-assessment__question-id">{response.questionId}</span>
-                                  <div className={`student-assessment__question-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                                    {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                                    {response.isCorrect ? 'Correct' : 'Incorrect'}
+                                  <div className="student-assessment__question-header-left">
+                                    <span className="student-assessment__question-number">Q{index + 1}</span>
+                                    <span className="student-assessment__question-id">{response.questionId}</span>
                                   </div>
-                                  <span className="student-assessment__revision-badge">
-                                    Rev. {response.revisionNumber}
-                                  </span>
+                                  <div className="student-assessment__question-header-right">
+                                    <div className={`student-assessment__intervention-status-badge ${response.isCorrect ? 'passed' : 'failed'}`}>
+                                      {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                      {response.isCorrect ? 'Correct' : 'Incorrect'}
+                                    </div>
+                                    <span className="student-assessment__intervention-revision-badge">
+                                      Rev. {response.revisionNumber}
+                                    </span>
+                                  </div>
                                 </div>
 
                                 {response.questionDetails && (
@@ -1445,9 +1450,7 @@ const StudentAssessmentResults = () => {
 
                                     {/* Question metadata */}
                                     <div className="student-assessment__question-metadata">
-                                      <div className="student-assessment__question-type">
-                                        <strong>Question Type:</strong> {response.questionDetails.questionType}
-                                      </div>
+                                      {/* Question type removed for all categories */}
                                       {response.interventionRevision && (
                                         <div className="student-assessment__intervention-revision">
                                           <strong>Intervention Revision:</strong> {response.interventionRevision}

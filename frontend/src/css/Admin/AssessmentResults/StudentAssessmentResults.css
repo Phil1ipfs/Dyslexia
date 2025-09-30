@@ -382,9 +382,10 @@
   
   .student-assessment__intervention-info {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: #4e5c93;
     margin: 0.25rem 0;
     font-style: italic;
+    font-weight: 500;
   }
   
   .student-assessment__correct-count strong {
@@ -465,7 +466,46 @@
   
   .student-assessment__status-badge.passed {
     background-color: #d1fae5;
-    color: #065f46;
+    color: #1f2937;
+    font-weight: 700;
+  }
+  
+  /* Unique styling for intervention section status badges */
+  .student-assessment__intervention-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .student-assessment__intervention-status-badge.passed {
+    background-color: #dcfce7;
+    color: #166534;
+    border-color: #16a34a;
+  }
+  
+  .student-assessment__intervention-status-badge.passed svg {
+    color: #166534 !important;
+    stroke: #166534 !important;
+    fill: none !important;
+  }
+  
+  .student-assessment__intervention-status-badge.failed {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #dc2626;
+  }
+  
+  .student-assessment__intervention-status-badge.failed svg {
+    color: #991b1b !important;
+    stroke: #991b1b !important;
+    fill: none !important;
   }
   
   .student-assessment__status-badge.failed {
@@ -986,10 +1026,17 @@
 
   .student-assessment__question-item {
     background-color: white;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
-    padding: 1rem;
-    transition: all 0.2s ease;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+  }
+  
+  .student-assessment__question-item:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
   }
 
   .student-assessment__question-item.correct {
@@ -1002,11 +1049,26 @@
 
   .student-assessment__question-header {
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f1f5f9;
+  }
+  
+  .student-assessment__question-header-left {
+    display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #f1f5f9;
+    gap: 0.75rem;
+  }
+  
+  .student-assessment__question-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+    min-width: 200px;
   }
 
   .student-assessment__question-number {
@@ -1051,7 +1113,8 @@
   }
 
   .student-assessment__question-content {
-    margin-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 0;
   }
 
   .student-assessment__question-text {
@@ -1353,17 +1416,24 @@
 
   .student-assessment__response-details {
     background-color: #f8fafc;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    border: 1px solid #e2e8f0;
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    margin-top: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   }
 
   .student-assessment__student-answer,
   .student-assessment__response-time,
   .student-assessment__response-date {
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-    color: #64748b;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    color: #334155;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    background-color: #f8fafc;
+    border-radius: 0.375rem;
+    border: 1px solid #e2e8f0;
   }
 
   .student-assessment__student-answer:last-child,
@@ -1389,18 +1459,18 @@
   }
 
   .student-assessment__main-assessment-section {
-    border: 2px solid #e0f2fe;
+    border: 2px solid #e2e8f0;
     border-radius: 0.75rem;
     padding: 1.5rem;
-    background: linear-gradient(135deg, #f0f9ff, #e0f7fa);
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     position: relative;
   }
 
   .student-assessment__intervention-section {
-    border: 2px solid #fff3cd;
+    border: 2px solid #e2e8f0;
     border-radius: 0.75rem;
     padding: 1.5rem;
-    background: linear-gradient(135deg, #fffbf0, #fff4cd);
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     position: relative;
   }
 
@@ -1419,8 +1489,8 @@
   .student-assessment__revision-info {
     font-size: 0.9rem;
     font-weight: 500;
-    color: #f97316;
-    background-color: rgba(249, 115, 22, 0.1);
+    color: white;
+    background-color: #4e5c93;
     padding: 0.25rem 0.75rem;
     border-radius: 1rem;
     margin-left: 0.5rem;
@@ -1435,34 +1505,51 @@
     border-radius: 0.5rem;
     border: 1px solid rgba(124, 58, 237, 0.2);
   }
+  
+  /* Unique styling for intervention revision badge */
+  .student-assessment__intervention-revision-badge {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+    background-color: #4e5c93;
+    padding: 0.4rem 0.8rem;
+    border-radius: 1rem;
+    border: 2px solid #4e5c93;
+    box-shadow: 0 2px 4px rgba(78, 92, 147, 0.2);
+    transition: all 0.2s ease;
+  }
 
   /* ===== INTERVENTION RESPONSE STYLING ===== */
   .student-assessment__question-item.intervention-response {
-    border-left: 4px solid #f97316;
-    background: linear-gradient(135deg, #fffbf0, #fef3c7);
+    border-left: 4px solid #4e5c93;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     position: relative;
   }
 
   .student-assessment__question-item.intervention-response::before {
-    content: "🎯";
+    content: "INTERVENTION";
     position: absolute;
     top: 0.75rem;
     right: 0.75rem;
-    font-size: 1.2rem;
+    font-size: 0.8rem;
     opacity: 0.6;
+    font-weight: 600;
+    color: #4e5c93;
   }
 
   .student-assessment__main-assessment-section .student-assessment__question-item {
-    border-left: 4px solid #0ea5e9;
+    border-left: 4px solid #4e5c93;
   }
 
   .student-assessment__main-assessment-section .student-assessment__question-item::before {
-    content: "📝";
+    content: "MAIN";
     position: absolute;
     top: 0.75rem;
     right: 0.75rem;
-    font-size: 1.2rem;
+    font-size: 0.8rem;
     opacity: 0.6;
+    font-weight: 600;
+    color: #4e5c93;
   }
 
   /* ===== RESPONSIVE ADJUSTMENTS ===== */
@@ -1493,18 +1580,26 @@
   .student-assessment__question-value {
     margin: 0.5rem 0;
     padding: 0.5rem;
-    background: #f3f4f6;
+    background: #f8fafc;
     border-radius: 0.375rem;
     font-size: 0.875rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    font-weight: 500;
   }
 
   .student-assessment__intervention-options {
     margin: 0.75rem 0;
-    padding: 0.5rem;
-    background: #f9fafb;
+    padding: 0.75rem;
+    background: #f8fafc;
     border-radius: 0.375rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .student-assessment__intervention-options strong {
+    color: #334155;
+    font-weight: 600;
+    font-size: 0.9rem;
   }
 
   /* Phonological Awareness correct pairs styling */
@@ -1539,13 +1634,19 @@
   }
 
   .student-assessment__option {
-    background: #e5e7eb;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
+    background: #f1f5f9;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
     font-size: 0.875rem;
     font-weight: 500;
-    border: 1px solid #d1d5db;
-    color: #374151;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    transition: all 0.2s ease;
+  }
+  
+  .student-assessment__option:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
   }
 
   /* ===== READING COMPREHENSION SPECIFIC STYLING ===== */
@@ -1644,20 +1745,28 @@
   }
 
   .student-assessment__intervention-revision {
-    color: #dc2626;
-    font-weight: 500;
-    background: #fef2f2;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    border: 1px solid #fecaca;
+    color: white;
+    font-weight: 600;
+    background: #4e5c93;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 2px solid #4e5c93;
+    box-shadow: 0 2px 4px rgba(78, 92, 147, 0.2);
+    margin-bottom: 0.75rem;
+    display: block;
+    width: 100%;
   }
 
   .student-assessment__intervention-edited {
-    color: #6b7280;
-    background: #f9fafb;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    border: 1px solid #e5e7eb;
+    color: white;
+    font-weight: 600;
+    background: #4e5c93;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 2px solid #4e5c93;
+    box-shadow: 0 2px 4px rgba(78, 92, 147, 0.2);
+    display: block;
+    width: 100%;
   }
 
   /* ===== MOBILE RESPONSIVE ADJUSTMENTS FOR NEW ELEMENTS ===== */

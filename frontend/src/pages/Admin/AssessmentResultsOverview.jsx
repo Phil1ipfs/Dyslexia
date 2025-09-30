@@ -432,9 +432,9 @@ const AssessmentResultsOverview = () => {
                 const breakdown = getCategoryPassingBreakdown('alphabet_knowledge');
                 return (
                   <>
-                    <p className="assessment-results__category-description">
-                      Students passing this category
-                    </p>
+            <p className="assessment-results__category-description">
+              Students passing this category
+            </p>
                     <p className="assessment-results__category-levels">
                       Available for: {getReadingLevelsForCategory('alphabet_knowledge').join(', ')}
                     </p>
@@ -474,9 +474,9 @@ const AssessmentResultsOverview = () => {
                 const breakdown = getCategoryPassingBreakdown('phonological_awareness');
                 return (
                   <>
-                    <p className="assessment-results__category-description">
-                      Students passing this category
-                    </p>
+            <p className="assessment-results__category-description">
+              Students passing this category
+            </p>
                     <p className="assessment-results__category-levels">
                       Available for: {getReadingLevelsForCategory('phonological_awareness').join(', ')}
                     </p>
@@ -516,9 +516,9 @@ const AssessmentResultsOverview = () => {
                 const breakdown = getCategoryPassingBreakdown('decoding');
                 return (
                   <>
-                    <p className="assessment-results__category-description">
-                      Students passing this category
-                    </p>
+            <p className="assessment-results__category-description">
+              Students passing this category
+            </p>
                     <p className="assessment-results__category-levels">
                       Available for: {getReadingLevelsForCategory('decoding').join(', ')}
                     </p>
@@ -558,9 +558,9 @@ const AssessmentResultsOverview = () => {
                 const breakdown = getCategoryPassingBreakdown('word_recognition');
                 return (
                   <>
-                    <p className="assessment-results__category-description">
-                      Students passing this category
-                    </p>
+            <p className="assessment-results__category-description">
+              Students passing this category
+            </p>
                     <p className="assessment-results__category-levels">
                       Available for: {getReadingLevelsForCategory('word_recognition').join(', ')}
                     </p>
@@ -600,9 +600,9 @@ const AssessmentResultsOverview = () => {
                 const breakdown = getCategoryPassingBreakdown('reading_comprehension');
                 return (
                   <>
-                    <p className="assessment-results__category-description">
-                      Students passing this category
-                    </p>
+            <p className="assessment-results__category-description">
+              Students passing this category
+            </p>
                     <p className="assessment-results__category-levels">
                       Available for: {getReadingLevelsForCategory('reading_comprehension').join(', ')}
                     </p>
