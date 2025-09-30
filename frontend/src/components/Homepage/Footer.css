@@ -7,7 +7,7 @@
   background-repeat: no-repeat;
   background-size: 100% auto; 
   background-position: top center;
-  padding: 2rem 8%;
+  padding: 4rem 8%;
   box-sizing: border-box;
 }
 
@@ -16,7 +16,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-top: 2rem;
+  margin-top: 8rem;
 }
 
 .footer-logo {
@@ -32,7 +32,7 @@
 
 @media (max-width: 768px) {
   .footer-section {
-    padding: 1.5rem 5%;
+    padding: 3rem 5%;
   }
   
   .footer-logo {
