@@ -50,18 +50,41 @@
   color: #3B4F81;
 }
 
-.admin-profile__header-image {
+.admin-profile__header-actions {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.admin-profile__header-placeholder {
-  width: 120px;
-  height: 80px;
-  background-color: #f0f4f9;
+.admin-profile__edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #3B4F81;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
-  opacity: 0.5;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.2);
+}
+
+.admin-profile__edit-btn:hover {
+  background: #2d3f6b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);
+}
+
+.admin-profile__edit-btn--active {
+  background: #dc2626;
+}
+
+.admin-profile__edit-btn--active:hover {
+  background: #b91c1c;
 }
 
 /* ===== LOADING STATE ===== */
@@ -366,6 +389,27 @@
   height: 1.25rem;
   accent-color: #3B4F81;
   cursor: pointer;
+}
+
+/* ===== READ-ONLY FIELDS ===== */
+.admin-profile__readonly-field {
+  padding: 0.875rem 1rem;
+  background: #f7f9fc;
+  border: 1px solid #eaeff8;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  color: #2c3e50;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.admin-profile__readonly-field--multiline {
+  min-height: 4rem;
+  align-items: flex-start;
+  padding-top: 0.875rem;
 }
 
 /* ===== CHANGE PASSWORD SECTION ===== */

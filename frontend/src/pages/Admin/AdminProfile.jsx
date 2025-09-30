@@ -30,6 +30,7 @@ const AdminProfile = () => {
   const [imagePreview, setImagePreview] = useState(null);
 
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [validationErrors, setValidationErrors] = useState({});
   const [loading, setLoading] = useState(true);
@@ -220,6 +221,14 @@ const AdminProfile = () => {
     }
   };
 
+  const handleEditModeToggle = () => {
+    setIsEditMode(!isEditMode);
+    // Clear validation errors when entering edit mode
+    if (!isEditMode) {
+      setValidationErrors({});
+    }
+  };
+
   const validatePassword = () => {
     const errors = {};
 
@@ -334,6 +343,14 @@ const AdminProfile = () => {
 
         // Refresh profile data from server to ensure consistency
         await fetchProfile();
+
+        // Dispatch custom event to notify other components about auth state change
+        window.dispatchEvent(new CustomEvent('authStateChanged', {
+          detail: {
+            action: 'password_update',
+            message: 'Password updated successfully'
+          }
+        }));
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to change password' });
       }
@@ -462,8 +479,41 @@ const AdminProfile = () => {
           localStorage.setItem('user', JSON.stringify(currentUser));
         }
 
-        // Refresh profile data from server to ensure consistency
+        // If email changed, show confirmation dialog and redirect
+        if (originalEmail !== profileData.email) {
+          // Show success message first
+          setTimeout(() => {
+            const confirmRedirect = window.confirm(
+              'Your email has been updated successfully!\n\n' +
+              'For security reasons, you will be redirected back to the login page.\n\n' +
+              'Click OK to continue.'
+            );
+
+            if (confirmRedirect || true) { // Always redirect regardless of choice
+              // Clear all authentication data
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('token');
+              localStorage.removeItem('userData');
+              localStorage.removeItem('user');
+
+              // Redirect to role selection page
+              window.location.href = '/choose-role';
+            }
+          }, 1000); // Give user time to see success message
+
+          return; // Don't continue with normal flow
+        }
+
+        // For non-email changes, refresh profile data normally
         await fetchProfile();
+
+        // Dispatch custom event to notify other components (like NavigationBar)
+        window.dispatchEvent(new CustomEvent('profileUpdated', {
+          detail: {
+            action: 'profile_update',
+            updatedData: data.data
+          }
+        }));
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to update profile' });
       }
@@ -507,8 +557,13 @@ const AdminProfile = () => {
           </h1>
           <p className="admin-profile__page-subtitle">Manage your account information and email settings</p>
         </div>
-        <div className="admin-profile__header-image">
-          <div className="admin-profile__header-placeholder"></div>
+        <div className="admin-profile__header-actions">
+          <button
+            onClick={handleEditModeToggle}
+            className={`admin-profile__edit-btn ${isEditMode ? 'admin-profile__edit-btn--active' : ''}`}
+          >
+            {isEditMode ? 'Cancel' : 'Edit Profile'}
+          </button>
         </div>
       </div>
 
@@ -560,14 +615,20 @@ const AdminProfile = () => {
                 First Name 
                 <span className="admin-profile__required-asterisk">*</span>
               </label>
-              <input
-                type="text"
-                value={profileData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
-                placeholder="Enter first name"
-                className={validationErrors.firstName ? 'admin-profile__input--error' : ''}
-              />
-              {renderValidationErrors('firstName')}
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={profileData.firstName}
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  placeholder="Enter first name"
+                  className={validationErrors.firstName ? 'admin-profile__input--error' : ''}
+                />
+              ) : (
+                <div className="admin-profile__readonly-field">
+                  {profileData.firstName || 'Not provided'}
+                </div>
+              )}
+              {isEditMode && renderValidationErrors('firstName')}
             </div>
 
             <div className="admin-profile__form-group">
@@ -575,38 +636,56 @@ const AdminProfile = () => {
                 Last Name 
                 <span className="admin-profile__required-asterisk">*</span>
               </label>
-              <input
-                type="text"
-                value={profileData.lastName}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
-                placeholder="Enter last name"
-                className={validationErrors.lastName ? 'admin-profile__input--error' : ''}
-              />
-              {renderValidationErrors('lastName')}
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={profileData.lastName}
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  placeholder="Enter last name"
+                  className={validationErrors.lastName ? 'admin-profile__input--error' : ''}
+                />
+              ) : (
+                <div className="admin-profile__readonly-field">
+                  {profileData.lastName || 'Not provided'}
+                </div>
+              )}
+              {isEditMode && renderValidationErrors('lastName')}
             </div>
 
             <div className="admin-profile__form-group">
               <label>Middle Name (Optional)</label>
-              <input
-                type="text"
-                value={profileData.middleName}
-                onChange={(e) => handleInputChange('middleName', e.target.value)}
-                placeholder="Enter middle name (e.g., T or T.)"
-                className={validationErrors.middleName ? 'admin-profile__input--error' : ''}
-              />
-              {renderValidationErrors('middleName')}
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={profileData.middleName}
+                  onChange={(e) => handleInputChange('middleName', e.target.value)}
+                  placeholder="Enter middle name (e.g., T or T.)"
+                  className={validationErrors.middleName ? 'admin-profile__input--error' : ''}
+                />
+              ) : (
+                <div className="admin-profile__readonly-field">
+                  {profileData.middleName || 'Not provided'}
+                </div>
+              )}
+              {isEditMode && renderValidationErrors('middleName')}
             </div>
 
             <div className="admin-profile__form-group">
               <label>Gender</label>
-              <select
-                value={profileData.gender}
-                onChange={(e) => handleInputChange('gender', e.target.value)}
-              >
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
+              {isEditMode ? (
+                <select
+                  value={profileData.gender}
+                  onChange={(e) => handleInputChange('gender', e.target.value)}
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              ) : (
+                <div className="admin-profile__readonly-field">
+                  {profileData.gender || 'Not provided'}
+                </div>
+              )}
             </div>
 
             <div className="admin-profile__form-group">
@@ -614,27 +693,39 @@ const AdminProfile = () => {
                 Date of Birth
                 <span className="admin-profile__required-asterisk">*</span>
               </label>
-              <input
-                type="date"
-                value={profileData.dateOfBirth}
-                onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                className={validationErrors.dateOfBirth ? 'admin-profile__input--error' : ''}
-              />
-              {renderValidationErrors('dateOfBirth')}
+              {isEditMode ? (
+                <input
+                  type="date"
+                  value={profileData.dateOfBirth}
+                  onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                  className={validationErrors.dateOfBirth ? 'admin-profile__input--error' : ''}
+                />
+              ) : (
+                <div className="admin-profile__readonly-field">
+                  {profileData.dateOfBirth ? new Date(profileData.dateOfBirth).toLocaleDateString() : 'Not provided'}
+                </div>
+              )}
+              {isEditMode && renderValidationErrors('dateOfBirth')}
             </div>
 
             <div className="admin-profile__form-group">
               <label>Civil Status</label>
-              <select
-                value={profileData.civilStatus}
-                onChange={(e) => handleInputChange('civilStatus', e.target.value)}
-              >
-                <option value="">Select Status</option>
-                <option value="Single">Single</option>
-                <option value="Married">Married</option>
-                <option value="Divorced">Divorced</option>
-                <option value="Widowed">Widowed</option>
-              </select>
+              {isEditMode ? (
+                <select
+                  value={profileData.civilStatus}
+                  onChange={(e) => handleInputChange('civilStatus', e.target.value)}
+                >
+                  <option value="">Select Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
+              ) : (
+                <div className="admin-profile__readonly-field">
+                  {profileData.civilStatus || 'Not provided'}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -652,38 +743,56 @@ const AdminProfile = () => {
                 Email Address 
                 <span className="admin-profile__required-asterisk">*</span>
               </label>
-              <input
-                type="email"
-                value={profileData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="Enter email address"
-                className={validationErrors.email ? 'admin-profile__input--error' : ''}
-              />
-              {renderValidationErrors('email')}
+              {isEditMode ? (
+                <input
+                  type="email"
+                  value={profileData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="Enter email address"
+                  className={validationErrors.email ? 'admin-profile__input--error' : ''}
+                />
+              ) : (
+                <div className="admin-profile__readonly-field">
+                  {profileData.email || 'Not provided'}
+                </div>
+              )}
+              {isEditMode && renderValidationErrors('email')}
             </div>
 
             <div className="admin-profile__form-group">
               <label>Contact Number</label>
-              <input
-                type="text"
-                value={profileData.contact}
-                onChange={(e) => handleInputChange('contact', e.target.value)}
-                placeholder="Enter contact number"
-                className={validationErrors.contact ? 'admin-profile__input--error' : ''}
-              />
-              {renderValidationErrors('contact')}
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={profileData.contact}
+                  onChange={(e) => handleInputChange('contact', e.target.value)}
+                  placeholder="Enter contact number"
+                  className={validationErrors.contact ? 'admin-profile__input--error' : ''}
+                />
+              ) : (
+                <div className="admin-profile__readonly-field">
+                  {profileData.contact || 'Not provided'}
+                </div>
+              )}
+              {isEditMode && renderValidationErrors('contact')}
             </div>
 
             <div className="admin-profile__form-group admin-profile__form-group--full">
               <label>Address</label>
-              <textarea
-                value={profileData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                placeholder="Enter complete address"
-                rows="3"
-                className={validationErrors.address ? 'admin-profile__input--error' : ''}
-              />
-              {renderValidationErrors('address')}
+              {isEditMode ? (
+                <textarea
+                  value={profileData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="Enter complete address"
+                  rows="3"
+                  className={validationErrors.address ? 'admin-profile__input--error' : ''}
+                />
+              ) : (
+                <div className="admin-profile__readonly-field admin-profile__readonly-field--multiline">
+                  {profileData.address || 'Not provided'}
+                </div>
+              )}
+              {isEditMode && renderValidationErrors('address')}
             </div>
           </div>
         </div>
@@ -805,17 +914,19 @@ const AdminProfile = () => {
           )}
         </div>
 
-        {/* Save Button */}
-        <div className="admin-profile__actions">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="admin-profile__save-btn"
-          >
-            <Save size={16} />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
+        {/* Save Button - Only show in edit mode */}
+        {isEditMode && (
+          <div className="admin-profile__actions">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="admin-profile__save-btn"
+            >
+              <Save size={16} />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
