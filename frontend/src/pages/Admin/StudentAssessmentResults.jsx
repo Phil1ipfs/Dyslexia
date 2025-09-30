@@ -254,20 +254,26 @@ const StudentAssessmentResults = () => {
 
       if (finalResult.hasIntervention) {
         try {
-          // Determine target revision number
-          let targetRevisionNumber = null;
-          if (finalResult.passedAttemptNumber) {
-            targetRevisionNumber = finalResult.passedAttemptNumber;
-          } else if (finalResult.bestInterventionAttempt) {
-            targetRevisionNumber = finalResult.bestInterventionAttempt;
-          }
+          // Find the passed attempt or best attempt from interventionHistory
+          const passedAttempt = categoryData.interventionHistory?.find(attempt => attempt.isPassed);
+          const bestAttempt = categoryData.interventionHistory?.reduce((best, current) =>
+            !best || current.score > best.score ? current : best, null);
 
-          if (targetRevisionNumber) {
-            // Get intervention responses using the correct API endpoint with query parameters
+          const targetAttempt = passedAttempt || bestAttempt;
+
+          if (targetAttempt) {
+            const targetRevisionNumber = targetAttempt.attemptNumber;
+            const interventionAssessmentId = targetAttempt.interventionId.$oid || targetAttempt.interventionId;
+
+            console.log(`🎯 Target revision number for ${category}: ${targetRevisionNumber}`);
+            console.log(`🆔 Intervention Assessment ID: ${interventionAssessmentId}`);
+
+            // Get intervention responses using the correct API endpoint with all required parameters
             const interventionResponse = await axios.get(
               `http://localhost:5001/api/intervention-responses`, {
                 params: {
                   studentId: studentId,
+                  interventionAssessmentId: interventionAssessmentId,
                   category: category,
                   revisionNumber: targetRevisionNumber
                 }
