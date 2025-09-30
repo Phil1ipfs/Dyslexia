@@ -404,6 +404,39 @@ const StudentAssessmentResults = () => {
     }
   };
 
+  // Helper function to group Reading Comprehension questions
+  const groupReadingComprehensionQuestions = (responses) => {
+    if (!responses || responses.length === 0) return [];
+    
+    const grouped = {};
+    
+    responses.forEach(response => {
+      // Extract base question ID (e.g., RC_001 from RC_001_1, RC_001_2, RC_001_3)
+      const baseQuestionId = response.questionId.replace(/_\d+$/, '');
+      
+      if (!grouped[baseQuestionId]) {
+        grouped[baseQuestionId] = {
+          baseQuestionId: baseQuestionId,
+          responses: [],
+          questionDetails: null
+        };
+      }
+      
+      grouped[baseQuestionId].responses.push(response);
+    });
+    
+    // Sort responses within each group by question number
+    Object.keys(grouped).forEach(baseId => {
+      grouped[baseId].responses.sort((a, b) => {
+        const aNum = parseInt(a.questionId.split('_').pop());
+        const bNum = parseInt(b.questionId.split('_').pop());
+        return aNum - bNum;
+      });
+    });
+    
+    return Object.values(grouped);
+  };
+
   // Helper function to format main assessment student responses
   const formatMainAssessmentResponse = (response, questionDetails, category) => {
     if (!response) return '';
@@ -458,8 +491,8 @@ const StudentAssessmentResults = () => {
             return response.map((answer, index) => {
               const question = questionDetails.sentenceQuestions[index];
               const questionText = question ? question.questionText : `Question ${index + 1}`;
-              return `${questionText}: "${answer}"`;
-            }).join(' | ');
+              return `Q${index + 1}: ${answer}`;
+            }).join(', ');
           } else if (Array.isArray(response)) {
             return response.map((answer, index) => `Q${index + 1}: ${answer}`).join(', ');
           }
@@ -675,33 +708,73 @@ const StudentAssessmentResults = () => {
 
       // Enhance main assessment responses with question details
       if (mainAssessment && mainAssessmentResponses.length > 0) {
-        mainAssessmentResponses = mainAssessmentResponses.map(response => {
-          const questionDetails = mainAssessment?.questions?.find(q => q.questionId === response.questionId);
+        if (category === 'Reading Comprehension') {
+          // Group Reading Comprehension questions
+          const groupedQuestions = groupReadingComprehensionQuestions(mainAssessmentResponses);
+          
+          mainAssessmentResponses = groupedQuestions.map(group => {
+            const questionDetails = mainAssessment?.questions?.find(q => q.questionId === group.baseQuestionId);
+            
+            return {
+              questionId: group.baseQuestionId,
+              category: category,
+              isCorrect: group.responses.every(r => r.isCorrect),
+              responseTime: group.responses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / group.responses.length,
+              answeredAt: group.responses[0]?.answeredAt, // Use first response date
+              response: group.responses.map(r => r.response).flat(), // Combine all responses
+              questionDetails: questionDetails ? {
+                question: questionDetails.questionText,
+                questionType: questionDetails.questionType,
+                questionImage: questionDetails.questionImage,
+                questionValue: questionDetails.questionValue,
+                correctAnswer: getCorrectAnswerFromMainQuestion(questionDetails, category),
+                options: getOptionsFromMainQuestion(questionDetails, category),
+                // Special handling for different question types
+                questionSet: questionDetails.questionSet,
+                choiceOptions: questionDetails.choiceOptions,
+                dragElements: questionDetails.dragElements,
+                correctSequence: questionDetails.correctSequence,
+                displaySequence: questionDetails.displaySequence,
+                blankOptions: questionDetails.blankOptions,
+                displayWord: questionDetails.displayWord,
+                // Reading Comprehension special handling
+                storyTitle: questionDetails.storyTitle,
+                passages: questionDetails.passages || [],
+                sentenceQuestions: questionDetails.sentenceQuestions || []
+              } : null,
+              groupedResponses: group.responses // Keep individual responses for detailed display
+            };
+          });
+        } else {
+          // Handle other categories normally
+          mainAssessmentResponses = mainAssessmentResponses.map(response => {
+            const questionDetails = mainAssessment?.questions?.find(q => q.questionId === response.questionId);
 
-          return {
-            ...response,
-            questionDetails: questionDetails ? {
-              question: questionDetails.questionText,
-              questionType: questionDetails.questionType,
-              questionImage: questionDetails.questionImage,
-              questionValue: questionDetails.questionValue,
-              correctAnswer: getCorrectAnswerFromMainQuestion(questionDetails, category),
-              options: getOptionsFromMainQuestion(questionDetails, category),
-              // Special handling for different question types
-              questionSet: questionDetails.questionSet,
-              choiceOptions: questionDetails.choiceOptions,
-              dragElements: questionDetails.dragElements,
-              correctSequence: questionDetails.correctSequence,
-              displaySequence: questionDetails.displaySequence,
-              blankOptions: questionDetails.blankOptions,
-              displayWord: questionDetails.displayWord,
-              // Reading Comprehension special handling
-              storyTitle: questionDetails.storyTitle,
-              passages: questionDetails.passages || [],
-              sentenceQuestions: questionDetails.sentenceQuestions || []
-            } : null
-          };
-        });
+            return {
+              ...response,
+              questionDetails: questionDetails ? {
+                question: questionDetails.questionText,
+                questionType: questionDetails.questionType,
+                questionImage: questionDetails.questionImage,
+                questionValue: questionDetails.questionValue,
+                correctAnswer: getCorrectAnswerFromMainQuestion(questionDetails, category),
+                options: getOptionsFromMainQuestion(questionDetails, category),
+                // Special handling for different question types
+                questionSet: questionDetails.questionSet,
+                choiceOptions: questionDetails.choiceOptions,
+                dragElements: questionDetails.dragElements,
+                correctSequence: questionDetails.correctSequence,
+                displaySequence: questionDetails.displaySequence,
+                blankOptions: questionDetails.blankOptions,
+                displayWord: questionDetails.displayWord,
+                // Reading Comprehension special handling
+                storyTitle: questionDetails.storyTitle,
+                passages: questionDetails.passages || [],
+                sentenceQuestions: questionDetails.sentenceQuestions || []
+              } : null
+            };
+          });
+        }
       }
 
       // Fetch intervention responses (AFTER INTERVENTION)
@@ -1145,8 +1218,8 @@ const StudentAssessmentResults = () => {
                             </div>
                             <div className="student-assessment__question-header-right">
                               <div className={`student-assessment__intervention-status-badge ${response.isCorrect ? 'passed' : 'failed'}`}>
-                                {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                                {response.isCorrect ? 'Correct' : 'Incorrect'}
+                              {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                              {response.isCorrect ? 'Correct' : 'Incorrect'}
                               </div>
                             </div>
                           </div>
@@ -1157,36 +1230,7 @@ const StudentAssessmentResults = () => {
                                     <strong>Main Assessment Question:</strong> {response.questionDetails.question || 'Question text not available'}
                               </div>
 
-                                  {/* Special handling for Reading Comprehension - show story title and passages */}
-                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.storyTitle && (
-                                    <div className="student-assessment__story-info">
-                                      <strong>Story Title:</strong> {response.questionDetails.storyTitle}
-                                    </div>
-                                  )}
 
-                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
-                                    <div className="student-assessment__passages">
-                                      <strong>Story Passages:</strong>
-                                      <div className="student-assessment__passages-list">
-                                        {response.questionDetails.passages.map((passage, passageIndex) => (
-                                          <div key={passageIndex} className="student-assessment__passage-item">
-                                            <div className="student-assessment__passage-text">
-                                              <strong>Page {passage.pageNumber}:</strong> {passage.pageText}
-                                            </div>
-                                            {passage.pageImage && (
-                                              <div className="student-assessment__passage-image">
-                                                <img
-                                                  src={passage.pageImage}
-                                                  alt={`Page ${passage.pageNumber} illustration`}
-                                                  style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
-                                                />
-                                              </div>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
 
                                   {response.questionDetails.questionImage && (
                                     <div className="student-assessment__question-image">
@@ -1239,40 +1283,69 @@ const StudentAssessmentResults = () => {
                                   )}
 
                                   {/* Special handling for Reading Comprehension */}
-                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
-                                    <div className="student-assessment__rc-passages">
-                                      <strong>Reading Passage:</strong>
-                                      {response.questionDetails.passages.map((passage, passageIndex) => (
-                                        <div key={passageIndex} className="student-assessment__passage">
-                                          <p>{passage.text || passage}</p>
-                                          {passage.image && (
-                                            <img
-                                              src={passage.image}
-                                              alt="Passage illustration"
-                                              style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
-                                            />
-                                          )}
+                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails && (
+                                    <>
+                                      {/* Story Title */}
+                                      {response.questionDetails.storyTitle && (
+                                        <div className="student-assessment__story-title">
+                                          <strong>Story:</strong> {response.questionDetails.storyTitle}
                                         </div>
-                                      ))}
-                                    </div>
-                                  )}
+                                      )}
 
-                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.sentenceQuestions && response.questionDetails.sentenceQuestions.length > 0 && (
-                                    <div className="student-assessment__rc-sentence-questions">
-                                      <strong>Sentence Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
-                                      {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => (
-                                        <div key={sqIndex} className="student-assessment__sentence-question">
-                                          <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
-                                          <div className="student-assessment__sq-text">{sq.questionText}</div>
-                                          <div className="student-assessment__sq-correct">Correct: {sq.sentenceCorrectAnswer}</div>
-                                          {sq.sentenceOptionAnswers && sq.sentenceOptionAnswers.length > 0 && (
-                                            <div className="student-assessment__sq-options">
-                                              Options: {sq.sentenceOptionAnswers.join(', ')}
-                                            </div>
-                                          )}
+                                      {/* Reading Passages */}
+                                      {response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
+                                        <div className="student-assessment__rc-passages">
+                                          <strong>Reading Passage:</strong>
+                                          {response.questionDetails.passages.map((passage, passageIndex) => {
+                                            const passageText = passage.pageText || passage.text || passage;
+                                            const cleanText = typeof passageText === 'string' ? passageText.trim() : '';
+                                            
+                                            return (
+                                              <div key={passageIndex} className="student-assessment__passage">
+                                                {cleanText && (
+                                                  <p className="student-assessment__passage-text">{cleanText}</p>
+                                                )}
+                                                {passage.pageImage && (
+                                                  <img
+                                                    src={passage.pageImage}
+                                                    alt="Passage illustration"
+                                                    style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
+                                                  />
+                                                )}
+                                              </div>
+                                            );
+                                          })}
                                         </div>
-                                      ))}
-                                    </div>
+                                      )}
+
+                                      {/* Sentence Questions */}
+                                      {response.questionDetails.sentenceQuestions && response.questionDetails.sentenceQuestions.length > 0 && (
+                                        <div className="student-assessment__rc-sentence-questions">
+                                          <strong>Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
+                                          {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
+                                            const questionText = typeof sq.questionText === 'string' ? sq.questionText.trim() : '';
+                                            const correctAnswer = typeof sq.correctAnswer === 'string' ? sq.correctAnswer.trim() : '';
+                                            
+                                            return (
+                                              <div key={sqIndex} className="student-assessment__sentence-question">
+                                                <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
+                                                {questionText && (
+                                                  <div className="student-assessment__sq-text">{questionText}</div>
+                                                )}
+                                                {correctAnswer && (
+                                                  <div className="student-assessment__sq-correct">Correct Answer: {correctAnswer}</div>
+                                                )}
+                                                {sq.acceptableAnswers && sq.acceptableAnswers.length > 0 && (
+                                                  <div className="student-assessment__sq-options">
+                                                    Acceptable Answers: {sq.acceptableAnswers.join(', ')}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </>
                                   )}
 
                                   {/* Question metadata */}
@@ -1417,36 +1490,71 @@ const StudentAssessmentResults = () => {
                                 </div>
                               )}
 
-                                    {/* Special handling for Reading Comprehension */}
-                                    {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
-                                      <div className="student-assessment__rc-passages">
-                                        <strong>Reading Passage:</strong>
-                                        {response.questionDetails.passages.map((passage, passageIndex) => (
-                                          <div key={passageIndex} className="student-assessment__passage">
-                                            <p>{passage.text || passage}</p>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+                              {/* Special handling for Reading Comprehension in intervention results */}
+                              {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails && (
+                                <>
+                                  {/* Story Title */}
+                                  {response.questionDetails.storyTitle && (
+                                    <div className="student-assessment__story-title">
+                                      <strong>Story:</strong> {response.questionDetails.storyTitle}
+                                    </div>
+                                  )}
 
-                                    {/* Reading Comprehension sentence questions */}
-                                    {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.sentenceQuestions && response.questionDetails.sentenceQuestions.length > 0 && (
-                                      <div className="student-assessment__rc-sentence-questions">
-                                        <strong>Sentence Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
-                                        {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => (
+                                  {/* Reading Passages */}
+                                  {response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
+                                    <div className="student-assessment__rc-passages">
+                                      <strong>Reading Passage:</strong>
+                                      {response.questionDetails.passages.map((passage, passageIndex) => {
+                                        const passageText = passage.pageText || passage.text || passage;
+                                        const cleanText = typeof passageText === 'string' ? passageText.trim() : '';
+                                        
+                                        return (
+                                          <div key={passageIndex} className="student-assessment__passage">
+                                            {cleanText && (
+                                              <p className="student-assessment__passage-text">{cleanText}</p>
+                                            )}
+                                            {passage.pageImage && (
+                                              <img
+                                                src={passage.pageImage}
+                                                alt="Passage illustration"
+                                                style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
+                                              />
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+
+                                  {/* Sentence Questions */}
+                                  {response.questionDetails.sentenceQuestions && response.questionDetails.sentenceQuestions.length > 0 && (
+                                    <div className="student-assessment__rc-sentence-questions">
+                                      <strong>Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
+                                      {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
+                                        const questionText = typeof sq.questionText === 'string' ? sq.questionText.trim() : '';
+                                        const correctAnswer = typeof sq.correctAnswer === 'string' ? sq.correctAnswer.trim() : '';
+                                        
+                                        return (
                                           <div key={sqIndex} className="student-assessment__sentence-question">
                                             <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
-                                            <div className="student-assessment__sq-text">{sq.questionText}</div>
-                                            <div className="student-assessment__sq-correct">Correct: {sq.sentenceCorrectAnswer}</div>
-                                            {sq.sentenceOptionAnswers && sq.sentenceOptionAnswers.length > 0 && (
+                                            {questionText && (
+                                              <div className="student-assessment__sq-text">{questionText}</div>
+                                            )}
+                                            {correctAnswer && (
+                                              <div className="student-assessment__sq-correct">Correct Answer: {correctAnswer}</div>
+                                            )}
+                                            {sq.acceptableAnswers && sq.acceptableAnswers.length > 0 && (
                                               <div className="student-assessment__sq-options">
-                                                Options: {sq.sentenceOptionAnswers.join(', ')}
+                                                Acceptable Answers: {sq.acceptableAnswers.join(', ')}
                                               </div>
                                             )}
                                           </div>
-                                        ))}
-                                      </div>
-                                    )}
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </>
+                              )}
 
                                     {/* Question metadata */}
                                     <div className="student-assessment__question-metadata">
