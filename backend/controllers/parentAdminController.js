@@ -4,6 +4,140 @@ const multer = require('multer');
 const upload = multer();
 const uploadToS3 = require('../utils/s3Upload');
 
+/**
+ * Comprehensive email uniqueness validation across ALL user types and collections
+ */
+const validateEmailUniqueness = async (email) => {
+  try {
+    console.log('🔍 [EMAIL VALIDATION] Starting comprehensive email uniqueness check for:', email);
+
+    const sanitizedEmail = email.toLowerCase().trim();
+
+    // Check 1: teachers.profile collection
+    console.log('🔍 [EMAIL VALIDATION] Checking teachers.profile collection...');
+    const teachersDb = mongoose.connection.useDb('teachers');
+    const teachersCollection = teachersDb.collection('profile');
+    const existingTeacher = await teachersCollection.findOne({ email: sanitizedEmail });
+
+    if (existingTeacher) {
+      console.log('❌ [EMAIL VALIDATION] Email found in teachers.profile:', existingTeacher._id);
+      return {
+        isUnique: false,
+        existingUserType: 'teacher',
+        foundInCollection: 'teachers.profile',
+        existingRecord: {
+          id: existingTeacher._id,
+          name: `${existingTeacher.firstName} ${existingTeacher.lastName}`,
+          email: existingTeacher.email
+        }
+      };
+    }
+
+    // Check 2: parent.parent_profile collection
+    console.log('🔍 [EMAIL VALIDATION] Checking parent.parent_profile collection...');
+    const parentDb = mongoose.connection.useDb('parent');
+    const parentCollection = parentDb.collection('parent_profile');
+    const existingParent = await parentCollection.findOne({ email: sanitizedEmail });
+
+    if (existingParent) {
+      console.log('❌ [EMAIL VALIDATION] Email found in parent.parent_profile:', existingParent._id);
+      return {
+        isUnique: false,
+        existingUserType: 'parent',
+        foundInCollection: 'parent.parent_profile',
+        existingRecord: {
+          id: existingParent._id,
+          name: `${existingParent.firstName} ${existingParent.lastName}`,
+          email: existingParent.email
+        }
+      };
+    }
+
+    // Check 3: users_web.users collection (general users/login accounts)
+    console.log('🔍 [EMAIL VALIDATION] Checking users_web.users collection...');
+    const usersWebDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersWebDb.collection('users');
+    const existingUser = await usersCollection.findOne({ email: sanitizedEmail });
+
+    if (existingUser) {
+      console.log('❌ [EMAIL VALIDATION] Email found in users_web.users:', existingUser._id);
+      return {
+        isUnique: false,
+        existingUserType: 'user account',
+        foundInCollection: 'users_web.users',
+        existingRecord: {
+          id: existingUser._id,
+          email: existingUser.email,
+          roles: existingUser.roles
+        }
+      };
+    }
+
+    // Check 4: test.users collection (student users)
+    console.log('🔍 [EMAIL VALIDATION] Checking test.users collection...');
+    const testDb = mongoose.connection.useDb('test');
+    const studentsCollection = testDb.collection('users');
+    const existingStudent = await studentsCollection.findOne({ email: sanitizedEmail });
+
+    if (existingStudent) {
+      console.log('❌ [EMAIL VALIDATION] Email found in test.users:', existingStudent._id);
+      return {
+        isUnique: false,
+        existingUserType: 'student',
+        foundInCollection: 'test.users',
+        existingRecord: {
+          id: existingStudent._id,
+          name: `${existingStudent.firstName} ${existingStudent.lastName}`,
+          email: existingStudent.email
+        }
+      };
+    }
+
+    // Check 5: admin_user.admin_profile collection
+    console.log('🔍 [EMAIL VALIDATION] Checking admin_user.admin_profile collection...');
+    const adminDb = mongoose.connection.useDb('admin_user');
+    const adminCollection = adminDb.collection('admin_profile');
+    const existingAdmin = await adminCollection.findOne({ email: sanitizedEmail });
+
+    if (existingAdmin) {
+      console.log('❌ [EMAIL VALIDATION] Email found in admin_user.admin_profile:', existingAdmin._id);
+      return {
+        isUnique: false,
+        existingUserType: 'admin',
+        foundInCollection: 'admin_user.admin_profile',
+        existingRecord: {
+          id: existingAdmin._id,
+          name: `${existingAdmin.firstName} ${existingAdmin.lastName}`,
+          email: existingAdmin.email
+        }
+      };
+    }
+
+    // All checks passed - email is unique across all systems
+    console.log('✅ [EMAIL VALIDATION] Email is UNIQUE across ALL collections and user types');
+    return {
+      isUnique: true,
+      checkedCollections: [
+        'teachers.profile',
+        'parent.parent_profile',
+        'users_web.users',
+        'test.users',
+        'admin_user.admin_profile'
+      ],
+      message: 'Email is available for use'
+    };
+
+  } catch (error) {
+    console.error('❌ [EMAIL VALIDATION] Error during email validation:', error);
+    return {
+      isUnique: false,
+      error: true,
+      message: 'Email validation failed due to system error',
+      details: error.message
+    };
+  }
+};
+
 // Comprehensive admin validation utility
 const adminValidation = {
   // Name validation (no numbers, proper format)
@@ -328,31 +462,24 @@ exports.createParent = async (req, res) => {
     // Ensure children is always an array
     const childrenArray = Array.isArray(children) ? children : (children ? [children] : []);
 
-    // Check for duplicate email in parent.parent_profile
-    const profileCollection = await getParentProfileCollection();
-    const existing = await profileCollection.findOne({ email: sanitizedData.email });
-    if (existing) {
+    // COMPREHENSIVE cross-system email duplication check
+    console.log('🔍 [PARENT CREATION] Checking for duplicate emails across ALL user types...');
+
+    const emailValidationResult = await validateEmailUniqueness(sanitizedData.email);
+    if (!emailValidationResult.isUnique) {
+      console.error('❌ [PARENT CREATION] Email validation failed:', emailValidationResult);
       return res.status(400).json({
         success: false,
         message: 'Email already registered',
         userType: 'parent',
-        validationErrors: ['A parent with this email address is already registered in the system.'],
-        details: 'Please use a different email address.'
+        validationErrors: [`This email is already registered as a ${emailValidationResult.existingUserType} in the system.`],
+        details: `Email "${sanitizedData.email}" is already associated with a ${emailValidationResult.existingUserType} account. Please use a different email address.`,
+        existingUser: emailValidationResult.existingRecord,
+        foundInCollection: emailValidationResult.foundInCollection
       });
     }
 
-    // Check for duplicate email in users_web.users as well
-    const User = await getUserModel();
-    const existingUser = await User.findOne({ email: sanitizedData.email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email already in use',
-        userType: 'parent',
-        validationErrors: ['This email address is already associated with another user account.'],
-        details: 'Please use a different email address.'
-      });
-    }
+    console.log('✅ [PARENT CREATION] Email is unique across ALL collections and user types');
     // 1. Generate password
     const password = generatePassword(8);
     // 2. Hash password

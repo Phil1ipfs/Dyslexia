@@ -1647,6 +1647,10 @@ exports.createTeacher = async (req, res) => {
     // STEP 3: Create user in users_web.users
     console.log('💾 [TEACHER CREATION] Creating user account in users_web.users...');
 
+    // Get users_web database connection
+    const usersDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersDb.collection('users');
+
     // CRITICAL FIX: Create user document directly via collection to avoid Mongoose model issues
     const newUser = {
       email: email,
@@ -1666,6 +1670,10 @@ exports.createTeacher = async (req, res) => {
 
     // STEP 4: Create teacher profile in teachers.profile with proper linking
     console.log('💾 [TEACHER CREATION] Creating teacher profile in teachers.profile...');
+
+    // Get teachers database connection
+    const teachersDb = mongoose.connection.useDb('teachers');
+    const profileCollection = teachersDb.collection('profile');
 
     const now = new Date();
     const fullName = [firstName, middleName, lastName].filter(part => part && part.trim()).join(' ');

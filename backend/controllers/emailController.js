@@ -31,75 +31,75 @@ const getEmailTemplate = (userType, email, password, senderName = 'Literexia Adm
             <title>Welcome to Literexia</title>
         </head>
         <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-            <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(59, 79, 129, 0.1); overflow: hidden;">
+            <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e7eb; overflow: hidden;">
 
                 <!-- Header Section -->
-                <div style="background: linear-gradient(135deg, #3B4F81 0%, #2a3a65 100%); padding: 40px 30px; text-align: center;">
-                    <div style="background-color: #ffffff; width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                        <span style="font-size: 36px; font-weight: bold; color: #3B4F81;">L</span>
+                <div style="background-color: #3B4F81; padding: 25px 30px; text-align: center; border-bottom: 2px solid #2a3a65;">
+                    <div style="background-color: #ffffff; width: 50px; height: 50px; border-radius: 4px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #2a3a65;">
+                        <span style="font-size: 24px; font-weight: bold; color: #3B4F81;">L</span>
                     </div>
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Welcome to Literexia</h1>
-                    <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Your Reading Journey Begins Here</p>
+                    <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600;">Welcome to Literexia</h1>
+                    <p style="color: #ffffff; margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Your Reading Journey Begins Here</p>
                 </div>
 
                 <!-- Main Content -->
-                <div style="padding: 40px 30px;">
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <h2 style="color: #3B4F81; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Account Created Successfully! 🎉</h2>
-                        <p style="color: #666; margin: 0; font-size: 16px; line-height: 1.5;">Your ${userType} account has been created by <strong>${senderName}</strong></p>
+                <div style="padding: 30px 40px;">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h2 style="color: #3B4F81; margin: 0 0 8px 0; font-size: 20px; font-weight: 600;">Account Created Successfully</h2>
+                        <p style="color: #666; margin: 0; font-size: 14px; line-height: 1.4;">Your ${userType} account has been created by <strong>${senderName}</strong></p>
                     </div>
 
                     <!-- Credentials Box -->
-                    <div style="background: linear-gradient(135deg, #3B4F81 0%, #2a3a65 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center; box-shadow: 0 4px 12px rgba(59, 79, 129, 0.2);">
-                        <h3 style="color: #ffffff; margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">🔐 Your Login Credentials</h3>
+                    <div style="background-color: #3B4F81; border: 1px solid #2a3a65; border-radius: 4px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <h3 style="color: #ffffff; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">Your Login Credentials</h3>
 
-                        <div style="background-color: #ffffff; border-radius: 8px; padding: 20px; margin-bottom: 15px; border: 2px solid #3B4F81;">
-                            <p style="margin: 0; color: #3B4F81; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Email Address</p>
-                            <p style="margin: 10px 0 0 0; color: #3B4F81; font-size: 18px; font-weight: 600; word-break: break-all;">${email}</p>
+                        <div style="background-color: #ffffff; border-radius: 4px; padding: 15px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
+                            <p style="margin: 0; color: #3B4F81; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Email Address</p>
+                            <p style="margin: 8px 0 0 0; color: #3B4F81; font-size: 16px; font-weight: 600; word-break: break-all;">${email}</p>
                         </div>
 
-                        <div style="background-color: #ffffff; border-radius: 8px; padding: 20px; border: 2px solid #3B4F81;">
-                            <p style="margin: 0; color: #3B4F81; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Temporary Password</p>
-                            <p style="margin: 10px 0 0 0; color: #3B4F81; font-size: 18px; font-weight: 600; font-family: 'Courier New', monospace; background-color: #f8f9fa; padding: 12px 16px; border-radius: 6px; display: inline-block; border: 1px solid #3B4F81;">${password}</p>
+                        <div style="background-color: #ffffff; border-radius: 4px; padding: 15px; border: 1px solid #e5e7eb;">
+                            <p style="margin: 0; color: #3B4F81; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Temporary Password</p>
+                            <p style="margin: 8px 0 0 0; color: #3B4F81; font-size: 16px; font-weight: 600; font-family: 'Courier New', monospace; background-color: #f8f9fa; padding: 10px 12px; border-radius: 4px; display: inline-block; border: 1px solid #d1d5db;">${password}</p>
                         </div>
                     </div>
 
                     <!-- Security Notice -->
-                    <div style="background-color: #f8f9fa; border: 2px solid #3B4F81; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
-                        <h4 style="color: #3B4F81; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">🔒 Security Recommendation</h4>
-                        <p style="color: #3B4F81; margin: 0; font-size: 14px; line-height: 1.5;">For your security, please change your password after your first login</p>
+                    <div style="background-color: #f8f9fa; border: 1px solid #d1d5db; border-radius: 4px; padding: 15px; margin: 20px 0; text-align: center;">
+                        <h4 style="color: #3B4F81; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Security Recommendation</h4>
+                        <p style="color: #3B4F81; margin: 0; font-size: 13px; line-height: 1.4;">For your security, please change your password after your first login</p>
                     </div>
 
                     <!-- Contact Information -->
-                    <div style="text-align: center; margin: 30px 0;">
-                        <p style="color: #3B4F81; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">Need help? We're here for you!</p>
-                        <div style="background-color: #3B4F81; border-radius: 8px; padding: 20px; display: inline-block;">
-                            <p style="margin: 0; color: #ffffff; font-size: 14px; font-weight: 600;">
-                                📧 Contact: <a href="mailto:${senderEmail}" style="color: #ffffff; text-decoration: none; font-weight: 600;">${senderName}</a>
+                    <div style="text-align: center; margin: 25px 0;">
+                        <p style="color: #3B4F81; margin: 0 0 12px 0; font-size: 14px; font-weight: 600;">Need help? We're here for you!</p>
+                        <div style="background-color: #3B4F81; border-radius: 4px; padding: 15px; display: inline-block;">
+                            <p style="margin: 0; color: #ffffff; font-size: 13px; font-weight: 600;">
+                                Contact: <a href="mailto:${senderEmail}" style="color: #ffffff; text-decoration: none; font-weight: 600;">${senderName}</a>
                             </p>
-                            <p style="margin: 8px 0 0 0; color: #ffffff; font-size: 12px; opacity: 0.9;">${senderEmail}</p>
+                            <p style="margin: 6px 0 0 0; color: #ffffff; font-size: 11px; opacity: 0.9;">${senderEmail}</p>
                         </div>
                     </div>
 
                     <!-- Call to Action -->
-                    <div style="text-align: center; margin: 30px 0;">
-                        <div style="background: linear-gradient(135deg, #3B4F81 0%, #2a3a65 100%); display: inline-block; padding: 15px 30px; border-radius: 25px; box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);">
-                            <p style="color: #ffffff; margin: 0; font-size: 16px; font-weight: 600;">Ready to start your reading journey? 📚</p>
+                    <div style="text-align: center; margin: 25px 0;">
+                        <div style="background-color: #3B4F81; border: 1px solid #2a3a65; display: inline-block; padding: 12px 25px; border-radius: 4px;">
+                            <p style="color: #ffffff; margin: 0; font-size: 14px; font-weight: 600;">Ready to start your reading journey?</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Footer -->
-                <div style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #eee;">
-                    <p style="color: #666; margin: 0 0 10px 0; font-size: 12px;">
+                <div style="background-color: #f8f9fa; padding: 20px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #666; margin: 0 0 8px 0; font-size: 11px;">
                         Account created by: <strong>${senderName}</strong> (${senderEmail})
                     </p>
-                    <div style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 15px;">
-                        <p style="color: #3B4F81; margin: 0; font-size: 14px; font-weight: 600;">Best regards,</p>
-                        <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">The Literexia Team 🌟</p>
+                    <div style="border-top: 1px solid #d1d5db; padding-top: 12px; margin-top: 12px;">
+                        <p style="color: #3B4F81; margin: 0; font-size: 13px; font-weight: 600;">Best regards,</p>
+                        <p style="color: #666; margin: 4px 0 0 0; font-size: 13px;">The Literexia Team</p>
                     </div>
-                    <div style="margin-top: 20px;">
-                        <p style="color: #999; margin: 0; font-size: 11px;">
+                    <div style="margin-top: 15px;">
+                        <p style="color: #999; margin: 0; font-size: 10px;">
                             © ${new Date().getFullYear()} Literexia. All rights reserved.
                         </p>
                     </div>
