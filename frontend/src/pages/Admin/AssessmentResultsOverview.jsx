@@ -160,16 +160,95 @@ const AssessmentResultsOverview = () => {
   
   const getCategoryPassingRate = (category) => {
     if (!filteredStudents.length) return 0;
-    const passedCount = filteredStudents.filter(student => 
-      (student.categoryScores?.[category]?.score || 0) >= 75
-    ).length;
-    return Math.round((passedCount / filteredStudents.length) * 100);
+    const passedCount = getCategoryPassedCount(category);
+    
+    // Calculate percentage based on students who actually have access to this category
+    const studentsWithAccess = filteredStudents.filter(student => {
+      const availableCategories = getCategoriesForReadingLevel(student.readingLevel);
+      return availableCategories.includes(category);
+    }).length;
+    
+    if (studentsWithAccess === 0) return 0;
+    return Math.round((passedCount / studentsWithAccess) * 100);
   };
 
-  // NEW: count of students who passed a specific category
+  // Get categories available for a specific reading level
+  const getCategoriesForReadingLevel = (readingLevel) => {
+    const categoryAssignment = {
+      "Low Emerging": ["alphabet_knowledge"],
+      "High Emerging": ["alphabet_knowledge", "phonological_awareness"],
+      "Developing": ["alphabet_knowledge", "phonological_awareness", "decoding"],
+      "Transitioning": ["alphabet_knowledge", "phonological_awareness", "decoding", "word_recognition"],
+      "At Grade Level": ["alphabet_knowledge", "phonological_awareness", "decoding", "word_recognition", "reading_comprehension"]
+    };
+    return categoryAssignment[readingLevel] || [];
+  };
+
+  // Get reading levels that have access to a specific category
+  const getReadingLevelsForCategory = (category) => {
+    const categoryAssignment = {
+      "alphabet_knowledge": ["Low Emerging", "High Emerging", "Developing", "Transitioning", "At Grade Level"],
+      "phonological_awareness": ["High Emerging", "Developing", "Transitioning", "At Grade Level"],
+      "decoding": ["Developing", "Transitioning", "At Grade Level"],
+      "word_recognition": ["Transitioning", "At Grade Level"],
+      "reading_comprehension": ["At Grade Level"]
+    };
+    return categoryAssignment[category] || [];
+  };
+
+  // Enhanced: count of students who passed a specific category (including intervention)
+  // Only counts students whose reading level includes this category
   const getCategoryPassedCount = (category) => {
     if (!filteredStudents.length) return 0;
-    return filteredStudents.filter(student => (student.categoryScores?.[category]?.score || 0) >= 75).length;
+    return filteredStudents.filter(student => {
+      // Only count students whose reading level includes this category
+      const availableCategories = getCategoriesForReadingLevel(student.readingLevel);
+      if (!availableCategories.includes(category)) return false;
+      
+      const categoryData = student.categoryScores?.[category];
+      if (!categoryData) return false;
+      
+      // Check if student passed initially OR passed through intervention
+      const passedInitially = categoryData.score >= 75;
+      const passedThroughIntervention = categoryData.interventionHistory && 
+        categoryData.interventionHistory.some(intervention => intervention.isPassed === true);
+      
+      return passedInitially || passedThroughIntervention;
+    }).length;
+  };
+
+  // NEW: Get detailed breakdown of how students passed each category
+  // Only includes students whose reading level includes this category
+  const getCategoryPassingBreakdown = (category) => {
+    if (!filteredStudents.length) return { passedInitially: 0, passedThroughIntervention: 0, total: 0 };
+    
+    let passedInitially = 0;
+    let passedThroughIntervention = 0;
+    
+    filteredStudents.forEach(student => {
+      // Only count students whose reading level includes this category
+      const availableCategories = getCategoriesForReadingLevel(student.readingLevel);
+      if (!availableCategories.includes(category)) return;
+      
+      const categoryData = student.categoryScores?.[category];
+      if (!categoryData) return;
+      
+      const passedInitiallyCheck = categoryData.score >= 75;
+      const passedThroughInterventionCheck = categoryData.interventionHistory && 
+        categoryData.interventionHistory.some(intervention => intervention.isPassed === true);
+      
+      if (passedInitiallyCheck && !passedThroughInterventionCheck) {
+        passedInitially++;
+      } else if (passedThroughInterventionCheck) {
+        passedThroughIntervention++;
+      }
+    });
+    
+    return {
+      passedInitially,
+      passedThroughIntervention,
+      total: passedInitially + passedThroughIntervention
+    };
   };
 
   // Format date for display
@@ -303,9 +382,33 @@ const AssessmentResultsOverview = () => {
                 style={{ width: `${getCategoryPassingRate('alphabet_knowledge')}%` }}
               ></div>
             </div>
-            <p className="assessment-results__category-description">
-              Students passing this category
-            </p>
+            <div className="assessment-results__category-breakdown">
+              {(() => {
+                const breakdown = getCategoryPassingBreakdown('alphabet_knowledge');
+                return (
+                  <>
+                    <p className="assessment-results__category-description">
+                      Students passing this category
+                    </p>
+                    <p className="assessment-results__category-levels">
+                      Available for: {getReadingLevelsForCategory('alphabet_knowledge').join(', ')}
+                    </p>
+                    {breakdown.total > 0 && (
+                      <div className="assessment-results__breakdown-details">
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">Initial:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedInitially}</span>
+                        </span>
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">With Intervention:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedThroughIntervention}</span>
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           </div>
           
           <div className="assessment-results__category-card">
@@ -321,9 +424,33 @@ const AssessmentResultsOverview = () => {
                 style={{ width: `${getCategoryPassingRate('phonological_awareness')}%` }}
               ></div>
             </div>
-            <p className="assessment-results__category-description">
-              Students passing this category
-            </p>
+            <div className="assessment-results__category-breakdown">
+              {(() => {
+                const breakdown = getCategoryPassingBreakdown('phonological_awareness');
+                return (
+                  <>
+                    <p className="assessment-results__category-description">
+                      Students passing this category
+                    </p>
+                    <p className="assessment-results__category-levels">
+                      Available for: {getReadingLevelsForCategory('phonological_awareness').join(', ')}
+                    </p>
+                    {breakdown.total > 0 && (
+                      <div className="assessment-results__breakdown-details">
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">Initial:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedInitially}</span>
+                        </span>
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">With Intervention:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedThroughIntervention}</span>
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           </div>
           
           <div className="assessment-results__category-card">
@@ -339,9 +466,33 @@ const AssessmentResultsOverview = () => {
                 style={{ width: `${getCategoryPassingRate('decoding')}%` }}
               ></div>
             </div>
-            <p className="assessment-results__category-description">
-              Students passing this category
-            </p>
+            <div className="assessment-results__category-breakdown">
+              {(() => {
+                const breakdown = getCategoryPassingBreakdown('decoding');
+                return (
+                  <>
+                    <p className="assessment-results__category-description">
+                      Students passing this category
+                    </p>
+                    <p className="assessment-results__category-levels">
+                      Available for: {getReadingLevelsForCategory('decoding').join(', ')}
+                    </p>
+                    {breakdown.total > 0 && (
+                      <div className="assessment-results__breakdown-details">
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">Initial:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedInitially}</span>
+                        </span>
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">With Intervention:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedThroughIntervention}</span>
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           </div>
           
           <div className="assessment-results__category-card">
@@ -357,9 +508,33 @@ const AssessmentResultsOverview = () => {
                 style={{ width: `${getCategoryPassingRate('word_recognition')}%` }}
               ></div>
             </div>
-            <p className="assessment-results__category-description">
-              Students passing this category
-            </p>
+            <div className="assessment-results__category-breakdown">
+              {(() => {
+                const breakdown = getCategoryPassingBreakdown('word_recognition');
+                return (
+                  <>
+                    <p className="assessment-results__category-description">
+                      Students passing this category
+                    </p>
+                    <p className="assessment-results__category-levels">
+                      Available for: {getReadingLevelsForCategory('word_recognition').join(', ')}
+                    </p>
+                    {breakdown.total > 0 && (
+                      <div className="assessment-results__breakdown-details">
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">Initial:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedInitially}</span>
+                        </span>
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">With Intervention:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedThroughIntervention}</span>
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           </div>
           
           <div className="assessment-results__category-card">
@@ -375,9 +550,33 @@ const AssessmentResultsOverview = () => {
                 style={{ width: `${getCategoryPassingRate('reading_comprehension')}%` }}
               ></div>
             </div>
-            <p className="assessment-results__category-description">
-              Students passing this category
-            </p>
+            <div className="assessment-results__category-breakdown">
+              {(() => {
+                const breakdown = getCategoryPassingBreakdown('reading_comprehension');
+                return (
+                  <>
+                    <p className="assessment-results__category-description">
+                      Students passing this category
+                    </p>
+                    <p className="assessment-results__category-levels">
+                      Available for: {getReadingLevelsForCategory('reading_comprehension').join(', ')}
+                    </p>
+                    {breakdown.total > 0 && (
+                      <div className="assessment-results__breakdown-details">
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">Initial:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedInitially}</span>
+                        </span>
+                        <span className="assessment-results__breakdown-item">
+                          <span className="assessment-results__breakdown-label">With Intervention:</span>
+                          <span className="assessment-results__breakdown-value">{breakdown.passedThroughIntervention}</span>
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </div>
       </div>

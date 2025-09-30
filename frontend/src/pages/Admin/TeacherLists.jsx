@@ -478,7 +478,7 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
                 <label className="admin-teacher-required">Gender</label>
                 <select
                   name="gender"
-                  value={formData.gender}
+                  value={formData.gender || ''}
                   onChange={handleChange}
                   className={`admin-teacher-input ${errors.gender || hasValidationError ? 'error' : ''}`}
                 >
@@ -503,7 +503,7 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
                 <label className="admin-teacher-required">Civil Status</label>
                 <select
                   name="civilStatus"
-                  value={formData.civilStatus}
+                  value={formData.civilStatus || ''}
                   onChange={handleChange}
                   className={`admin-teacher-input ${errors.civilStatus || hasValidationError ? 'error' : ''}`}
                 >
@@ -530,7 +530,7 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
                 <label className="admin-teacher-required">Position</label>
                 <select
                   name="position"
-                  value={formData.position}
+                  value={formData.position || ''}
                   onChange={handleChange}
                   className={`admin-teacher-input ${errors.position || hasValidationError ? 'error' : ''}`}
                 >
@@ -563,7 +563,7 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
               <input
                 type={inputType}
                 name={field}
-                value={formData[field]}
+                value={formData[field] || ''}
                 onChange={handleChange}
                 className={`admin-teacher-input ${errors[field] || hasValidationError ? 'error' : ''}`}
                 placeholder={`Enter ${getFieldLabel(field).toLowerCase()}`}

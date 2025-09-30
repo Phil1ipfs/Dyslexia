@@ -385,7 +385,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                 <label className="studentlist-required">Gender</label>
                 <select
                   name="gender"
-                  value={formData.gender}
+                  value={formData.gender || ''}
                   onChange={handleChange}
                   className={`studentlist-input ${errors.gender || hasValidationError ? 'error' : ''}`}
                 >
@@ -410,7 +410,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                 <label className="studentlist-required">Grade Level</label>
                 <select
                   name="gradeLevel"
-                  value={formData.gradeLevel}
+                  value={formData.gradeLevel || ''}
                   onChange={handleChange}
                   className={`studentlist-input ${errors.gradeLevel || hasValidationError ? 'error' : ''}`}
                 >
@@ -438,7 +438,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                 <label className="studentlist-required">Section</label>
                 <select
                   name="section"
-                  value={formData.section}
+                  value={formData.section || ''}
                   onChange={handleChange}
                   className={`studentlist-input ${errors.section || hasValidationError ? 'error' : ''}`}
                 >
@@ -471,7 +471,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
               <input
                 type={inputType}
                 name={field}
-                value={formData[field]}
+                value={formData[field] || ''}
                 onChange={handleChange}
                 className={`studentlist-input ${errors[field] || hasValidationError ? 'error' : ''}`}
                 placeholder={`Enter ${getFieldLabel(field).toLowerCase()}`}
