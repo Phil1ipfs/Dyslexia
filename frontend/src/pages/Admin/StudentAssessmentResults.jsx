@@ -71,6 +71,76 @@ const StudentAssessmentResults = () => {
     fetchStudentData();
   }, [id]);
 
+  // Helper function to extract correct answer from question details
+  const getCorrectAnswerFromQuestion = (questionDetails, category) => {
+    if (!questionDetails) return 'Not available';
+
+    try {
+      // For multiple choice questions (choiceOptions)
+      if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+        const correctOption = questionDetails.choiceOptions.find(option => option.isCorrect);
+        return correctOption ? correctOption.optionText : 'Not found';
+      }
+
+      // For drag and drop questions (correctSequence)
+      if (questionDetails.correctSequence && Array.isArray(questionDetails.correctSequence)) {
+        return questionDetails.correctSequence.join(', ');
+      }
+
+      // For fill in the blank questions (correctAnswer)
+      if (questionDetails.correctAnswer && Array.isArray(questionDetails.correctAnswer)) {
+        return questionDetails.correctAnswer.join(', ');
+      }
+
+      // For Reading Comprehension (sentenceQuestions)
+      if (category === 'Reading Comprehension' && questionDetails.sentenceQuestions && Array.isArray(questionDetails.sentenceQuestions)) {
+        return questionDetails.sentenceQuestions.map(sq => sq.sentenceCorrectAnswer).join(', ');
+      }
+
+      // For single value questions
+      if (questionDetails.questionValue) {
+        return questionDetails.questionValue;
+      }
+
+      return 'Correct answer not available';
+    } catch (error) {
+      console.error('Error extracting correct answer:', error);
+      return 'Error extracting answer';
+    }
+  };
+
+  // Helper function to extract options from question details
+  const getOptionsFromQuestion = (questionDetails, category) => {
+    if (!questionDetails) return [];
+
+    try {
+      // For multiple choice questions
+      if (questionDetails.choiceOptions && Array.isArray(questionDetails.choiceOptions)) {
+        return questionDetails.choiceOptions.map(option => option.optionText);
+      }
+
+      // For drag and drop questions
+      if (questionDetails.dragElements && Array.isArray(questionDetails.dragElements)) {
+        return questionDetails.dragElements;
+      }
+
+      // For fill in the blank questions
+      if (questionDetails.blankOptions && Array.isArray(questionDetails.blankOptions)) {
+        return questionDetails.blankOptions;
+      }
+
+      // For Reading Comprehension
+      if (category === 'Reading Comprehension' && questionDetails.sentenceQuestions && Array.isArray(questionDetails.sentenceQuestions)) {
+        return questionDetails.sentenceQuestions.map(sq => sq.sentenceOptionAnswers || []).flat();
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error extracting options:', error);
+      return [];
+    }
+  };
+
   // Get final category result considering intervention history
   const getFinalCategoryResult = (categoryData) => {
     if (!categoryData) return { 
@@ -286,6 +356,13 @@ const StudentAssessmentResults = () => {
                 return { ...rest, responseType: 'intervention' };
               });
 
+              // Get intervention assessment data with question details
+              const interventionAssessment = interventionResponse.data.interventionAssessment;
+              const interventionResult = interventionResponse.data.interventionResult;
+
+              console.log(`[DEBUG] Intervention Assessment:`, interventionAssessment);
+              console.log(`[DEBUG] Intervention Result:`, interventionResult);
+
               if (allInterventionResponses.length > 0) {
                 // Group by questionId and get the most recent response for each question
                 const responsesByQuestion = {};
@@ -301,8 +378,34 @@ const StudentAssessmentResults = () => {
                   }
                 });
 
-                // Convert to array and sort by question ID
-                interventionResponses = Object.values(responsesByQuestion).sort((a, b) => {
+                // Convert to array and enhance with question details from intervention assessment
+                interventionResponses = Object.values(responsesByQuestion).map(response => {
+                  // Find matching question from intervention assessment
+                  const questionDetails = interventionAssessment?.questions?.find(q => q.questionId === response.questionId);
+
+                  let enhancedResponse = {
+                    ...response,
+                    questionDetails: questionDetails ? {
+                      question: questionDetails.questionText,
+                      questionType: questionDetails.questionType,
+                      image: questionDetails.questionImage,
+                      questionValue: questionDetails.questionValue,
+                      // Handle different question types
+                      correctAnswer: getCorrectAnswerFromQuestion(questionDetails, category),
+                      options: getOptionsFromQuestion(questionDetails, category),
+                      // Reading Comprehension special handling
+                      passages: questionDetails.passages || [],
+                      sentenceQuestions: questionDetails.sentenceQuestions || []
+                    } : null,
+                    // Include intervention assessment metadata
+                    interventionRevision: interventionAssessment?.revisionNumber || targetRevisionNumber,
+                    interventionLastEdited: interventionAssessment?.lastEditedAt,
+                    interventionScore: interventionResult?.score,
+                    interventionPassed: interventionResult?.isPassed
+                  };
+
+                  return enhancedResponse;
+                }).sort((a, b) => {
                   // Handle different question ID formats
                   const aMatch = a.questionId.match(/(\d+)$/);
                   const bMatch = b.questionId.match(/(\d+)$/);
@@ -311,7 +414,7 @@ const StudentAssessmentResults = () => {
                   return aNum - bNum;
                 });
 
-                console.log(`[DEBUG] Found ${interventionResponses.length} intervention responses for ${category} revision ${targetRevisionNumber}`);
+                console.log(`[DEBUG] Found ${interventionResponses.length} enhanced intervention responses for ${category} revision ${targetRevisionNumber}`);
               }
             }
           }
@@ -732,12 +835,22 @@ const StudentAssessmentResults = () => {
                       <div className="student-assessment__intervention-section">
                         <h5 className="student-assessment__response-section-title">
                           🎯 Intervention Results (AFTER INTERVENTION)
-                          {questionResponses[selectedCategory.categoryName]?.passedAttemptNumber && (
+                          {questionResponses[selectedCategory.categoryName]?.intervention?.[0]?.interventionRevision && (
+                            <span className="student-assessment__revision-info">
+                              - Revision {questionResponses[selectedCategory.categoryName].intervention[0].interventionRevision}
+                              {questionResponses[selectedCategory.categoryName].intervention[0].interventionPassed ? " (Passed)" : " (Failed)"}
+                              {questionResponses[selectedCategory.categoryName].intervention[0].interventionScore &&
+                                ` - Score: ${questionResponses[selectedCategory.categoryName].intervention[0].interventionScore}%`}
+                            </span>
+                          )}
+                          {!questionResponses[selectedCategory.categoryName]?.intervention?.[0]?.interventionRevision &&
+                           questionResponses[selectedCategory.categoryName]?.passedAttemptNumber && (
                             <span className="student-assessment__revision-info">
                               - Revision {questionResponses[selectedCategory.categoryName].passedAttemptNumber} (Passed)
                             </span>
                           )}
-                          {!questionResponses[selectedCategory.categoryName]?.passedAttemptNumber &&
+                          {!questionResponses[selectedCategory.categoryName]?.intervention?.[0]?.interventionRevision &&
+                           !questionResponses[selectedCategory.categoryName]?.passedAttemptNumber &&
                            questionResponses[selectedCategory.categoryName]?.bestInterventionAttempt && (
                             <span className="student-assessment__revision-info">
                               - Revision {questionResponses[selectedCategory.categoryName].bestInterventionAttempt} (Best Attempt)
@@ -767,8 +880,9 @@ const StudentAssessmentResults = () => {
                                 {response.questionDetails && (
                                   <div className="student-assessment__question-content">
                                     <div className="student-assessment__question-text">
-                                      <strong>Question:</strong> {response.questionDetails.question || 'Question text not available'}
+                                      <strong>Intervention Question:</strong> {response.questionDetails.question || 'Question text not available'}
                                     </div>
+
                                     {response.questionDetails.image && (
                                       <div className="student-assessment__question-image">
                                         <img
@@ -778,19 +892,29 @@ const StudentAssessmentResults = () => {
                                         />
                                       </div>
                                     )}
+
+                                    {response.questionDetails.questionValue && (
+                                      <div className="student-assessment__question-value">
+                                        <strong>Question Value:</strong> {response.questionDetails.questionValue}
+                                      </div>
+                                    )}
+
+                                    {/* Show correct answer for non-Phonological Awareness */}
                                     {selectedCategory?.categoryName !== 'Phonological Awareness' && (
                                       <div className="student-assessment__correct-answer">
                                         <strong>Correct Answer:</strong> {response.questionDetails.correctAnswer || 'Correct answer not available'}
                                       </div>
                                     )}
-                                    {response.questionDetails.questionType === 'fill_blank' && response.questionDetails.options && response.questionDetails.options.length > 0 && (
-                                      <div className="student-assessment__blank-options">
-                                        <strong>Blank Options:</strong>
-                                        <div className="student-assessment__blank-options-list">
+
+                                    {/* Show options/choices */}
+                                    {response.questionDetails.options && response.questionDetails.options.length > 0 && (
+                                      <div className="student-assessment__intervention-options">
+                                        <strong>Answer Options:</strong>
+                                        <div className="student-assessment__options-list">
                                           {response.questionDetails.options.map((option, optionIndex) => {
                                             const optionText = typeof option === 'object' && option.optionText ? option.optionText : String(option);
                                             return (
-                                              <span key={optionIndex} className="student-assessment__blank-option">
+                                              <span key={optionIndex} className="student-assessment__option">
                                                 {optionText}
                                               </span>
                                             );
@@ -798,6 +922,54 @@ const StudentAssessmentResults = () => {
                                         </div>
                                       </div>
                                     )}
+
+                                    {/* Special handling for Reading Comprehension */}
+                                    {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
+                                      <div className="student-assessment__rc-passages">
+                                        <strong>Reading Passage:</strong>
+                                        {response.questionDetails.passages.map((passage, passageIndex) => (
+                                          <div key={passageIndex} className="student-assessment__passage">
+                                            <p>{passage.text || passage}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {/* Reading Comprehension sentence questions */}
+                                    {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails.sentenceQuestions && response.questionDetails.sentenceQuestions.length > 0 && (
+                                      <div className="student-assessment__rc-sentence-questions">
+                                        <strong>Sentence Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
+                                        {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => (
+                                          <div key={sqIndex} className="student-assessment__sentence-question">
+                                            <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
+                                            <div className="student-assessment__sq-text">{sq.questionText}</div>
+                                            <div className="student-assessment__sq-correct">Correct: {sq.sentenceCorrectAnswer}</div>
+                                            {sq.sentenceOptionAnswers && sq.sentenceOptionAnswers.length > 0 && (
+                                              <div className="student-assessment__sq-options">
+                                                Options: {sq.sentenceOptionAnswers.join(', ')}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {/* Question metadata */}
+                                    <div className="student-assessment__question-metadata">
+                                      <div className="student-assessment__question-type">
+                                        <strong>Question Type:</strong> {response.questionDetails.questionType}
+                                      </div>
+                                      {response.interventionRevision && (
+                                        <div className="student-assessment__intervention-revision">
+                                          <strong>Intervention Revision:</strong> {response.interventionRevision}
+                                        </div>
+                                      )}
+                                      {response.interventionLastEdited && (
+                                        <div className="student-assessment__intervention-edited">
+                                          <strong>Last Edited:</strong> {formatDate(response.interventionLastEdited)}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
 

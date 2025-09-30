@@ -1453,3 +1453,181 @@
       font-size: 0.8rem;
     }
   }
+
+  /* ===== ENHANCED INTERVENTION QUESTION DETAILS ===== */
+  .student-assessment__question-value {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    background: #f3f4f6;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    border: 1px solid #d1d5db;
+  }
+
+  .student-assessment__intervention-options {
+    margin: 0.75rem 0;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .student-assessment__options-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .student-assessment__option {
+    background: #e5e7eb;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid #d1d5db;
+    color: #374151;
+  }
+
+  /* ===== READING COMPREHENSION SPECIFIC STYLING ===== */
+  .student-assessment__rc-passages {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: #f0f9ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 0.5rem;
+  }
+
+  .student-assessment__passage {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 0.375rem;
+    font-style: italic;
+    line-height: 1.6;
+    border: 1px solid #e0f2fe;
+  }
+
+  .student-assessment__rc-sentence-questions {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 0.5rem;
+  }
+
+  .student-assessment__sentence-question {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 0.375rem;
+    border-left: 3px solid #f59e0b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .student-assessment__sq-number {
+    font-weight: bold;
+    color: #92400e;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .student-assessment__sq-text {
+    margin: 0.25rem 0;
+    font-weight: 500;
+    color: #374151;
+    line-height: 1.4;
+  }
+
+  .student-assessment__sq-correct {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+    color: #059669;
+    font-weight: 500;
+    background: #ecfdf5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #10b981;
+  }
+
+  .student-assessment__sq-options {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+    background: #f9fafb;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* ===== QUESTION METADATA STYLING ===== */
+  .student-assessment__question-metadata {
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  .student-assessment__question-metadata > div {
+    margin: 0.25rem 0;
+    padding: 0.2rem 0;
+  }
+
+  .student-assessment__question-type {
+    color: #4f46e5;
+    font-weight: 500;
+    background: #eef2ff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #c7d2fe;
+  }
+
+  .student-assessment__intervention-revision {
+    color: #dc2626;
+    font-weight: 500;
+    background: #fef2f2;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #fecaca;
+  }
+
+  .student-assessment__intervention-edited {
+    color: #6b7280;
+    background: #f9fafb;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* ===== MOBILE RESPONSIVE ADJUSTMENTS FOR NEW ELEMENTS ===== */
+  @media (max-width: 768px) {
+    .student-assessment__options-list {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .student-assessment__option {
+      text-align: center;
+      padding: 0.5rem;
+    }
+
+    .student-assessment__rc-passages,
+    .student-assessment__rc-sentence-questions {
+      padding: 0.5rem;
+    }
+
+    .student-assessment__sentence-question {
+      padding: 0.5rem;
+    }
+
+    .student-assessment__question-metadata {
+      padding: 0.5rem;
+    }
+
+    .student-assessment__question-metadata > div {
+      margin: 0.5rem 0;
+      padding: 0.25rem 0;
+    }
+  }
