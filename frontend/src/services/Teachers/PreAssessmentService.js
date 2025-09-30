@@ -17,7 +17,8 @@ class PreAssessmentService {
    * @returns {Object} Headers with authentication token
    */
   getAuthHeaders = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token;
     return {
       headers: {
         'Content-Type': 'application/json',
@@ -481,7 +482,8 @@ class PreAssessmentService {
       }
       
       // Set headers for file upload (don't include Content-Type, browser will set it)
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = user?.token;
       const headers = {
         'Authorization': token ? `Bearer ${token}` : ''
       };

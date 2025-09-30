@@ -27,14 +27,12 @@ apiClient.interceptors.request.use(config => {
 const ParentApiService = {
   // Get authentication token from all possible storage locations
   getAuthToken() {
-    // Try all possible token storage locations
-    const authToken = localStorage.getItem('authToken');
-    const token = localStorage.getItem('token');
+    // Try to get token from user object first
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user?.token) return user.token;
+
+    // Fallback to userData
     const userDataStr = localStorage.getItem('userData');
-    
-    if (authToken) return authToken;
-    if (token) return token;
-    
     if (userDataStr) {
       try {
         const userData = JSON.parse(userDataStr);
@@ -43,7 +41,7 @@ const ParentApiService = {
         console.warn('Failed to parse userData from localStorage');
       }
     }
-    
+
     console.warn("No token found in any storage location");
     return '';
   },

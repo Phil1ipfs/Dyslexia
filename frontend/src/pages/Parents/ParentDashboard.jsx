@@ -359,7 +359,8 @@ const ParentDashboard = () => {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = user?.token;
 
       if (!token) {
         setError("No authentication token found. Please log in again.");

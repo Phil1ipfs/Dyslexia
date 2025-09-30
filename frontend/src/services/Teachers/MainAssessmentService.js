@@ -49,27 +49,9 @@ class MainAssessmentService {
    * @returns {Object} Headers with authentication token
    */
   getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    
-    // If no token is available, try to get it from AuthService
-    if (!token) {
-      try {
-        // Try to import AuthService dynamically
-        const authToken = localStorage.getItem('authToken');
-        if (authToken) {
-          return {
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json'
-            },
-            withCredentials: true
-          };
-        }
-      } catch (error) {
-        console.warn('Could not get authentication token:', error);
-      }
-    }
-    
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token;
+
     return {
       headers: {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),

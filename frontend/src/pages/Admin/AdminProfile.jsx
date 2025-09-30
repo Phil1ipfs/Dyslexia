@@ -47,7 +47,8 @@ const AdminProfile = () => {
     try {
       setLoading(true);
       const currentUser = authService.getCurrentUser();
-      const token = currentUser?.token || localStorage.getItem('authToken');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = currentUser?.token || user?.token;
 
       const response = await fetch('https://api.literexia.com/api/admin/profile', {
         method: 'GET',
@@ -311,7 +312,8 @@ const AdminProfile = () => {
     setSaving(true);
     try {
       const currentUser = authService.getCurrentUser();
-      const token = currentUser?.token || localStorage.getItem('authToken');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = currentUser?.token || user?.token;
 
       const response = await fetch('https://api.literexia.com/api/admin/change-password', {
         method: 'PUT',
@@ -342,10 +344,8 @@ const AdminProfile = () => {
         setValidationErrors(newErrors);
 
         // Clear all authentication data and redirect to custom dialog page
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
-        localStorage.removeItem('userData');
         localStorage.removeItem('user');
+        localStorage.removeItem('userData');
 
         // Redirect to role selection page with custom dialog
         setTimeout(() => {
@@ -394,7 +394,8 @@ const AdminProfile = () => {
 
     try {
       const currentUser = authService.getCurrentUser();
-      const token = currentUser?.token || localStorage.getItem('authToken');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = currentUser?.token || user?.token;
 
       const response = await fetch('https://api.literexia.com/api/admin/upload-profile-image', {
         method: 'POST',
@@ -425,7 +426,8 @@ const AdminProfile = () => {
     setSaving(true);
     try {
       const currentUser = authService.getCurrentUser();
-      const token = currentUser?.token || localStorage.getItem('authToken');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = currentUser?.token || user?.token;
 
       // Upload image first if a new image is selected
       let imageUrl = profileData.profileImageUrl;
@@ -482,10 +484,8 @@ const AdminProfile = () => {
         // If email changed, redirect to custom dialog page
         if (originalEmail !== profileData.email) {
           // Clear all authentication data immediately
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('token');
-          localStorage.removeItem('userData');
           localStorage.removeItem('user');
+          localStorage.removeItem('userData');
 
           // Redirect to role selection page with custom dialog
           setTimeout(() => {

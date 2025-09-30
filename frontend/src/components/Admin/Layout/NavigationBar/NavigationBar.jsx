@@ -68,9 +68,8 @@ const NavigationBar = ({ onLogout }) => {
       // Get the auth token from authService first, then fallback to localStorage
       let token = authService.getToken();
       if (!token) {
-        token = localStorage.getItem('authToken') ||
-               localStorage.getItem('token') ||
-               JSON.parse(localStorage.getItem('userData'))?.token;
+        const user = JSON.parse(localStorage.getItem('user'));
+        token = user?.token;
       }
 
       console.log('Auth token:', token ? 'Found' : 'Not found');
@@ -175,7 +174,7 @@ const NavigationBar = ({ onLogout }) => {
 
     // Listen for storage changes (in case user logs in/out from another tab)
     const handleStorageChange = (e) => {
-      if (e.key === 'authToken' || e.key === 'token' || e.key === 'userData') {
+      if (e.key === 'user' || e.key === 'userData') {
         console.log('Auth storage changed - refreshing admin data');
         fetchAdminProfile();
       }

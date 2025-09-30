@@ -136,11 +136,13 @@ const api = {
       console.log('Mock POST to:', endpoint, data);
       return { success: true };
     }
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token;
     const response = await fetch(`${config.apiBaseUrl}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(data)
     });
