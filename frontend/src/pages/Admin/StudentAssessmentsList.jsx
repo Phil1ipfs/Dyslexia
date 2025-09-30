@@ -6,6 +6,7 @@ import {
   User, UserPlus
 } from 'lucide-react';
 import axios from 'axios'; // Import axios
+import { API_BASE_URL } from '../../config/apiConfig';
 import '../../css/Admin/AssessmentResults/StudentAssessmentsList.css';
 
 const StudentAssessmentsList = () => {
@@ -24,7 +25,7 @@ const StudentAssessmentsList = () => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
+        const response = await axios.get(`${API_BASE_URL}/admin/manage/students`);
         
         if (response.data.success) {
           setStudents(response.data.data);

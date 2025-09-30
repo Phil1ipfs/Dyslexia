@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHorizontal, User, X } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/apiConfig';
 import './StudentListPage.css';
 
 const SuccessModal = ({ message, onClose }) => (
@@ -426,7 +427,7 @@ const StudentListPage = () => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
+        const response = await axios.get(`${API_BASE_URL}/admin/manage/students`);
         if (response.data.success) {
           setStudents(response.data.data);
           setFilteredStudents(response.data.data);
@@ -500,7 +501,7 @@ const StudentListPage = () => {
     if (!studentId) return;
     try {
       setLoading(true);
-              const response = await axios.delete(`http://localhost:5001/api/admin/manage/students/${studentId}`);
+              const response = await axios.delete(`${API_BASE_URL}/admin/manage/students/${studentId}`);
       if (response.data.success) {
         const updatedList = students.filter(s => s._id !== studentId);
         setStudents(updatedList);
@@ -556,7 +557,7 @@ const StudentListPage = () => {
          }
       });
 
-      const response = await axios.post('http://localhost:5001/api/admin/manage/students', data, {
+      const response = await axios.post(`${API_BASE_URL}/admin/manage/students`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
@@ -587,7 +588,7 @@ const StudentListPage = () => {
       Object.entries(formData).forEach(([key, value]) => {
          if (value !== undefined && value !== null) data.append(key, value); // Check for undefined/null
       });
-      const response = await axios.put(`http://localhost:5001/api/admin/manage/students/${formData._id}`, data, {
+      const response = await axios.put(`${API_BASE_URL}/admin/manage/students/${formData._id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {

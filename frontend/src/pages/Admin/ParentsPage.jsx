@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Edit, Trash2, Eye, UserSquare2, BookOpen, Clock, MessageSquare, User, X } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/apiConfig';
 import Select from 'react-select';
 import './ParentsPage.css';
 
@@ -46,7 +47,7 @@ const CredentialsModal = ({ credentials, onClose }) => {
     try {
       setIsSending(true);
       setSendStatus(null);
-      const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
+      const response = await axios.post(`${API_BASE_URL}/admin/send-credentials`, {
         email: credentials.email,
         password: credentials.password,
         userType: 'parent'
@@ -169,7 +170,7 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
+        const response = await axios.get(`${API_BASE_URL}/admin/manage/students`);
         if (response.data.success) {
           setStudents(response.data.data);
         } else {
@@ -657,7 +658,7 @@ const ParentListPage = () => {
     const fetchParents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/admin/manage/parents');
+        const response = await axios.get(`${API_BASE_URL}/admin/manage/parents`);
         if (response.data.success) {
           // Normalize children to always be an array
           const normalizedParents = response.data.data.map(parent => ({
@@ -713,7 +714,7 @@ const ParentListPage = () => {
     if (parent.children && parent.children.length > 0) {
       Promise.all(
         parent.children.map(childId =>
-          axios.get(`http://localhost:5001/api/admin/manage/students/${childId}`)
+          axios.get(`${API_BASE_URL}/admin/manage/students/${childId}`)
         )
       ).then(responses => {
         setViewModalChildren(responses
@@ -746,7 +747,7 @@ const ParentListPage = () => {
     if (!selectedParent) return;
     try {
       setLoading(true);
-      const response = await axios.delete(`http://localhost:5001/api/admin/manage/parents/${selectedParent._id}`);
+      const response = await axios.delete(`${API_BASE_URL}/admin/manage/parents/${selectedParent._id}`);
       if (response.data.success) {
         const updatedList = parents.filter(p => p._id !== selectedParent._id);
         setParents(updatedList);
@@ -779,7 +780,7 @@ const ParentListPage = () => {
           }
         }
       });
-      const response = await axios.post('http://localhost:5001/api/admin/manage/parents', data, {
+      const response = await axios.post(`${API_BASE_URL}/admin/manage/parents`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
@@ -822,7 +823,7 @@ const ParentListPage = () => {
           }
         }
       });
-      const response = await axios.put(`http://localhost:5001/api/admin/manage/parents/${formData._id}`, data, {
+      const response = await axios.put(`${API_BASE_URL}/admin/manage/parents/${formData._id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {

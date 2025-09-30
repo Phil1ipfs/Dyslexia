@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHorizontal, User, X } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/apiConfig';
 import './TeacherLists.css';
 
 // Success Modal Component
@@ -47,7 +48,7 @@ const CredentialsModal = ({ credentials, onClose }) => {
     try {
       setIsSending(true);
       setSendStatus(null);
-      const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
+      const response = await axios.post(`${API_BASE_URL}/admin/send-credentials`, {
         email: credentials.email,
         password: credentials.password,
         userType: 'teacher'
@@ -583,7 +584,7 @@ useEffect(() => {
   const fetchTeachers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5001/api/admin/manage/teachers');
+      const response = await axios.get(`${API_BASE_URL}/admin/manage/teachers`);
       if (response.data.success) {
         setTeachers(response.data.data);
         setFilteredTeachers(response.data.data);
@@ -648,7 +649,7 @@ const deleteTeacher = async () => {
   if (!selectedTeacher) return;
   try {
     setLoading(true);
-    const response = await axios.delete(`http://localhost:5001/api/admin/manage/teachers/${selectedTeacher._id}`);
+    const response = await axios.delete(`${API_BASE_URL}/admin/manage/teachers/${selectedTeacher._id}`);
     if (response.data.success) {
       const updatedList = teachers.filter(t => t._id !== selectedTeacher._id);
       setTeachers(updatedList);
@@ -675,7 +676,7 @@ const handleAddTeacher = async (formData) => {
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) data.append(key, value);
     });
-    const response = await axios.post('http://localhost:5001/api/admin/manage/teachers', data, {
+    const response = await axios.post(`${API_BASE_URL}/admin/manage/teachers`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     if (response.data.success) {
@@ -709,7 +710,7 @@ const handleEditTeacherSubmit = async (formData) => {
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) data.append(key, value);
     });
-    const response = await axios.put(`http://localhost:5001/api/admin/manage/teachers/${formData._id}`, data, {
+    const response = await axios.put(`${API_BASE_URL}/admin/manage/teachers/${formData._id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     if (response.data.success) {
