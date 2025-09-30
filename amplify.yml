@@ -13,6 +13,10 @@ frontend:
     build:
       commands:
         - echo "=== LITEREXIA AMPLIFY BUILD - BUILD ==="
+        - echo "Verifying environment variables..."
+        - echo "VITE_BACKEND_URL=$VITE_BACKEND_URL"
+        - echo "VITE_API_BASE_URL=$VITE_API_BASE_URL"
+        - echo "VITE_API_URL=$VITE_API_URL"
         - echo "Building React application..."
         - npm --prefix frontend run build
         - echo "Build completed! Checking output..."
