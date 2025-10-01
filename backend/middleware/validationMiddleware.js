@@ -99,6 +99,12 @@ const studentValidation = {
   ],
 
   createStudent: [
+    body('idNumber')
+      .isNumeric()
+      .withMessage('ID Number must be numeric')
+      .isInt({ min: 1, max: 999999999 })
+      .withMessage('ID Number must be a valid integer between 1 and 999999999'),
+
     body('firstName')
       .isLength({ min: 1, max: 50 })
       .withMessage('First name is required and must be less than 50 characters')
@@ -115,21 +121,28 @@ const studentValidation = {
       .isInt({ min: 5, max: 18 })
       .withMessage('Age must be between 5 and 18'),
 
+    body('gender')
+      .isIn(['Male', 'Female', 'Other'])
+      .withMessage('Gender must be Male, Female, or Other'),
+
     body('gradeLevel')
       .isIn(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'])
       .withMessage('Grade level must be between Grade 1 and Grade 6'),
+
+    body('section')
+      .isLength({ min: 1, max: 20 })
+      .withMessage('Section is required and must be less than 20 characters')
+      .matches(/^[a-zA-Z0-9\s\-]+$/)
+      .withMessage('Section can only contain letters, numbers, spaces, and hyphens'),
+
+    body('address')
+      .isLength({ min: 1, max: 200 })
+      .withMessage('Address is required and must be less than 200 characters'),
 
     body('readingLevel')
       .optional()
       .isIn(['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'])
       .withMessage('Invalid reading level'),
-
-    body('section')
-      .optional()
-      .isLength({ max: 20 })
-      .withMessage('Section must be less than 20 characters')
-      .matches(/^[a-zA-Z0-9\s\-]+$/)
-      .withMessage('Section can only contain letters, numbers, spaces, and hyphens'),
 
     handleValidationErrors
   ]
