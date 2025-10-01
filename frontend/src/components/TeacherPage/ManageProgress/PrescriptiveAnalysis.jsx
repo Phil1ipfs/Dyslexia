@@ -2,6 +2,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import api from '../../../services/Teachers/api';
+
+// API base URL from environment variable
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'https://api.literexia.com/api';
 import './css/InterventionResponseModal.css';
 import {
   FaInfoCircle,
@@ -5413,7 +5416,7 @@ const PrescriptiveAnalysis = ({
       }
 
       // Call the prescriptive analytics generation endpoint
-      const response = await axios.post('/api/prescriptive-analytics/generate', {
+      const response = await axios.post(`${API_BASE_URL}/prescriptive-analytics/generate`, {
         categoryResultId: liveCategoryResults._id
       });
 
