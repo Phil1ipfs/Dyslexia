@@ -16,6 +16,9 @@ import {
 import '../../css/Parents/Feedback.css';
 import axios from 'axios';
 
+// API base URL from environment variable
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'https://api.literexia.com/api';
+
 const Feedback = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [selectedPdf, setSelectedPdf] = useState(null);
@@ -28,7 +31,7 @@ const Feedback = () => {
     const token = localStorage.getItem('token');
     
     // Fetch feedbacks
-    axios.get('/api/parent/child_pdf', {
+    axios.get(`${API_BASE_URL}/parent/child_pdf`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -39,7 +42,7 @@ const Feedback = () => {
       .catch(() => setFeedbacks([]));
 
     // Fetch teachers
-    axios.get('/api/admin/manage/teachers', {
+    axios.get(`${API_BASE_URL}/admin/manage/teachers`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
