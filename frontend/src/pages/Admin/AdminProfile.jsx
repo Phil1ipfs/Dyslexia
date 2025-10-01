@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Camera, Eye, EyeOff, Save, Settings, UserCheck, Shield } from 'lucide-react';
 import authService from '../../services/authService';
 import adminValidation from '../../utils/adminValidation';
+import { API_BASE_URL } from '../../config/apiConfig';
 import './AdminProfile.css';
 
 const AdminProfile = () => {
@@ -50,7 +51,7 @@ const AdminProfile = () => {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = currentUser?.token || user?.token;
 
-      const response = await fetch('https://api.literexia.com/api/admin/profile', {
+      const response = await fetch(`${API_BASE_URL}/admin/profile`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -315,7 +316,7 @@ const AdminProfile = () => {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = currentUser?.token || user?.token;
 
-      const response = await fetch('https://api.literexia.com/api/admin/change-password', {
+      const response = await fetch(`${API_BASE_URL}/admin/change-password`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -397,7 +398,7 @@ const AdminProfile = () => {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = currentUser?.token || user?.token;
 
-      const response = await fetch('https://api.literexia.com/api/admin/upload-profile-image', {
+      const response = await fetch(`${API_BASE_URL}/admin/upload-profile-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -457,7 +458,7 @@ const AdminProfile = () => {
       };
 
       // Update admin profile in database
-      const response = await fetch('https://api.literexia.com/api/admin/profile', {
+      const response = await fetch(`${API_BASE_URL}/admin/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

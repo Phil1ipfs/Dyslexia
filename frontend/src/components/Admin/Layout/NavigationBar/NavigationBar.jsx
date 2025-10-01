@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import authService from '../../../../services/authService';
+import { API_BASE_URL } from '../../../../config/apiConfig';
 import {
   Home,
   Users,
@@ -78,7 +79,7 @@ const NavigationBar = ({ onLogout }) => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('https://api.literexia.com/api/admin/profile', {
+      const response = await fetch(`${API_BASE_URL}/admin/profile`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
