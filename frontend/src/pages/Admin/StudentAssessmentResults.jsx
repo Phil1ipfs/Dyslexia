@@ -604,7 +604,9 @@ const StudentAssessmentResults = () => {
   const fetchQuestionResponses = async (studentId, category) => {
     try {
       setLoadingResponses(prev => ({ ...prev, [category]: true }));
-      
+
+      let mainAssessmentResponses = [];
+
       const response = await axios.get(`${API_BASE_URL}/admin/student-responses/${studentId}/${category}`);
 
       if (response.data.success) {
@@ -612,8 +614,6 @@ const StudentAssessmentResults = () => {
           const { correctMatches, totalMatches, matches, ...rest } = item || {};
           return { ...rest, responseType: 'main_assessment' };
         });
-
-        let mainAssessmentResponses = [];
 
         // Filter to get only the most recent assessment session
         // Group responses by date and get the most recent complete session
