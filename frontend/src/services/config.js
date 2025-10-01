@@ -2,7 +2,7 @@
 
 // API configuration for the service
 const isProd = import.meta.env?.PROD || false;
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'https://api.literexia.com/';
+const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'https://api.literexia.com/api';
 export const API_BASE_URL = API_BASE; // Use the environment variable directly
 
 // Content URLs (API_BASE_URL already includes /api)
