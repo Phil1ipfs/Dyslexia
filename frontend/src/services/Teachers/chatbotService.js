@@ -5,17 +5,7 @@
  * Uses OpenAI GPT-4 model for specialized teaching guidance
  */
 
-// Define backend URL with fallback
-const getBackendUrl = () => {
-  if (typeof window !== 'undefined' && window.location) {
-    // Use the current host as fallback
-    return window.location.origin.replace('3000', '5001');
-  }
-  return 'https://api.literexia.com/';
-};
-
-const BACKEND_URL =
-import.meta.env.VITE_BACKEND_URL || getBackendUrl();
+import { API_BASE_URL } from '../../config/apiConfig';
 /**
  * Generate a response from the chatbot
  * @param {string} query - The user's message
@@ -25,8 +15,8 @@ import.meta.env.VITE_BACKEND_URL || getBackendUrl();
  */
 export const generateResponse = async (query, conversationHistory = [], language = 'filipino') => {
   try {
-    console.log('Using Backend URL:', BACKEND_URL);
-    
+    console.log('Using API Base URL:', API_BASE_URL);
+
     // Format the prompt with expert system message for dyslexia teaching
     const systemMessage = language === 'filipino' 
       ? `Ikaw ay isang eksperto sa pagtuturo ng mga batang may dyslexia sa Pilipinas. 
@@ -73,12 +63,12 @@ Ensure every answer is appropriate for the Filipino context and relevant to actu
     prompt += `Teacher: ${query}\nAssistant:`;
     
     // Call to your backend API with GPT-4 model specification
-    const response = await fetch(`${BACKEND_URL}/api/chatbot/ask`, {
+    const response = await fetch(`${API_BASE_URL}/chatbot/ask`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         prompt: prompt,
         model: 'gpt-4'
       })
