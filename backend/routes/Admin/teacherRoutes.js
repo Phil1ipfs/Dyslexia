@@ -162,7 +162,7 @@ router.delete('/teachers/:id', teacherProfileController.deleteTeacher);
 router.post('/students', sanitizeRequest, studentValidation.createStudent, upload.single('profileImage'), studentAdminController.createStudent);
 
 // Update student (PUT)
-router.put('/students/:id', validateParams.id, sanitizeRequest, studentValidation.studentId, upload.single('profileImage'), studentAdminController.updateStudent);
+router.put('/students/:id', validateParams.id, sanitizeRequest, upload.single('profileImage'), studentAdminController.updateStudent);
 
 // Delete student (DELETE)
 router.delete('/students/:id', validateParams.id, studentAdminController.deleteStudent);

@@ -423,11 +423,25 @@ exports.updateStudent = async (req, res) => {
     // If there are validation errors, return them
     if (validationErrors.length > 0) {
       console.log('🚨 [STUDENT ADMIN] Update validation failed:', validationErrors);
+      console.log('🚨 [STUDENT ADMIN] Received data:', JSON.stringify({
+        idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
+      }, null, 2));
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
         userType: 'student',
         validationErrors: validationErrors,
+        receivedData: {
+          idNumber: idNumber,
+          firstName: firstName,
+          middleName: middleName,
+          lastName: lastName,
+          age: age,
+          gender: gender,
+          gradeLevel: gradeLevel,
+          section: section,
+          address: address
+        },
         details: 'Please fix the validation errors and try again.'
       });
     }
