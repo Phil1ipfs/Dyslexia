@@ -55,9 +55,9 @@ const Feedback = () => {
         }
       })
       .catch(error => {
-        console.error('Error fetching teachers from API, using fallback data:', error);
-        // Use fallback data from JSON file
-        setTeachers(teachersData || []);
+        console.error('Error fetching teachers from API:', error);
+        // Set empty array on error
+        setTeachers([]);
       });
   }, []);
 
