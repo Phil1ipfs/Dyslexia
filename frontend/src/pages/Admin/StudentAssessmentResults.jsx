@@ -606,19 +606,21 @@ const StudentAssessmentResults = () => {
       setLoadingResponses(prev => ({ ...prev, [category]: true }));
       
       const response = await axios.get(`${API_BASE_URL}/admin/student-responses/${studentId}/${category}`);
-      
+
       if (response.data.success) {
         const sanitized = (response.data.data || []).map(item => {
           const { correctMatches, totalMatches, matches, ...rest } = item || {};
           return { ...rest, responseType: 'main_assessment' };
         });
 
+        let mainAssessmentResponses = [];
+
         // Filter to get only the most recent assessment session
         // Group responses by date and get the most recent complete session
-        if (allResponses.length > 0) {
+        if (sanitized.length > 0) {
           const responsesByDate = {};
 
-          allResponses.forEach(response => {
+          sanitized.forEach(response => {
             const dateKey = new Date(response.answeredAt).toDateString();
             if (!responsesByDate[dateKey]) {
               responsesByDate[dateKey] = [];
@@ -656,9 +658,9 @@ const StudentAssessmentResults = () => {
 
           // Fallback: if no complete session found, get most recent unique responses
           if (mainAssessmentResponses.length === 0) {
-            const uniqueQuestionIds = [...new Set(allResponses.map(r => r.questionId))];
+            const uniqueQuestionIds = [...new Set(sanitized.map(r => r.questionId))];
             mainAssessmentResponses = uniqueQuestionIds.map(questionId => {
-              const responsesForQuestion = allResponses
+              const responsesForQuestion = sanitized
                 .filter(r => r.questionId === questionId)
                 .sort((a, b) => new Date(b.answeredAt) - new Date(a.answeredAt));
               return responsesForQuestion[0];
