@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 /**
  * MainAssessmentService - Service for managing main assessments in the teacher dashboard
@@ -7,7 +8,7 @@ import axios from 'axios';
 class MainAssessmentService {
   constructor() {
     this.apiInitialized = false;
-    this.apiUrl = '/api/main-assessment'; // Set the correct API URL
+    this.apiUrl = `${API_BASE_URL}/main-assessment`; // Use full API URL
     this.checkApiAvailability();
   }
 
@@ -18,7 +19,7 @@ class MainAssessmentService {
   checkApiAvailability = async () => {
     try {
       // Use the ping endpoint which requires NO authentication
-      await axios.get('/api/main-assessment/ping');
+      await axios.get(`${API_BASE_URL}/main-assessment/ping`);
       this.apiInitialized = true;
       console.log('Main Assessment API is available');
       return true;
@@ -90,8 +91,8 @@ class MainAssessmentService {
         authHeaders.headers ? 'Authorization header present: ' + !!authHeaders.headers.Authorization : 'No headers');
       
       // Make the real API request
-      console.log('[MainAssessmentService] Making API request to /api/main-assessment');
-      const response = await axios.get('/api/main-assessment?limit=100', authHeaders);
+      console.log('[MainAssessmentService] Making API request to main-assessment');
+      const response = await axios.get(`${API_BASE_URL}/main-assessment?limit=100`, authHeaders);
       
       // Log the raw response for debugging
       console.log('[MainAssessmentService] Raw API response:', response);
@@ -173,7 +174,7 @@ class MainAssessmentService {
    */
   getAssessmentById = async (assessmentId) => {
     try {
-      const response = await axios.get(`/api/main-assessment/${assessmentId}`, this.getAuthHeaders());
+      const response = await axios.get(`${API_BASE_URL}/main-assessment/${assessmentId}`, this.getAuthHeaders());
       return {
         success: true,
         data: response.data.data
@@ -194,16 +195,16 @@ class MainAssessmentService {
   getFilteredAssessments = async (filters = {}) => {
     try {
       const { readingLevel, category } = filters;
-      let url = '/api/main-assessment/filter?';
-      
+      let url = `${API_BASE_URL}/main-assessment/filter?`;
+
       if (readingLevel && readingLevel !== 'all') {
         url += `readingLevel=${encodeURIComponent(readingLevel)}&`;
       }
-      
+
       if (category && category !== 'all') {
         url += `category=${encodeURIComponent(category)}&`;
       }
-      
+
       const response = await axios.get(url, this.getAuthHeaders());
       return {
         success: true,
@@ -223,14 +224,14 @@ class MainAssessmentService {
   createAssessment = async (assessmentData) => {
     try {
       console.log('Creating assessment:', assessmentData);
-      
+
       // For debugging, log the request details
-      console.log('API URL:', '/api/main-assessment');
+      console.log('API URL:', `${API_BASE_URL}/main-assessment`);
       console.log('Request headers:', this.getAuthHeaders());
-      
+
       // Make the real API call
       const response = await axios.post(
-        '/api/main-assessment',
+        `${API_BASE_URL}/main-assessment`,
         assessmentData,
         this.getAuthHeaders()
       );
@@ -272,7 +273,7 @@ class MainAssessmentService {
    */
   updateAssessment = async (assessmentId, assessmentData) => {
     try {
-      const response = await axios.put(`/api/main-assessment/${assessmentId}`, assessmentData, this.getAuthHeaders());
+      const response = await axios.put(`${API_BASE_URL}/main-assessment/${assessmentId}`, assessmentData, this.getAuthHeaders());
       return {
         success: response.data.success,
         data: response.data.data
@@ -290,7 +291,7 @@ class MainAssessmentService {
    */
   deleteAssessment = async (assessmentId) => {
     try {
-      const response = await axios.delete(`/api/main-assessment/${assessmentId}`, this.getAuthHeaders());
+      const response = await axios.delete(`${API_BASE_URL}/main-assessment/${assessmentId}`, this.getAuthHeaders());
       return {
         success: response.data.success,
         message: response.data.message
@@ -310,7 +311,7 @@ class MainAssessmentService {
   toggleAssessmentStatus = async (assessmentId, newStatus) => {
     try {
       const response = await axios.patch(
-        `/api/main-assessment/${assessmentId}/status`, 
+        `${API_BASE_URL}/main-assessment/${assessmentId}/status`,
         { status: newStatus },
         this.getAuthHeaders()
       );
@@ -333,7 +334,7 @@ class MainAssessmentService {
   getAssessmentsForStudent = async (studentId, readingLevel) => {
     try {
       const response = await axios.get(
-        `/api/main-assessment/student/${studentId}?readingLevel=${encodeURIComponent(readingLevel)}`,
+        `${API_BASE_URL}/main-assessment/student/${studentId}?readingLevel=${encodeURIComponent(readingLevel)}`,
         this.getAuthHeaders()
       );
       return {
@@ -353,7 +354,7 @@ class MainAssessmentService {
    */
   getAssessmentStats = async () => {
     try {
-      const response = await axios.get('/api/main-assessment/stats', this.getAuthHeaders());
+      const response = await axios.get(`${API_BASE_URL}/main-assessment/stats`, this.getAuthHeaders());
       return {
         success: response.data.success,
         data: response.data.data
@@ -408,8 +409,8 @@ class MainAssessmentService {
       };
       
       // Use single, standardized upload endpoint
-      console.log(`Uploading to endpoint: /api/main-assessment/upload-image`);
-      const response = await axios.post('/api/main-assessment/upload-image', formData, uploadConfig);
+      console.log(`Uploading to endpoint: ${API_BASE_URL}/main-assessment/upload-image`);
+      const response = await axios.post(`${API_BASE_URL}/main-assessment/upload-image`, formData, uploadConfig);
       
       if (!response.data || (!response.data.success && !response.data.url)) {
         const errorMsg = response.data?.message || 'Upload failed - no response data';
