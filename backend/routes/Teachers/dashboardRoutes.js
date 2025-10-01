@@ -40,13 +40,19 @@ router.get('/parent/:parentId', auth, authorize('teacher', 'admin'), (req, res) 
   dashboardController.getParentProfile(req, res);
 });
 
-// Get comprehensive intervention progress data
+// Get comprehensive intervention progress data (handle both with and without trailing slash)
 router.get('/intervention-progress', auth, authorize('teacher', 'admin'), (req, res) => {
+  dashboardController.getInterventionProgress(req, res);
+});
+router.get('/intervention-progress/', auth, authorize('teacher', 'admin'), (req, res) => {
   dashboardController.getInterventionProgress(req, res);
 });
 
 // Debug endpoint for intervention progress issues
 router.get('/debug-intervention-progress', auth, authorize('teacher', 'admin'), (req, res) => {
+  dashboardController.debugInterventionProgress(req, res);
+});
+router.get('/debug-intervention-progress/', auth, authorize('teacher', 'admin'), (req, res) => {
   dashboardController.debugInterventionProgress(req, res);
 });
 
