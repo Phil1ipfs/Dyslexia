@@ -82,10 +82,10 @@ studentResponseSchema.post('save', async function(doc) {
         console.log(`[REAL-TIME DETECTION] ⏰ Processing assessment after batch delay: ${assessmentKey}`);
 
         // Import CategoryResultsService dynamically to avoid circular dependency
-        const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
+        const CategoryResultsService = require('../../../services/Teachers/CategoryResultsService');
 
         // Get the user to determine reading level
-        const User = require('../userModel');
+        const User = require('../../userModel');
         const user = await User.findOne({ idNumber: doc.studentId });
 
         if (!user || !user.readingLevel) {

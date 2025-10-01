@@ -117,8 +117,8 @@ interventionResponseSchema.post('save', async function(doc) {
         console.log(`[INTERVENTION REAL-TIME] ⏰ Processing intervention after batch delay: ${interventionKey}`);
 
         // Import services dynamically to avoid circular dependency
-        const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
-        const InterventionGeneratorService = require('../../services/Teachers/InterventionGeneratorService');
+        const CategoryResultsService = require('../../../services/Teachers/CategoryResultsService');
+        const InterventionGeneratorService = require('../../../services/Teachers/InterventionGeneratorService');
 
         // Check if this intervention is now complete
         console.log(`[INTERVENTION REAL-TIME] 🔍 Checking completeness for intervention ${doc.interventionAssessmentId}...`);
@@ -132,7 +132,7 @@ interventionResponseSchema.post('save', async function(doc) {
           console.log(`[INTERVENTION REAL-TIME] ✅ Intervention ${doc.interventionAssessmentId} is now COMPLETE for student ${doc.studentId}!`);
 
           // ✅ CRITICAL FIX: Check if intervention results already exist before generating new ones
-          const InterventionAssessment = require('../ManageProgress/interventionAssessmentModel');
+          const InterventionAssessment = require('./interventionAssessmentModel');
           const interventionAssessment = await InterventionAssessment.findById(doc.interventionAssessmentId);
 
           if (interventionAssessment && interventionAssessment.interventionResultsId) {
