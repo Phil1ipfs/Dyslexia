@@ -159,10 +159,10 @@ router.put('/teachers/:id', upload.single('profileImage'), teacherProfileControl
 router.delete('/teachers/:id', teacherProfileController.deleteTeacher);
 
 // Add new student (Create)
-router.post('/students', sanitizeRequest, studentValidation.createStudent, upload.single('profileImage'), studentAdminController.createStudent);
+router.post('/students', upload.single('profileImage'), sanitizeRequest, studentValidation.createStudent, studentAdminController.createStudent);
 
 // Update student (PUT)
-router.put('/students/:id', validateParams.id, sanitizeRequest, upload.single('profileImage'), studentAdminController.updateStudent);
+router.put('/students/:id', upload.single('profileImage'), validateParams.id, sanitizeRequest, studentAdminController.updateStudent);
 
 // Delete student (DELETE)
 router.delete('/students/:id', validateParams.id, studentAdminController.deleteStudent);
