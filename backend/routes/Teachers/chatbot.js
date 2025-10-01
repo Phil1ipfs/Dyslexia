@@ -1,12 +1,20 @@
 // routes/Teachers/chatbot.js
 const express = require('express');
 const router = express.Router();
+require('dotenv').config(); // Load environment variables
 const OpenAI = require('openai').default;
 
 // Initialize OpenAI client with your secret key
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+// Log API key status for debugging (without exposing the key)
+if (!process.env.OPENAI_API_KEY) {
+  console.error('❌ OPENAI_API_KEY not found in environment variables!');
+} else {
+  console.log(`✅ OpenAI API Key loaded (starts with: ${process.env.OPENAI_API_KEY.substring(0, 7)}...)`);
+}
 
 /**
  * Get dyslexia-specific teaching context for the AI assistant
