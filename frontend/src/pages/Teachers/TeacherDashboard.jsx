@@ -998,11 +998,13 @@ const TeacherDashboard = () => {
       // Fetch comprehensive intervention progress from new API endpoint
       try {
         console.log('Fetching comprehensive intervention progress data...');
-        const interventionResponse = await fetch('/api/teachers/dashboard/intervention-progress', {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const token = user?.token;
+        const interventionResponse = await fetch(`${API_BASE_URL}/teachers/dashboard/intervention-progress`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
 
