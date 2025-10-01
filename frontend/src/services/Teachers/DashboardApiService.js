@@ -22,7 +22,7 @@ class DashboardApiService {
         timeout: 10000, // 10 second timeout for database calls
       });
 
-      const response = await instance.get(`${API_BASE_URL}/dashboard/data`, authHeaders);
+      const response = await instance.get(`${API_BASE_URL}/teachers/dashboard/data`, authHeaders);
 
       if (response.data) {
         console.log('Successfully retrieved dashboard data from database');
@@ -60,7 +60,7 @@ class DashboardApiService {
       }
 
       const response = await axios.get(
-        `${API_BASE_URL}/dashboard/parent/${parentId}`,
+        `${API_BASE_URL}/teachers/dashboard/parent/${parentId}`,
         authHeaders
       );
 
@@ -81,7 +81,7 @@ class DashboardApiService {
   static async updateActivityStatus(activityId, status, authHeaders) {
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/dashboard/update-activity/${activityId}`,
+        `${API_BASE_URL}/teachers/dashboard/update-activity/${activityId}`,
         { status },
         authHeaders
       );
@@ -99,7 +99,7 @@ class DashboardApiService {
    */
   static async getMetrics(authHeaders) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/metrics`, authHeaders);
+      const response = await axios.get(`${API_BASE_URL}/teachers/dashboard/metrics`, authHeaders);
       return response.data;
     } catch (error) {
       console.error('Error fetching metrics:', error);
@@ -114,7 +114,7 @@ class DashboardApiService {
    */
   static async getReadingLevelDistribution(authHeaders) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/reading-level-distribution`, authHeaders);
+      const response = await axios.get(`${API_BASE_URL}/teachers/dashboard/reading-level-distribution`, authHeaders);
       return response.data;
     } catch (error) {
       console.error('Error fetching reading level distribution:', error);
@@ -129,7 +129,7 @@ class DashboardApiService {
    */
   static async getStudentsNeedingAttention(authHeaders) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/students-needing-attention`, authHeaders);
+      const response = await axios.get(`${API_BASE_URL}/teachers/dashboard/students-needing-attention`, authHeaders);
       return response.data;
     } catch (error) {
       console.error('Error fetching students needing attention:', error);
@@ -145,7 +145,7 @@ class DashboardApiService {
    */
   static async getStudentsBySection(section, authHeaders) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/by-section/${section}`, authHeaders);
+      const response = await axios.get(`${API_BASE_URL}/teachers/dashboard/by-section/${section}`, authHeaders);
       return response.data;
     } catch (error) {
       console.error('Error fetching students by section:', error);
