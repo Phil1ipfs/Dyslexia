@@ -5,6 +5,9 @@
 # CRITICAL: This must come BEFORE the SPA fallback rule
 /api/*  https://api.literexia.com/api/:splat  200
 
+# Remove trailing slashes from URLs
+/*/  /:splat  301!
+
 # SPA fallback - redirect all non-file requests to index.html
 # This is essential for React Router to work correctly
 /*    /index.html   200

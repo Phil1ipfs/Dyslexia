@@ -15,9 +15,7 @@ import {
 } from 'lucide-react';
 import '../../css/Parents/Feedback.css';
 import axios from 'axios';
-
-// API base URL from environment variable
-const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'https://api.literexia.com/api';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 const Feedback = () => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -28,8 +26,9 @@ const Feedback = () => {
 
   // Fetch feedbacks and teachers from backend
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token;
+
     // Fetch feedbacks
     axios.get(`${API_BASE_URL}/parent/child_pdf`, {
       headers: {
