@@ -677,7 +677,7 @@ const StudentAssessmentResults = () => {
         const user = JSON.parse(localStorage.getItem('user'));
         const token = user?.token;
         const mainAssessmentDetailsResponse = await axios.get(
-          `https://api.literexia.com/api/main-assessment`,
+          `${API_BASE_URL}/main-assessment`,
           {
             params: {
               category: category,
@@ -798,7 +798,7 @@ const StudentAssessmentResults = () => {
             const user = JSON.parse(localStorage.getItem('user'));
             const token = user?.token;
             const interventionResponse = await axios.get(
-              `https://api.literexia.com/api/intervention-responses`, {
+              `${API_BASE_URL}/intervention-responses`, {
                 params: {
                   studentId: studentId,
                   interventionAssessmentId: interventionAssessmentId,
