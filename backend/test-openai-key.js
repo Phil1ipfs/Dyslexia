@@ -3,7 +3,31 @@
  * Run: node test-openai-key.js
  */
 
-require('dotenv').config();
+// Load .env manually without dotenv package
+const fs = require('fs');
+const path = require('path');
+
+function loadEnv() {
+  try {
+    const envPath = path.join(__dirname, '.env');
+    const envFile = fs.readFileSync(envPath, 'utf8');
+
+    envFile.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const [key, ...values] = trimmed.split('=');
+        if (key && values.length > 0) {
+          process.env[key.trim()] = values.join('=').trim();
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Failed to load .env file:', error.message);
+  }
+}
+
+loadEnv();
+
 const OpenAI = require('openai').default;
 
 async function testOpenAIKey() {

@@ -1,7 +1,11 @@
 // routes/Teachers/chatbot.js
 const express = require('express');
 const router = express.Router();
-require('dotenv').config(); // Load environment variables
+const path = require('path');
+
+// Load environment variables with correct path (go up 2 directories to backend root)
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
 const OpenAI = require('openai').default;
 
 // Initialize OpenAI client with your secret key
