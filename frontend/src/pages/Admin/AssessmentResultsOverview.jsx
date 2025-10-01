@@ -1,7 +1,8 @@
 // src/pages/Admin/AssessmentResultsOverview.jsx
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, Filter, ChevronDown, PieChart, BarChart2, 
+import { Link } from 'react-router-dom';
+import {
+  Search, Filter, ChevronDown, PieChart, BarChart2,
   Book, Award, Layers, CheckCircle, AlertTriangle, Info
 } from 'lucide-react';
 import axios from 'axios'; // Import axios
@@ -790,9 +791,9 @@ const AssessmentResultsOverview = () => {
                   </td>
                   <td>{formatDate(student.assessmentDate)}</td>
                   <td>
-                    <a href={`/admin/assessment-results/${student.idNumber}`} className="assessment-results__view-details-btn">
+                    <Link to={`/admin/assessment-results/${student.idNumber}`} className="assessment-results__view-details-btn">
                       View Details
-                    </a>
+                    </Link>
                   </td>
                 </tr>
               ))}
