@@ -4,10 +4,11 @@
  */
 
 const mongoose = require('mongoose');
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 async function directValidationTest() {
   try {
-    await mongoose.connect('mongodb+srv://johncasingal63:GqrI1M4qlAq8u1R0@cluster0.0f8ylb8.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0');
+    await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ Connected to MongoDB');
 
     // Force fresh schema definition

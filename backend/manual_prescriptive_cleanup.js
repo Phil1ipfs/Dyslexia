@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
+require('dotenv').config();
 
 // Connect to MongoDB using the same connection as the server
-mongoose.connect('mongodb+srv://goodboykit:4rfv5tgb@cluster0.0f8ylb8.mongodb.net/test?retryWrites=true&w=majority');
+mongoose.connect(process.env.MONGO_URI);
 
 async function manualCleanup() {
   try {
