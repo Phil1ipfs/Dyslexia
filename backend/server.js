@@ -11,6 +11,9 @@ const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Trust proxy for AWS EC2 / load balancer (must be set before rate limiters)
+app.set('trust proxy', 1);
+
 // Create HTTP server for WebSocket integration
 const server = http.createServer(app);
 
