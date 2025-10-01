@@ -3,7 +3,13 @@
     "allow": [
       "Bash(git checkout:*)",
       "Bash(rm:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(curl -I https://literexia.com/api/main-assessment/ping)",
+      "Bash(curl:*)",
+      "Bash(cp:*)",
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

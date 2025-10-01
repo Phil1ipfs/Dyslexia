@@ -1,13 +1,13 @@
 # Redirects and Rewrites for Single Page Application (SPA)
 # This file ensures all routes are handled by React Router
 
+# API proxy - redirect API calls to backend EC2 server
+# CRITICAL: This must come BEFORE the SPA fallback rule
+/api/*  https://api.literexia.com/api/:splat  200
+
 # SPA fallback - redirect all non-file requests to index.html
 # This is essential for React Router to work correctly
 /*    /index.html   200
-
-# API proxy redirects (if needed for development)
-# These would redirect to your backend API
-# /api/*  https://your-backend-url.com/api/:splat  200
 
 # Force HTTPS redirects (optional)
 # http://your-domain.com/*  https://your-domain.com/:splat  301!

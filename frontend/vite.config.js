@@ -72,7 +72,19 @@ export default defineConfig(({ command, mode }) => {
           // Ensure consistent file names for caching
           chunkFileNames: 'assets/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
-          assetFileNames: 'assets/[name]-[hash].[ext]'
+          assetFileNames: (assetInfo) => {
+            // Don't hash critical files that are referenced externally
+            const criticalFiles = ['manifest.json', 'admin.png', '_redirects', '_headers', '.htaccess'];
+            const fileName = assetInfo.name || '';
+
+            if (criticalFiles.some(file => fileName.endsWith(file))) {
+              // Keep original name without hash for critical files
+              return '[name].[ext]';
+            }
+
+            // Hash all other assets for cache busting
+            return 'assets/[name]-[hash].[ext]';
+          }
         }
       },
       // Increase chunk size warning limit
