@@ -207,32 +207,6 @@ const StudentAssessmentResults = () => {
     }
   };
 
-  // Helper function to sanitize Reading Comprehension data
-  const sanitizeReadingComprehensionData = (questionDetails) => {
-    if (!questionDetails) return null;
-
-    return {
-      ...questionDetails,
-      storyTitle: questionDetails.storyTitle ? String(questionDetails.storyTitle).trim() : null,
-      question: questionDetails.question ? String(questionDetails.question).trim() : null,
-      passages: questionDetails.passages ? questionDetails.passages.map(passage => ({
-        ...passage,
-        pageText: passage.pageText ? String(passage.pageText).trim() : '',
-        text: passage.text ? String(passage.text).trim() : '',
-        pageImage: passage.pageImage || null,
-        image: passage.image || null
-      })) : [],
-      sentenceQuestions: questionDetails.sentenceQuestions ? questionDetails.sentenceQuestions.map(sq => ({
-        ...sq,
-        questionText: sq.questionText ? String(sq.questionText).trim() : '',
-        correctAnswer: sq.correctAnswer ? String(sq.correctAnswer).trim() : '',
-        sentenceCorrectAnswer: sq.sentenceCorrectAnswer ? String(sq.sentenceCorrectAnswer).trim() : '',
-        acceptableAnswers: sq.acceptableAnswers ? sq.acceptableAnswers.map(answer => String(answer).trim()) : [],
-        sentenceAcceptableAnswer: sq.sentenceAcceptableAnswer ? sq.sentenceAcceptableAnswer.map(answer => String(answer).trim()) : []
-      })) : []
-    };
-  };
-
   // Helper function to format intervention student responses
   const formatInterventionResponse = (response, questionDetails, category) => {
     if (!response) return '';
@@ -754,13 +728,10 @@ const StudentAssessmentResults = () => {
                 displaySequence: questionDetails.displaySequence,
                 blankOptions: questionDetails.blankOptions,
                 displayWord: questionDetails.displayWord,
-                // Reading Comprehension special handling - sanitized
-                ...sanitizeReadingComprehensionData({
-                  storyTitle: questionDetails.storyTitle,
-                  question: questionDetails.questionText,
-                  passages: questionDetails.passages || [],
-                  sentenceQuestions: questionDetails.sentenceQuestions || []
-                })
+                // Reading Comprehension special handling - direct assignment
+                storyTitle: questionDetails.storyTitle,
+                passages: questionDetails.passages || [],
+                sentenceQuestions: questionDetails.sentenceQuestions || []
               } : null,
               groupedResponses: group.responses // Keep individual responses for detailed display
             };
@@ -787,13 +758,10 @@ const StudentAssessmentResults = () => {
                 displaySequence: questionDetails.displaySequence,
                 blankOptions: questionDetails.blankOptions,
                 displayWord: questionDetails.displayWord,
-                // Reading Comprehension special handling - sanitized
-                ...sanitizeReadingComprehensionData({
-                  storyTitle: questionDetails.storyTitle,
-                  question: questionDetails.questionText,
-                  passages: questionDetails.passages || [],
-                  sentenceQuestions: questionDetails.sentenceQuestions || []
-                })
+                // Reading Comprehension special handling - direct assignment
+                storyTitle: questionDetails.storyTitle,
+                passages: questionDetails.passages || [],
+                sentenceQuestions: questionDetails.sentenceQuestions || []
               } : null
             };
           });
@@ -894,13 +862,10 @@ const StudentAssessmentResults = () => {
                       options: getOptionsFromQuestion(questionDetails, category),
                       // Include choiceOptions for formatting responses
                       choiceOptions: questionDetails.choiceOptions,
-                      // Reading Comprehension special handling - sanitized
-                      ...sanitizeReadingComprehensionData({
-                        storyTitle: null, // Intervention doesn't have separate story title
-                        question: questionDetails.questionText,
-                        passages: questionDetails.passages || [],
-                        sentenceQuestions: questionDetails.sentenceQuestions || []
-                      })
+                      // Reading Comprehension special handling - direct assignment
+                      storyTitle: questionDetails.storyTitle || questionDetails.questionText,
+                      passages: questionDetails.passages || [],
+                      sentenceQuestions: questionDetails.sentenceQuestions || []
                     } : null,
                     // Include intervention assessment metadata
                     interventionRevision: interventionAssessment?.revisionNumber || targetRevisionNumber,
