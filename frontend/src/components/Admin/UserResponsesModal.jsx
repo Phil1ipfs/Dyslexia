@@ -558,24 +558,24 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
               <div className="user-responses__list">
                 {filteredResponses.map((response, index) => {
                   const isExpanded = expandedQuestions[response.questionId];
-                  
+
                   return (
-                    <div key={response._id || index} className="user-responses__response-card">
-                      <div 
+                    <div key={response._id || index} className={`user-responses__response-card ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                      <div
                         className="user-responses__response-header"
                         onClick={() => toggleQuestionExpansion(response.questionId)}
                       >
                         <div className="user-responses__response-info">
+                          <div className="user-responses__question-number">
+                            #{index + 1}
+                          </div>
+                          <div className="user-responses__question-id">{response.questionId}</div>
                           <div className="user-responses__category-badge" style={{ backgroundColor: getCategoryColor(response.category) }}>
                             {getCategoryIcon(response.category)}
                             <span>{response.category}</span>
                           </div>
-                          <div className="user-responses__question-info">
-                            <span className="user-responses__question-id">{response.questionId}</span>
-                            <span className="user-responses__question-type">{response.questionType}</span>
-                          </div>
                         </div>
-                        
+
                         <div className="user-responses__response-meta">
                           <div className={`user-responses__correctness ${response.isCorrect ? 'correct' : 'incorrect'}`}>
                             {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
@@ -593,18 +593,19 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
 
                       {isExpanded && (
                         <div className="user-responses__response-details">
+                          {renderResponseContent(response)}
+
                           <div className="user-responses__response-metadata">
                             <div className="user-responses__metadata-item">
-                              <span className="user-responses__metadata-label">Answered At:</span>
-                              <span className="user-responses__metadata-value">{formatDate(response.answeredAt)}</span>
+                              <strong>Student's Answer:</strong> <span className={`user-responses__student-answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>{Array.isArray(response.response) ? response.response.join(', ') : response.response}</span>
                             </div>
                             <div className="user-responses__metadata-item">
-                              <span className="user-responses__metadata-label">Response Time:</span>
-                              <span className="user-responses__metadata-value">{formatResponseTime(response.responseTime)}</span>
+                              <strong>Response Time:</strong> {formatResponseTime(response.responseTime)}
+                            </div>
+                            <div className="user-responses__metadata-item">
+                              <strong>Answered At:</strong> {formatDate(response.answeredAt)}
                             </div>
                           </div>
-                          
-                          {renderResponseContent(response)}
                         </div>
                       )}
                     </div>
