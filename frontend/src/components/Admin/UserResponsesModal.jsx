@@ -506,7 +506,7 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
       <div className="user-responses__modal" onClick={(e) => e.stopPropagation()}>
         <div className="user-responses__modal-header">
           <div className="user-responses__modal-title">
-            <h2>Pre Assessment Responses</h2>
+            <h2>📊 Pre Assessment Responses</h2>
             <p>{student?.firstName} {student?.lastName} (ID: {student?.idNumber})</p>
           </div>
           <button className="user-responses__close-btn" onClick={onClose}>
@@ -560,7 +560,10 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
                   const isExpanded = expandedQuestions[response.questionId];
                   
                   return (
-                    <div key={response._id || index} className="user-responses__response-card">
+                    <div 
+                      key={response._id || index} 
+                      className={`user-responses__response-card ${response.isCorrect ? 'correct' : 'incorrect'}`}
+                    >
                       <div 
                         className="user-responses__response-header"
                         onClick={() => toggleQuestionExpansion(response.questionId)}
@@ -571,7 +574,23 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
                             <span>{response.category}</span>
                           </div>
                           <div className="user-responses__question-info">
-                            <span className="user-responses__question-id">{response.questionId}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span 
+                                style={{
+                                  backgroundColor: '#3B4F81',
+                                  color: 'white',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.375rem',
+                                  fontSize: '0.8rem',
+                                  fontWeight: '600',
+                                  minWidth: '2rem',
+                                  textAlign: 'center'
+                                }}
+                              >
+                                #{index + 1}
+                              </span>
+                              <span className="user-responses__question-id">{response.questionId}</span>
+                            </div>
                             <span className="user-responses__question-type">{response.questionType}</span>
                           </div>
                         </div>

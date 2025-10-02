@@ -80,7 +80,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With']
 }));
-console.error('Blocked by CORS:', origin);
 
 // Increase body parser limits for larger file uploads
 app.use(express.json({ limit: '50mb' }));
