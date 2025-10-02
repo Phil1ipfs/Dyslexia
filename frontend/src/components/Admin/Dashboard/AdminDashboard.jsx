@@ -61,16 +61,16 @@ const AdminDashboard = () => {
         setError(null);
         console.log('Fetching dashboard data...');
         
-        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+        const token = user?.token;
+
         if (!token) {
           throw new Error('No auth token found');
         }
 
         // Try to get user data to verify admin role
-        const userDataStr = localStorage.getItem('userData');
-        if (userDataStr) {
-          const userData = JSON.parse(userDataStr);
-          const roles = Array.isArray(userData.roles) ? userData.roles : [userData.roles];
+        if (user) {
+          const roles = Array.isArray(user.roles) ? user.roles : [user.roles];
           if (!roles.includes('admin')) {
             throw new Error('User is not authorized to view admin dashboard');
           }
@@ -165,7 +165,9 @@ const AdminDashboard = () => {
       setPrescriptiveLoading(true);
       setPrescriptiveError(null);
 
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = user?.token;
+
       if (!token) {
         throw new Error('No auth token found');
       }
