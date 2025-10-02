@@ -1258,7 +1258,7 @@ body {
 .why-literexia-section {
   width: 100vw;
   min-height: 130vh;
-  background-color: #fff;
+  background-color: #fff; 
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1274,7 +1274,7 @@ body {
   font-weight: 700;
   margin-bottom: 3rem;
   margin-top: 0;
-  color: #2a3b73;
+  color: #2a3b73; 
   font-family: 'Atkinson Hyperlegible', sans-serif;
   text-align: center;
 }
@@ -1290,11 +1290,11 @@ body {
 }
 
 .why-card {
-  background-color: transparent;
+  background-color: transparent; 
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: #2a3b73;
+  color: #2a3b73; 
   font-family: 'Poppins', sans-serif;
   padding: 1rem;
   border-radius: 8px;

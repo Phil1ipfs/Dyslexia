@@ -331,8 +331,13 @@ const StudentAssessmentsList = () => {
                     </div>
                   ) : (
                     <div className="student-assessments__score-not-taken">
-                      <AlertTriangle size={24} />
-                      <span>Pre-Assessment Not Taken</span>
+                      <div className="student-assessments__not-taken-icon">
+                        <AlertTriangle size={32} />
+                      </div>
+                      <div className="student-assessments__not-taken-content">
+                        <span className="student-assessments__not-taken-title">Pre-Assessment Not Taken</span>
+                        <span className="student-assessments__not-taken-subtitle">Assessment pending</span>
+                      </div>
                     </div>
                   )}
                   <span className="student-assessments__score-label">Pre Assessment Score</span>
@@ -349,9 +354,12 @@ const StudentAssessmentsList = () => {
                       View Responses
                     </button>
                   ) : (
-                    <span className="student-assessments__no-responses">
-                      No responses available
-                    </span>
+                    <div className="student-assessments__no-responses">
+                      <div className="student-assessments__no-responses-icon">
+                        <Eye size={20} />
+                      </div>
+                      <span className="student-assessments__no-responses-text">No responses available</span>
+                    </div>
                   )}
                 </div>
               </div>
