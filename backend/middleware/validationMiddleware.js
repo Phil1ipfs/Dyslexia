@@ -386,7 +386,7 @@ const sanitizeRequest = (req, res, next) => {
   const sanitizeObject = (obj) => {
     if (obj && typeof obj === 'object') {
       for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
           if (Array.isArray(obj[key])) {
             obj[key] = obj[key].map(item => sanitizeObject(item));
           } else if (typeof obj[key] === 'object' && obj[key] !== null) {
