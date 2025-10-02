@@ -8,7 +8,6 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
   const [preAssessmentData, setPreAssessmentData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [expandedQuestions, setExpandedQuestions] = useState({});
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
@@ -58,12 +57,6 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
     }
   };
 
-  const toggleQuestionExpansion = (questionId) => {
-    setExpandedQuestions(prev => ({
-      ...prev,
-      [questionId]: !prev[questionId]
-    }));
-  };
 
   const formatResponseTime = (time) => {
     if (!time) return 'N/A';
@@ -194,7 +187,10 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
           {correctOption && (
             <div className="user-responses__response-item">
               <span className="user-responses__response-label">Correct Answer:</span>
-              <span className="user-responses__response-value correct">
+              <span 
+                className="user-responses__response-value correct"
+                style={{ color: '#166534 !important' }}
+              >
                 {correctOption.optionText}
               </span>
             </div>
@@ -213,6 +209,7 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
                   } ${
                     option.optionId === studentAnswerOptionId ? 'selected' : ''
                   }`}
+                  style={option.isCorrect ? { color: '#166534 !important' } : {}}
                 >
                   {option.optionText}
                 </span>
@@ -506,7 +503,7 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
       <div className="user-responses__modal" onClick={(e) => e.stopPropagation()}>
         <div className="user-responses__modal-header">
           <div className="user-responses__modal-title">
-            <h2>📊 Pre Assessment Responses</h2>
+            <h2>Pre Assessment Responses</h2>
             <p>{student?.firstName} {student?.lastName} (ID: {student?.idNumber})</p>
           </div>
           <button className="user-responses__close-btn" onClick={onClose}>
@@ -554,20 +551,16 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
                 </div>
               </div>
 
-              {/* Responses List */}
+              {/* Responses List - Continuous Scrolling like Post-Assessment */}
               <div className="user-responses__list">
                 {filteredResponses.map((response, index) => {
-                  const isExpanded = expandedQuestions[response.questionId];
-                  
                   return (
                     <div 
                       key={response._id || index} 
                       className={`user-responses__response-card ${response.isCorrect ? 'correct' : 'incorrect'}`}
                     >
-                      <div 
-                        className="user-responses__response-header"
-                        onClick={() => toggleQuestionExpansion(response.questionId)}
-                      >
+                      {/* Question Header */}
+                      <div className="user-responses__response-header">
                         <div className="user-responses__response-info">
                           <div className="user-responses__category-badge" style={{ backgroundColor: getCategoryColor(response.category) }}>
                             {getCategoryIcon(response.category)}
@@ -604,28 +597,24 @@ const UserResponsesModal = ({ isOpen, onClose, student }) => {
                             <Clock size={14} />
                             <span>{formatResponseTime(response.responseTime)}</span>
                           </div>
-                          <div className="user-responses__expand-icon">
-                            {isExpanded ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </div>
                         </div>
                       </div>
 
-                      {isExpanded && (
-                        <div className="user-responses__response-details">
-                          <div className="user-responses__response-metadata">
-                            <div className="user-responses__metadata-item">
-                              <span className="user-responses__metadata-label">Answered At:</span>
-                              <span className="user-responses__metadata-value">{formatDate(response.answeredAt)}</span>
-                            </div>
-                            <div className="user-responses__metadata-item">
-                              <span className="user-responses__metadata-label">Response Time:</span>
-                              <span className="user-responses__metadata-value">{formatResponseTime(response.responseTime)}</span>
-                            </div>
+                      {/* Question Details - Always Visible */}
+                      <div className="user-responses__response-details">
+                        <div className="user-responses__response-metadata">
+                          <div className="user-responses__metadata-item">
+                            <span className="user-responses__metadata-label">Answered At:</span>
+                            <span className="user-responses__metadata-value">{formatDate(response.answeredAt)}</span>
                           </div>
-                          
-                          {renderResponseContent(response)}
+                          <div className="user-responses__metadata-item">
+                            <span className="user-responses__metadata-label">Response Time:</span>
+                            <span className="user-responses__metadata-value">{formatResponseTime(response.responseTime)}</span>
+                          </div>
                         </div>
-                      )}
+                        
+                        {renderResponseContent(response)}
+                      </div>
                     </div>
                   );
                 })}
