@@ -195,105 +195,46 @@ const getStudentCollection = async () => {
   return db.collection('users');
 };
 
-// CREATE student
+// CREATE student - SIMPLIFIED VALIDATION (frontend handles validation)
 exports.createStudent = async (req, res) => {
   try {
-    // DEBUG: Log what multer received
-    console.log('🔍 [DEBUG] req.body:', JSON.stringify(req.body, null, 2));
-    console.log('🔍 [DEBUG] req.file:', req.file);
-    console.log('🔍 [DEBUG] Content-Type:', req.headers['content-type']);
-
     const {
       idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
     } = req.body;
 
-    // Comprehensive validation
-    const validationErrors = [];
-
-    // Validate ID number
-    const idNumberResult = adminValidation.validateIdNumber(idNumber);
-    if (!idNumberResult.isValid) {
-      validationErrors.push(...idNumberResult.errors);
-    }
-
-    // Validate first name
-    const firstNameResult = adminValidation.validateName(firstName, 'First Name');
-    if (!firstNameResult.isValid) {
-      validationErrors.push(...firstNameResult.errors);
-    }
-
-    // Validate last name
-    const lastNameResult = adminValidation.validateName(lastName, 'Last Name');
-    if (!lastNameResult.isValid) {
-      validationErrors.push(...lastNameResult.errors);
-    }
-
-    // Validate middle name (optional but must be valid if provided)
-    let middleNameResult = { isValid: true, sanitized: '' };
-    if (middleName && middleName.trim()) {
-      middleNameResult = adminValidation.validateName(middleName, 'Middle Name', true);
-      if (!middleNameResult.isValid) {
-        validationErrors.push(...middleNameResult.errors);
-      }
-    }
-
-    // Validate age
-    const ageResult = adminValidation.validateAge(age);
-    if (!ageResult.isValid) {
-      validationErrors.push(...ageResult.errors);
-    }
-
-    // Validate grade level
-    const gradeLevelResult = adminValidation.validateGradeLevel(gradeLevel);
-    if (!gradeLevelResult.isValid) {
-      validationErrors.push(...gradeLevelResult.errors);
-    }
-
-    // Validate section (required)
-    const sectionResult = adminValidation.validateText(section, 'Section', true, 50);
-    if (!sectionResult.isValid) {
-      validationErrors.push(...sectionResult.errors);
-    }
-
-    // Validate address (optional)
-    const addressResult = adminValidation.validateText(address, 'Address', false, 200);
-    if (!addressResult.isValid) {
-      validationErrors.push(...addressResult.errors);
-    }
-
-    // Validate gender (basic check)
-    if (!gender || typeof gender !== 'string' || !gender.trim()) {
-      validationErrors.push('Gender is required');
-    } else {
-      const validGenders = ['Male', 'Female', 'Other'];
-      if (!validGenders.includes(gender.trim())) {
-        validationErrors.push('Gender must be Male, Female, or Other');
-      }
-    }
-
-    // If there are validation errors, return them
-    if (validationErrors.length > 0) {
-      console.log('🚨 [STUDENT ADMIN] Validation failed:', validationErrors);
+    // Minimal validation - just check required fields exist and basic sanitization
+    if (!idNumber || !firstName || !lastName || !age || !gender || !gradeLevel || !section) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        userType: 'student',
-        validationErrors: validationErrors,
-        details: 'Please fix the validation errors and try again.'
+        message: 'Missing required fields',
+        userType: 'student'
       });
     }
 
-    console.log('✅ [STUDENT ADMIN] Validation passed, proceeding with student creation...');
+    // Basic sanitization (trust frontend for detailed validation)
+    const sanitizedData = {
+      idNumber: parseInt(String(idNumber).trim(), 10),
+      firstName: String(firstName).trim(),
+      middleName: middleName ? String(middleName).trim() : '',
+      lastName: String(lastName).trim(),
+      age: parseInt(String(age), 10),
+      gender: String(gender).trim(),
+      gradeLevel: String(gradeLevel).trim(),
+      section: String(section).trim(),
+      address: address ? String(address).trim() : ''
+    };
+
+    console.log('✅ [STUDENT ADMIN] Basic validation passed, proceeding with student creation...');
 
     // Check for duplicate ID number
     const collection = await getStudentCollection();
-    const existingStudent = await collection.findOne({ idNumber: idNumberResult.sanitized });
+    const existingStudent = await collection.findOne({ idNumber: sanitizedData.idNumber });
     if (existingStudent) {
       return res.status(400).json({
         success: false,
         message: 'ID Number already exists',
         userType: 'student',
-        validationErrors: [`A student with ID number ${idNumberResult.sanitized} already exists`],
+        validationErrors: [`A student with ID number ${sanitizedData.idNumber} already exists`],
         details: 'Please use a different ID number.'
       });
     }
@@ -304,18 +245,18 @@ exports.createStudent = async (req, res) => {
       profileImageUrl = await uploadToS3(req.file, 'student-profiles');
     }
 
-    // Use sanitized data from validation
+    // Create student document using sanitized data
     const now = new Date();
     const studentDoc = {
-      idNumber: idNumberResult.sanitized,
-      firstName: firstNameResult.sanitized,
-      middleName: middleNameResult.sanitized,
-      lastName: lastNameResult.sanitized,
-      age: ageResult.sanitized,
-      gender: gender.trim(),
-      gradeLevel: gradeLevelResult.sanitized,
-      section: sectionResult.sanitized,
-      address: addressResult.sanitized,
+      idNumber: sanitizedData.idNumber,
+      firstName: sanitizedData.firstName,
+      middleName: sanitizedData.middleName,
+      lastName: sanitizedData.lastName,
+      age: sanitizedData.age,
+      gender: sanitizedData.gender,
+      gradeLevel: sanitizedData.gradeLevel,
+      section: sanitizedData.section,
+      address: sanitizedData.address,
       profileImageUrl: profileImageUrl || '',
       readingLevel: null,
       readingPercentage: null,
