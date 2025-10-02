@@ -207,6 +207,32 @@ const StudentAssessmentResults = () => {
     }
   };
 
+  // Helper function to sanitize Reading Comprehension data
+  const sanitizeReadingComprehensionData = (questionDetails) => {
+    if (!questionDetails) return null;
+
+    return {
+      ...questionDetails,
+      storyTitle: questionDetails.storyTitle ? String(questionDetails.storyTitle).trim() : null,
+      question: questionDetails.question ? String(questionDetails.question).trim() : null,
+      passages: questionDetails.passages ? questionDetails.passages.map(passage => ({
+        ...passage,
+        pageText: passage.pageText ? String(passage.pageText).trim() : '',
+        text: passage.text ? String(passage.text).trim() : '',
+        pageImage: passage.pageImage || null,
+        image: passage.image || null
+      })) : [],
+      sentenceQuestions: questionDetails.sentenceQuestions ? questionDetails.sentenceQuestions.map(sq => ({
+        ...sq,
+        questionText: sq.questionText ? String(sq.questionText).trim() : '',
+        correctAnswer: sq.correctAnswer ? String(sq.correctAnswer).trim() : '',
+        sentenceCorrectAnswer: sq.sentenceCorrectAnswer ? String(sq.sentenceCorrectAnswer).trim() : '',
+        acceptableAnswers: sq.acceptableAnswers ? sq.acceptableAnswers.map(answer => String(answer).trim()) : [],
+        sentenceAcceptableAnswer: sq.sentenceAcceptableAnswer ? sq.sentenceAcceptableAnswer.map(answer => String(answer).trim()) : []
+      })) : []
+    };
+  };
+
   // Helper function to format intervention student responses
   const formatInterventionResponse = (response, questionDetails, category) => {
     if (!response) return '';
@@ -728,10 +754,13 @@ const StudentAssessmentResults = () => {
                 displaySequence: questionDetails.displaySequence,
                 blankOptions: questionDetails.blankOptions,
                 displayWord: questionDetails.displayWord,
-                // Reading Comprehension special handling
-                storyTitle: questionDetails.storyTitle,
-                passages: questionDetails.passages || [],
-                sentenceQuestions: questionDetails.sentenceQuestions || []
+                // Reading Comprehension special handling - sanitized
+                ...sanitizeReadingComprehensionData({
+                  storyTitle: questionDetails.storyTitle,
+                  question: questionDetails.questionText,
+                  passages: questionDetails.passages || [],
+                  sentenceQuestions: questionDetails.sentenceQuestions || []
+                })
               } : null,
               groupedResponses: group.responses // Keep individual responses for detailed display
             };
@@ -758,10 +787,13 @@ const StudentAssessmentResults = () => {
                 displaySequence: questionDetails.displaySequence,
                 blankOptions: questionDetails.blankOptions,
                 displayWord: questionDetails.displayWord,
-                // Reading Comprehension special handling
-                storyTitle: questionDetails.storyTitle,
-                passages: questionDetails.passages || [],
-                sentenceQuestions: questionDetails.sentenceQuestions || []
+                // Reading Comprehension special handling - sanitized
+                ...sanitizeReadingComprehensionData({
+                  storyTitle: questionDetails.storyTitle,
+                  question: questionDetails.questionText,
+                  passages: questionDetails.passages || [],
+                  sentenceQuestions: questionDetails.sentenceQuestions || []
+                })
               } : null
             };
           });
@@ -862,9 +894,13 @@ const StudentAssessmentResults = () => {
                       options: getOptionsFromQuestion(questionDetails, category),
                       // Include choiceOptions for formatting responses
                       choiceOptions: questionDetails.choiceOptions,
-                      // Reading Comprehension special handling
-                      passages: questionDetails.passages || [],
-                      sentenceQuestions: questionDetails.sentenceQuestions || []
+                      // Reading Comprehension special handling - sanitized
+                      ...sanitizeReadingComprehensionData({
+                        storyTitle: null, // Intervention doesn't have separate story title
+                        question: questionDetails.questionText,
+                        passages: questionDetails.passages || [],
+                        sentenceQuestions: questionDetails.sentenceQuestions || []
+                      })
                     } : null,
                     // Include intervention assessment metadata
                     interventionRevision: interventionAssessment?.revisionNumber || targetRevisionNumber,
@@ -1279,9 +1315,9 @@ const StudentAssessmentResults = () => {
                                   {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails && (
                                     <>
                                       {/* Story Title */}
-                                      {response.questionDetails.storyTitle && (
+                                      {(response.questionDetails.storyTitle || response.questionDetails.question) && (
                                         <div className="student-assessment__story-title">
-                                          <strong>Story:</strong> {response.questionDetails.storyTitle}
+                                          <strong>Story:</strong> {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
                                         </div>
                                       )}
 
@@ -1291,16 +1327,16 @@ const StudentAssessmentResults = () => {
                                           <strong>Reading Passage:</strong>
                                           {response.questionDetails.passages.map((passage, passageIndex) => {
                                             const passageText = passage.pageText || passage.text || passage;
-                                            const cleanText = typeof passageText === 'string' ? passageText.trim() : '';
+                                            const cleanText = typeof passageText === 'string' ? String(passageText).trim() : '';
                                             
                                             return (
                                               <div key={passageIndex} className="student-assessment__passage">
                                                 {cleanText && (
                                                   <p className="student-assessment__passage-text">{cleanText}</p>
                                                 )}
-                                                {passage.pageImage && (
+                                                {(passage.pageImage || passage.image) && (
                                                   <img
-                                                    src={passage.pageImage}
+                                                    src={passage.pageImage || passage.image}
                                                     alt="Passage illustration"
                                                     style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
                                                   />
@@ -1316,8 +1352,10 @@ const StudentAssessmentResults = () => {
                                         <div className="student-assessment__rc-sentence-questions">
                                           <strong>Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
                                           {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
-                                            const questionText = typeof sq.questionText === 'string' ? sq.questionText.trim() : '';
-                                            const correctAnswer = typeof sq.correctAnswer === 'string' ? sq.correctAnswer.trim() : '';
+                                            const questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
+                                            const correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim() : '';
+                                            const sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim() : '';
+                                            const finalCorrectAnswer = correctAnswer || sentenceCorrectAnswer;
                                             
                                             return (
                                               <div key={sqIndex} className="student-assessment__sentence-question">
@@ -1325,12 +1363,12 @@ const StudentAssessmentResults = () => {
                                                 {questionText && (
                                                   <div className="student-assessment__sq-text">{questionText}</div>
                                                 )}
-                                                {correctAnswer && (
-                                                  <div className="student-assessment__sq-correct">Correct Answer: {correctAnswer}</div>
+                                                {finalCorrectAnswer && (
+                                                  <div className="student-assessment__sq-correct">Correct Answer: {finalCorrectAnswer}</div>
                                                 )}
-                                                {sq.acceptableAnswers && sq.acceptableAnswers.length > 0 && (
+                                                {(sq.acceptableAnswers || sq.sentenceAcceptableAnswer) && (sq.acceptableAnswers?.length > 0 || sq.sentenceAcceptableAnswer?.length > 0) && (
                                                   <div className="student-assessment__sq-options">
-                                                    Acceptable Answers: {sq.acceptableAnswers.join(', ')}
+                                                    Acceptable Answers: {(sq.acceptableAnswers || sq.sentenceAcceptableAnswer || []).map(answer => String(answer).trim()).join(', ')}
                                                   </div>
                                                 )}
                                               </div>
@@ -1487,9 +1525,9 @@ const StudentAssessmentResults = () => {
                               {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails && (
                                 <>
                                   {/* Story Title */}
-                                  {response.questionDetails.storyTitle && (
+                                  {(response.questionDetails.storyTitle || response.questionDetails.question) && (
                                     <div className="student-assessment__story-title">
-                                      <strong>Story:</strong> {response.questionDetails.storyTitle}
+                                      <strong>Story:</strong> {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
                                     </div>
                                   )}
 
@@ -1499,16 +1537,16 @@ const StudentAssessmentResults = () => {
                                       <strong>Reading Passage:</strong>
                                       {response.questionDetails.passages.map((passage, passageIndex) => {
                                         const passageText = passage.pageText || passage.text || passage;
-                                        const cleanText = typeof passageText === 'string' ? passageText.trim() : '';
+                                        const cleanText = typeof passageText === 'string' ? String(passageText).trim() : '';
                                         
                                         return (
                                           <div key={passageIndex} className="student-assessment__passage">
                                             {cleanText && (
                                               <p className="student-assessment__passage-text">{cleanText}</p>
                                             )}
-                                            {passage.pageImage && (
+                                            {(passage.pageImage || passage.image) && (
                                               <img
-                                                src={passage.pageImage}
+                                                src={passage.pageImage || passage.image}
                                                 alt="Passage illustration"
                                                 style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
                                               />
@@ -1524,8 +1562,10 @@ const StudentAssessmentResults = () => {
                                     <div className="student-assessment__rc-sentence-questions">
                                       <strong>Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
                                       {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
-                                        const questionText = typeof sq.questionText === 'string' ? sq.questionText.trim() : '';
-                                        const correctAnswer = typeof sq.correctAnswer === 'string' ? sq.correctAnswer.trim() : '';
+                                        const questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
+                                        const correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim() : '';
+                                        const sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim() : '';
+                                        const finalCorrectAnswer = correctAnswer || sentenceCorrectAnswer;
                                         
                                         return (
                                           <div key={sqIndex} className="student-assessment__sentence-question">
@@ -1533,12 +1573,12 @@ const StudentAssessmentResults = () => {
                                             {questionText && (
                                               <div className="student-assessment__sq-text">{questionText}</div>
                                             )}
-                                            {correctAnswer && (
-                                              <div className="student-assessment__sq-correct">Correct Answer: {correctAnswer}</div>
+                                            {finalCorrectAnswer && (
+                                              <div className="student-assessment__sq-correct">Correct Answer: {finalCorrectAnswer}</div>
                                             )}
-                                            {sq.acceptableAnswers && sq.acceptableAnswers.length > 0 && (
+                                            {(sq.acceptableAnswers || sq.sentenceAcceptableAnswer) && (sq.acceptableAnswers?.length > 0 || sq.sentenceAcceptableAnswer?.length > 0) && (
                                               <div className="student-assessment__sq-options">
-                                                Acceptable Answers: {sq.acceptableAnswers.join(', ')}
+                                                Acceptable Answers: {(sq.acceptableAnswers || sq.sentenceAcceptableAnswer || []).map(answer => String(answer).trim()).join(', ')}
                                               </div>
                                             )}
                                           </div>
