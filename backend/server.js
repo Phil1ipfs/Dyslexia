@@ -62,8 +62,8 @@ const requestLogger = (req, res, next) => {
 app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
-      'http://localhost:5173',
-      'http://localhost:5174',
+      'https://literexia.com',
+      'https://literexia.com',
       'http://192.168.56.1:5173',
       'http://192.168.1.4:5173',
       'https://literexia.com',
