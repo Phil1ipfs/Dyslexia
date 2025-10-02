@@ -198,6 +198,11 @@ const getStudentCollection = async () => {
 // CREATE student
 exports.createStudent = async (req, res) => {
   try {
+    // DEBUG: Log what multer received
+    console.log('🔍 [DEBUG] req.body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 [DEBUG] req.file:', req.file);
+    console.log('🔍 [DEBUG] Content-Type:', req.headers['content-type']);
+
     const {
       idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
     } = req.body;
