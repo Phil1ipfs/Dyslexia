@@ -100,47 +100,72 @@ const studentValidation = {
 
   createStudent: [
     body('idNumber')
+      .trim()
+      .notEmpty()
+      .withMessage('ID Number is required')
       .isNumeric()
       .withMessage('ID Number must be numeric')
       .isInt({ min: 1, max: 999999999 })
       .withMessage('ID Number must be a valid integer between 1 and 999999999'),
 
     body('firstName')
+      .trim()
+      .notEmpty()
+      .withMessage('First name is required')
       .isLength({ min: 1, max: 50 })
-      .withMessage('First name is required and must be less than 50 characters')
+      .withMessage('First name must be less than 50 characters')
       .matches(/^[a-zA-Z\s\-'\.]+$/)
       .withMessage('First name can only contain letters, spaces, hyphens, apostrophes, and periods'),
 
     body('lastName')
+      .trim()
+      .notEmpty()
+      .withMessage('Last name is required')
       .isLength({ min: 1, max: 50 })
-      .withMessage('Last name is required and must be less than 50 characters')
+      .withMessage('Last name must be less than 50 characters')
       .matches(/^[a-zA-Z\s\-'\.]+$/)
       .withMessage('Last name can only contain letters, spaces, hyphens, apostrophes, and periods'),
 
     body('age')
+      .trim()
+      .notEmpty()
+      .withMessage('Age is required')
       .isInt({ min: 5, max: 18 })
       .withMessage('Age must be between 5 and 18'),
 
     body('gender')
+      .trim()
+      .notEmpty()
+      .withMessage('Gender is required')
       .isIn(['Male', 'Female', 'Other'])
       .withMessage('Gender must be Male, Female, or Other'),
 
     body('gradeLevel')
+      .trim()
+      .notEmpty()
+      .withMessage('Grade level is required')
       .isIn(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'])
       .withMessage('Grade level must be between Grade 1 and Grade 6'),
 
     body('section')
+      .trim()
+      .notEmpty()
+      .withMessage('Section is required')
       .isLength({ min: 1, max: 20 })
-      .withMessage('Section is required and must be less than 20 characters')
+      .withMessage('Section must be less than 20 characters')
       .matches(/^[a-zA-Z0-9\s\-]+$/)
       .withMessage('Section can only contain letters, numbers, spaces, and hyphens'),
 
     body('address')
+      .trim()
+      .notEmpty()
+      .withMessage('Address is required')
       .isLength({ min: 1, max: 200 })
-      .withMessage('Address is required and must be less than 200 characters'),
+      .withMessage('Address must be less than 200 characters'),
 
     body('readingLevel')
       .optional()
+      .trim()
       .isIn(['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'])
       .withMessage('Invalid reading level'),
 
