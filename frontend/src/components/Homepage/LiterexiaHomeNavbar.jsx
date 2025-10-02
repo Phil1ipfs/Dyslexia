@@ -47,6 +47,20 @@ function LiterexiaHomeNavbar() {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [mobileMenuOpen]);
+
   const handleDownload = () => {
     window.open('https://drive.google.com/uc?export=download&id=12zk_OyBrbiAxArTFpwPKGRAi3hk_zw5u', '_blank');
   };
