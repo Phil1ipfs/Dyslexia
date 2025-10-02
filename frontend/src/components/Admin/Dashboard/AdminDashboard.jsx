@@ -67,14 +67,8 @@ const AdminDashboard = () => {
         if (!token) {
           throw new Error('No auth token found');
         }
+        // Backend will handle role authorization
 
-        // Try to get user data to verify admin role
-        if (user) {
-          const roles = Array.isArray(user.roles) ? user.roles : [user.roles];
-          if (!roles.includes('admin')) {
-            throw new Error('User is not authorized to view admin dashboard');
-          }
-        }
 
         const response = await fetch(`${API_BASE_URL}/admin/stats`, {
           headers: {
