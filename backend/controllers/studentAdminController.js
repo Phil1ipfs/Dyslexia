@@ -198,17 +198,9 @@ const getStudentCollection = async () => {
 // CREATE student
 exports.createStudent = async (req, res) => {
   try {
-    // Log all incoming data for debugging
-    console.log('🔍 [STUDENT ADMIN] Incoming request body:', req.body);
-    console.log('🔍 [STUDENT ADMIN] Incoming file:', req.file);
-
     const {
       idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
     } = req.body;
-
-    console.log('🔍 [STUDENT ADMIN] Create student validation starting...', {
-      idNumber, firstName, lastName, middleName, age, gradeLevel
-    });
 
     // Comprehensive validation
     const validationErrors = [];

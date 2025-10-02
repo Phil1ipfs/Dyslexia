@@ -733,12 +733,6 @@ const StudentListPage = () => {
         }
       });
 
-      // Log what's being sent
-      console.log('📤 Sending FormData to backend:');
-      for (let [key, value] of data.entries()) {
-        console.log(`  ${key}:`, value);
-      }
-
       const response = await axios.post(`${API_BASE_URL}/admin/manage/students`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -755,9 +749,6 @@ const StudentListPage = () => {
       }
     } catch (error) {
       // Handle network or other errors
-      console.error('❌ Student creation error:', error);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Validation errors:', error.response?.data?.errors);
       setValidationError(error.response?.data?.message || 'Failed to add student');
     } finally {
       setLoading(false);
