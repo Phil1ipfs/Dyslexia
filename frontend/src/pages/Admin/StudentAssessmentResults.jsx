@@ -1310,17 +1310,17 @@ const StudentAssessmentResults = () => {
                                             borderRadius: '0.5rem',
                                             border: '1px solid #e2e8f0'
                                           }}>
-                                            {response.questionDetails.passages.map((passage, passageIndex) => {
-                                              const passageText = passage.pageText || passage.text || passage;
+                                          {response.questionDetails.passages.map((passage, passageIndex) => {
+                                            const passageText = passage.pageText || passage.text || passage;
                                               const cleanText = typeof passageText === 'string' ? String(passageText).trim() : '';
-
-                                              return (
+                                            
+                                            return (
                                                 <div key={passageIndex} style={{ marginBottom: passageIndex < response.questionDetails.passages.length - 1 ? '0.75rem' : '0' }}>
                                                   {(passage.pageImage || passage.image) && (
                                                     <div style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
                                                       <img
                                                         src={passage.pageImage || passage.image}
-                                                        alt="Passage illustration"
+                                                    alt="Passage illustration"
                                                         style={{
                                                           maxWidth: '100%',
                                                           height: 'auto',
@@ -1339,10 +1339,10 @@ const StudentAssessmentResults = () => {
                                                     }}>
                                                       {cleanText}
                                                     </p>
-                                                  )}
-                                                </div>
-                                              );
-                                            })}
+                                                )}
+                                              </div>
+                                            );
+                                          })}
                                           </div>
                                         </div>
                                       )}
@@ -1359,7 +1359,7 @@ const StudentAssessmentResults = () => {
                                             Questions ({response.questionDetails.sentenceQuestions.length} questions)
                                           </h4>
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                            {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
+                                          {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
                                               // Sanitize question text - remove excessive repetition
                                               let questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
                                               const words = questionText.split(' ');
@@ -1391,8 +1391,8 @@ const StudentAssessmentResults = () => {
                                                 studentAnswer.toLowerCase() === finalCorrectAnswer.toLowerCase() ||
                                                 acceptableAnswers.some(acc => acc.toLowerCase() === studentAnswer.toLowerCase())
                                               );
-
-                                              return (
+                                            
+                                            return (
                                                 <div
                                                   key={sqIndex}
                                                   style={{
@@ -1414,7 +1414,7 @@ const StudentAssessmentResults = () => {
                                                     }}>
                                                       Q{sqIndex + 1}
                                                     </span>
-                                                    {questionText && (
+                                                {questionText && (
                                                       <p style={{ fontSize: '0.875rem', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>
                                                         {questionText}
                                                       </p>
@@ -1492,11 +1492,11 @@ const StudentAssessmentResults = () => {
                                                           </span>
                                                         ))}
                                                       </div>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              );
-                                            })}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
                                           </div>
                                         </div>
                                       )}
@@ -1512,24 +1512,24 @@ const StudentAssessmentResults = () => {
 
                               {/* Student's Answer - HIDE for Reading Comprehension since answers are shown in sentence questions */}
                               {selectedCategory?.categoryName !== 'Reading Comprehension' && (
-                                <div className="student-assessment__response-details">
-                                  <div className="student-assessment__student-answer">
-                                    <strong>Student's Answer:</strong>
-                                    <span className="student-assessment__formatted-response">
-                                      {formatMainAssessmentResponse(response.response, response.questionDetails, selectedCategory?.categoryName)}
-                                    </span>
-                                  </div>
+                              <div className="student-assessment__response-details">
+                                <div className="student-assessment__student-answer">
+                                  <strong>Student's Answer:</strong>
+                                  <span className="student-assessment__formatted-response">
+                                    {formatMainAssessmentResponse(response.response, response.questionDetails, selectedCategory?.categoryName)}
+                                  </span>
+                                </div>
                                 {response.responseTime && (
                                   <div className="student-assessment__response-time">
                                     <strong>Response Time:</strong> {response.responseTime}ms
                                   </div>
                                 )}
-                                  {(response.answeredAt) && (
-                                    <div className="student-assessment__response-date">
-                                      <strong>Answered:</strong> {formatDate(response.answeredAt)}
-                                    </div>
-                                  )}
-                                </div>
+                                {(response.answeredAt) && (
+                                  <div className="student-assessment__response-date">
+                                    <strong>Answered:</strong> {formatDate(response.answeredAt)}
+                                  </div>
+                                )}
+                              </div>
                               )}
 
                               {/* Reading Comprehension - Show response time and date separately */}
@@ -1698,17 +1698,17 @@ const StudentAssessmentResults = () => {
                                         borderRadius: '0.5rem',
                                         border: '1px solid #e2e8f0'
                                       }}>
-                                        {response.questionDetails.passages.map((passage, passageIndex) => {
-                                          const passageText = passage.pageText || passage.text || passage;
+                                      {response.questionDetails.passages.map((passage, passageIndex) => {
+                                        const passageText = passage.pageText || passage.text || passage;
                                           const cleanText = typeof passageText === 'string' ? String(passageText).trim() : '';
-
-                                          return (
+                                        
+                                        return (
                                             <div key={passageIndex} style={{ marginBottom: passageIndex < response.questionDetails.passages.length - 1 ? '0.75rem' : '0' }}>
                                               {(passage.pageImage || passage.image) && (
                                                 <div style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
                                                   <img
                                                     src={passage.pageImage || passage.image}
-                                                    alt="Passage illustration"
+                                                alt="Passage illustration"
                                                     style={{
                                                       maxWidth: '100%',
                                                       height: 'auto',
@@ -1727,10 +1727,10 @@ const StudentAssessmentResults = () => {
                                                 }}>
                                                   {cleanText}
                                                 </p>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
+                                            )}
+                                          </div>
+                                        );
+                                      })}
                                       </div>
                                     </div>
                                   )}
@@ -1747,7 +1747,7 @@ const StudentAssessmentResults = () => {
                                         Questions ({response.questionDetails.sentenceQuestions.length} questions)
                                       </h4>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                        {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
+                                      {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
                                           // Sanitize question text - remove excessive repetition
                                           let questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
                                           const words = questionText.split(' ');
@@ -1779,8 +1779,8 @@ const StudentAssessmentResults = () => {
                                             studentAnswer.toLowerCase() === finalCorrectAnswer.toLowerCase() ||
                                             acceptableAnswers.some(acc => acc.toLowerCase() === studentAnswer.toLowerCase())
                                           );
-
-                                          return (
+                                        
+                                        return (
                                             <div
                                               key={sqIndex}
                                               style={{
@@ -1802,7 +1802,7 @@ const StudentAssessmentResults = () => {
                                                 }}>
                                                   Q{sqIndex + 1}
                                                 </span>
-                                                {questionText && (
+                                            {questionText && (
                                                   <p style={{ fontSize: '0.875rem', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>
                                                     {questionText}
                                                   </p>
@@ -1880,11 +1880,11 @@ const StudentAssessmentResults = () => {
                                                       </span>
                                                     ))}
                                                   </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
                                       </div>
                                     </div>
                                   )}
@@ -1907,25 +1907,25 @@ const StudentAssessmentResults = () => {
                                     </div>
                             </div>
                           )}
-
+                          
                           {/* Student's Answer - HIDE for Reading Comprehension since answers are shown in sentence questions */}
                           {selectedCategory?.categoryName !== 'Reading Comprehension' && (
-                            <div className="student-assessment__response-details">
-                              <div className="student-assessment__student-answer">
-                                <strong>Student's Answer:</strong>
-                                      {formatInterventionResponse(response.response, response.questionDetails, selectedCategory?.categoryName) || 'No response recorded'}
-                              </div>
-                              {response.responseTime && (
-                                <div className="student-assessment__response-time">
-                                  <strong>Response Time:</strong> {response.responseTime}ms
-                                </div>
-                              )}
-                              {(response.answeredAt) && (
-                                <div className="student-assessment__response-date">
-                                  <strong>Answered:</strong> {formatDate(response.answeredAt)}
-                                </div>
-                              )}
+                          <div className="student-assessment__response-details">
+                            <div className="student-assessment__student-answer">
+                              <strong>Student's Answer:</strong>
+                                    {formatInterventionResponse(response.response, response.questionDetails, selectedCategory?.categoryName) || 'No response recorded'}
                             </div>
+                            {response.responseTime && (
+                              <div className="student-assessment__response-time">
+                                <strong>Response Time:</strong> {response.responseTime}ms
+                              </div>
+                            )}
+                            {(response.answeredAt) && (
+                              <div className="student-assessment__response-date">
+                                <strong>Answered:</strong> {formatDate(response.answeredAt)}
+                              </div>
+                            )}
+                          </div>
                           )}
 
                           {/* Reading Comprehension - Show response time and date separately */}

@@ -1,5 +1,5 @@
 // src/pages/Homepage.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "../css/Homepage.css";
 import "../css/Teachers/responsive.css";
 
@@ -37,6 +37,23 @@ import methodLion from "../assets/icons/Homepage/sealion.png";
 import starIcon from "../assets/icons/Homepage/star.png";
 
 function Homepage() {
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [clickedButton, setClickedButton] = useState(null);
+
+  // Handle platform button clicks with animation
+  const handlePlatformClick = (platform) => {
+    setClickedButton(platform);
+    
+    // Reset animation after 600ms
+    setTimeout(() => {
+      setClickedButton(null);
+    }, 600);
+    
+    // Here you would typically redirect to the actual app store
+    // For now, we'll just show a console log
+    console.log(`Downloading for ${platform}...`);
+  };
+
   // Add scroll reveal animation effect
   useEffect(() => {
     const revealElements = document.querySelectorAll('.reveal');
@@ -309,6 +326,110 @@ function Homepage() {
 
       {/* ---- FOOTER SECTION ---- */}
       <Footer />
+
+      {/* Download Modal */}
+      {isDownloadModalOpen && (
+        <div className="download-modal-overlay" onClick={() => setIsDownloadModalOpen(false)}>
+          <div className="download-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="download-modal-header">
+              <h3>Download Literexia</h3>
+              <button 
+                className="download-modal-close" 
+                onClick={() => setIsDownloadModalOpen(false)}
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="download-modal-content">
+              <div className="qr-section">
+                <p className="qr-instruction">Scan the QR code to download the app</p>
+                <div className="qr-code">
+                  {/* Placeholder QR code - replace with actual QR code image */}
+                  <div className="qr-placeholder">
+                    <div className="qr-pattern">
+                      <div className="qr-square"></div>
+                      <div className="qr-square"></div>
+                      <div className="qr-square"></div>
+                      <div className="qr-square"></div>
+                      <div className="qr-square"></div>
+                      <div className="qr-square"></div>
+                      <div className="qr-square"></div>
+                      <div className="qr-square"></div>
+                      <div className="qr-square"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="divider">
+                <span>or</span>
+              </div>
+              
+              <div className="download-platforms">
+                <div className="platform-buttons">
+                  <button 
+                    className={`platform-btn ios-btn ${clickedButton === 'ios' ? 'clicked' : ''}`}
+                    onClick={() => handlePlatformClick('ios')}
+                  >
+                    <div className="platform-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.96-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.03-3.11z"/>
+                      </svg>
+                    </div>
+                    <div className="platform-info">
+                      <div className="platform-text">Download on the</div>
+                      <div className="platform-name">App Store</div>
+                    </div>
+                    <div className="click-ripple"></div>
+                  </button>
+                  
+                  <button 
+                    className={`platform-btn android-btn ${clickedButton === 'android' ? 'clicked' : ''}`}
+                    onClick={() => handlePlatformClick('android')}
+                  >
+                    <div className="platform-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.1779 13.8533 7.8508 12 7.8508s-3.5902.3271-5.1367.5357L4.841 4.8837a.416.416 0 00-.5676-.1521.416.416 0 00-.1521.5676l1.9973 3.4592C2.6889 10.1867.3432 12.6589 0 15.7617h24c-.3432-3.1028-2.6889-5.575-5.1185-6.4403"/>
+                      </svg>
+                    </div>
+                    <div className="platform-info">
+                      <div className="platform-text">GET IT ON</div>
+                      <div className="platform-name">Google Play</div>
+                    </div>
+                    <div className="click-ripple"></div>
+                  </button>
+                </div>
+                
+                <div className="download-features">
+                  <div className="feature-item">
+                    <div className="feature-icon">📱</div>
+                    <span>Mobile & Web</span>
+                  </div>
+                  <div className="feature-item">
+                    <div className="feature-icon">🎯</div>
+                    <span>Dyslexia-Friendly</span>
+                  </div>
+                  <div className="feature-item">
+                    <div className="feature-icon">🇵🇭</div>
+                    <span>Filipino Language</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="download-modal-footer">
+              <button 
+                className="download-modal-close-btn" 
+                onClick={() => setIsDownloadModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
