@@ -2,11 +2,11 @@ const rateLimit = require('express-rate-limit');
 
 // Rate limiter for login attempts
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  windowMs: 5 * 1000, // 5 seconds
+  max: 10, // limit each IP to 10 requests per 5 seconds
   message: {
-    error: 'Too many login attempts from this IP, please try again after 15 minutes',
-    retryAfter: '15 minutes'
+    error: 'Too many login attempts from this IP, please try again after 5 seconds',
+    retryAfter: '5 seconds'
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -20,8 +20,8 @@ const loginLimiter = rateLimit({
   handler: (req, res) => {
     console.warn(`[SECURITY] Rate limit exceeded for IP: ${req.ip}, path: ${req.path}`);
     res.status(429).json({
-      error: 'Too many login attempts from this IP, please try again after 15 minutes',
-      retryAfter: '15 minutes',
+      error: 'Too many login attempts from this IP, please try again after 5 seconds',
+      retryAfter: '5 seconds',
       code: 'RATE_LIMIT_EXCEEDED'
     });
   }
@@ -29,11 +29,11 @@ const loginLimiter = rateLimit({
 
 // Aggressive rate limiter for repeated failed attempts from same IP
 const aggressiveLoginLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // limit each IP to 10 requests per hour
+  windowMs: 5 * 1000, // 5 seconds
+  max: 10, // limit each IP to 10 requests per 5 seconds
   message: {
-    error: 'Too many failed login attempts from this IP, please try again after 1 hour',
-    retryAfter: '1 hour'
+    error: 'Too many failed login attempts from this IP, please try again after 5 seconds',
+    retryAfter: '5 seconds'
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -41,8 +41,8 @@ const aggressiveLoginLimiter = rateLimit({
   handler: (req, res) => {
     console.warn(`[SECURITY] Aggressive rate limit exceeded for IP: ${req.ip}, path: ${req.path}`);
     res.status(429).json({
-      error: 'Too many failed login attempts from this IP, please try again after 1 hour',
-      retryAfter: '1 hour',
+      error: 'Too many failed login attempts from this IP, please try again after 5 seconds',
+      retryAfter: '5 seconds',
       code: 'AGGRESSIVE_RATE_LIMIT_EXCEEDED'
     });
   }
