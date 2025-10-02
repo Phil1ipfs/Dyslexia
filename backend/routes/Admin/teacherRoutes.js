@@ -158,8 +158,8 @@ router.put('/teachers/:id', upload.single('profileImage'), teacherProfileControl
 // Delete teacher (DELETE)
 router.delete('/teachers/:id', teacherProfileController.deleteTeacher);
 
-// Add new student (Create) - Controller has comprehensive validation, no need for express-validator middleware
-router.post('/students', upload.single('profileImage'), sanitizeRequest, studentAdminController.createStudent);
+// Add new student (Create) - Temporarily bypass sanitizeRequest to test if it's corrupting multipart data
+router.post('/students', upload.single('profileImage'), studentAdminController.createStudent);
 
 // Update student (PUT)
 router.put('/students/:id', upload.single('profileImage'), validateParams.id, sanitizeRequest, studentAdminController.updateStudent);
