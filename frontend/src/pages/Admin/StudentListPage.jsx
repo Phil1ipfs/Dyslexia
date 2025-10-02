@@ -705,15 +705,17 @@ const StudentListPage = () => {
 
       // Client-side validation check before sending to backend
       const requiredFields = ['idNumber', 'firstName', 'lastName', 'age', 'gender', 'gradeLevel', 'section', 'address'];
+      const missingFields = [];
       for (const field of requiredFields) {
         if (!formData[field] || formData[field].toString().trim() === '') {
-          // This case should ideally be caught by handleFinalSubmit validation,
-          // but adding a safeguard here before the API call.
-          console.error(`Validation failed: ${field} is required.`);
-          setValidationError(`${getFieldLabel(field)} is required`);
-          setIsLoading(false);
-          return;
+          missingFields.push(getFieldLabel(field));
         }
+      }
+
+      if (missingFields.length > 0) {
+        setValidationError(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+        setIsLoading(false);
+        return;
       }
 
       const data = new FormData();
