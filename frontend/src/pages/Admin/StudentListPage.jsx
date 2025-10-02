@@ -725,19 +725,19 @@ const StudentListPage = () => {
           return;
         }
 
-        // Always append required fields (even if empty) so backend validation can report proper errors
+        // Always append required fields with proper conversion to string
         if (requiredFields.includes(key)) {
-          data.append(key, value || ''); // Convert null/undefined to empty string
+          // Convert to string, handling null/undefined as empty string
+          const stringValue = (value === null || value === undefined) ? '' : String(value);
+          data.append(key, stringValue);
         }
         // For non-required fields, only append if they have a value
         else if (value !== undefined && value !== null && value !== '') {
-          data.append(key, value);
+          data.append(key, String(value));
         }
       });
 
-      const response = await axios.post(`${API_BASE_URL}/admin/manage/students`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await axios.post(`${API_BASE_URL}/admin/manage/students`, data);
       if (response.data.success) {
         // Assuming the backend returns the new student profile
         setStudents([...students, response.data.data.studentProfile]);
