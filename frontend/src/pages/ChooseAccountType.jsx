@@ -23,8 +23,7 @@ const ChooseAccountType = () => {
   useEffect(() => {
     const fetchRoleTypes = async () => {
       try {
-        const BASE = import.meta.env.VITE_API_BASE_URL ||
-                    (import.meta.env.DEV ? 'https://api.literexia.com/api' : '');
+        const BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.literexia.com/api';
 
         // Try to fetch role definitions from API
         const response = await fetch(`${BASE}/roles`, {
