@@ -1,12 +1,9 @@
 .footer-section {
   width: 100%;
   position: relative;
-  color: #fff;             
+  color: #fff;
   font-family: 'Atkinson Hyperlegible', sans-serif;
-  background-image: url("../../assets/images/Homepage/Group 4079.png"); 
-  background-repeat: no-repeat;
-  background-size: 100% auto; 
-  background-position: top center;
+  background-color: #1C2B4E;
   padding: 2rem 8%;
   box-sizing: border-box;
 }

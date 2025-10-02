@@ -12,11 +12,11 @@ import heroCloud1 from "../assets/images/Homepage/hero-clouds.png";
 import heroCloud2 from "../assets/images/Homepage/hero-clouds2.png";
 import heroCloud3 from "../assets/images/Homepage/hero-clouds3.png";
 import heroPenguin from "../assets/images/Homepage/hero-penguin.png";
-import heroImage from "../assets/images/Homepage/Group 4076.png";
-import qrCodeImage from "../assets/images/android.PNG";
+import qrCodeAndroid from "../assets/images/android.PNG";
+import qrCodeIOS from "../assets/images/iOS.PNG";
 
 // About section assets
-import phones from "../assets/images/Homepage/phone.png";
+import phones from "../assets/images/Homepage/phone.svg";
 
 // Features section assets
 import phoneIcon from "../assets/icons/Homepage/feature-phone.png";
@@ -40,6 +40,7 @@ import starIcon from "../assets/icons/Homepage/star.png";
 function Homepage() {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [clickedButton, setClickedButton] = useState(null);
+  const [currentQRPlatform, setCurrentQRPlatform] = useState('android'); // 'android' or 'ios'
 
   // Handle platform button clicks with animation
   const handlePlatformClick = (platform) => {
@@ -103,7 +104,6 @@ function Homepage() {
       <section
         className="hero-section"
         id="home"
-        style={{ backgroundImage: `url(${heroImage})` }}
       >
         {/* 1) Animated clouds and penguin container */}
         <div className="hero-animations">
@@ -347,12 +347,29 @@ function Homepage() {
             <div className="download-modal-content">
               <div className="qr-section">
                 <p className="qr-instruction">Scan the QR code to download the app</p>
-                <div className="qr-code">
-                  <img
-                    src={qrCodeImage}
-                    alt="QR Code to download Literexia app"
-                    className="qr-code-image"
-                  />
+                <div className="qr-code-container">
+                  <button
+                    className="qr-nav-btn qr-prev-btn"
+                    onClick={() => setCurrentQRPlatform(currentQRPlatform === 'android' ? 'ios' : 'android')}
+                    aria-label="Previous QR Code"
+                  >
+                    ‹
+                  </button>
+                  <div className="qr-code">
+                    <img
+                      src={currentQRPlatform === 'android' ? qrCodeAndroid : qrCodeIOS}
+                      alt={`QR Code to download Literexia app for ${currentQRPlatform === 'android' ? 'Android' : 'iOS'}`}
+                      className="qr-code-image"
+                    />
+                    <p className="qr-platform-label">{currentQRPlatform === 'android' ? 'Android' : 'iOS'}</p>
+                  </div>
+                  <button
+                    className="qr-nav-btn qr-next-btn"
+                    onClick={() => setCurrentQRPlatform(currentQRPlatform === 'android' ? 'ios' : 'android')}
+                    aria-label="Next QR Code"
+                  >
+                    ›
+                  </button>
                 </div>
               </div>
               
@@ -373,7 +390,7 @@ function Homepage() {
                     </div>
                     <div className="platform-info">
                       <div className="platform-text">Download on the</div>
-                      <div className="platform-name">App Store</div>
+                      <div className="platform-name">iOS</div>
                     </div>
                     <div className="click-ripple"></div>
                   </button>
@@ -405,7 +422,17 @@ function Homepage() {
                     <span>Dyslexia-Friendly</span>
                   </div>
                   <div className="feature-item">
-                    <div className="feature-icon">🇵🇭</div>
+                    <div className="feature-icon">
+                      <svg width="24" height="24" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="#0038A8" d="M32 5H4a4 4 0 0 0-4 4v9h36V9a4 4 0 0 0-4-4z"/>
+                        <path fill="#CE1126" d="M4 31h28a4 4 0 0 0 4-4v-9H0v9a4 4 0 0 0 4 4z"/>
+                        <path fill="#FFF" d="M13.5 18L0 27V9l13.5 9z"/>
+                        <path fill="#FCD116" d="m6.527 11.643.439 1.351h1.421l-1.15.836.439 1.351-1.149-.835-1.15.835.439-1.351-1.149-.836h1.421l.439-1.351zm6 6 .439 1.351h1.421l-1.15.836.439 1.351-1.149-.835-1.15.835.439-1.351-1.149-.836h1.421l.439-1.351zm-6 6 .439 1.351h1.421l-1.15.836.439 1.351-1.149-.835-1.15.835.439-1.351-1.149-.836h1.421l.439-1.351z"/>
+                        <circle fill="#FCD116" cx="6.527" cy="11.643" r=".5"/>
+                        <circle fill="#FCD116" cx="12.527" cy="17.643" r=".5"/>
+                        <circle fill="#FCD116" cx="6.527" cy="23.643" r=".5"/>
+                      </svg>
+                    </div>
                     <span>Filipino Language</span>
                   </div>
                 </div>

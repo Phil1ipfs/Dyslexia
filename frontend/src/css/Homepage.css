@@ -20,17 +20,14 @@ body {
 /* --------HERO Section------ */
 
 .hero-section {
-  height: 135vh;
+  min-height: 60vh;
   width: 100vw;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
   position: relative;
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
   padding: 4rem 0 0 0;
-  background-color: transparent;
+  background-color: #1C2B4E;
 }
 
 .hero-content {
@@ -54,7 +51,7 @@ body {
   line-height: 1.8;
   margin-bottom: 1.8rem;
   margin-top: 2.9rem;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
   max-width: 580px;
 }
 
@@ -66,7 +63,7 @@ body {
   border-radius: 12px;
   font-size: 1.2rem;
   font-weight: 600;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -155,23 +152,30 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   color: #1f2937;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .download-modal-close {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 2rem;
   color: #6b7280;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .download-modal-close:hover {
   background: #f3f4f6;
   color: #374151;
+  transform: rotate(90deg);
 }
 
 .download-modal-content {
@@ -199,13 +203,22 @@ body {
   font-size: 1rem;
   color: #6b7280;
   margin-bottom: 1.5rem;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
+}
+
+.qr-code-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .qr-code {
   display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .qr-code-image {
@@ -216,6 +229,41 @@ body {
   padding: 10px;
   background: white;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.qr-platform-label {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #3B4F81;
+  font-family: 'Poppins', sans-serif;
+}
+
+.qr-nav-btn {
+  background: grey;
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.3);
+}
+
+.qr-nav-btn:hover {
+  background: #2d3d63;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.4);
+}
+
+.qr-nav-btn:active {
+  transform: scale(0.95);
 }
 
 .qr-placeholder {
@@ -292,7 +340,7 @@ body {
   padding: 0 1rem;
   color: #6b7280;
   font-size: 0.875rem;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .download-direct-btn {
@@ -303,7 +351,7 @@ body {
   border-radius: 12px;
   font-size: 1rem;
   font-weight: 600;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -513,14 +561,14 @@ body {
   color: #6b7280;
   font-weight: 500;
   margin-bottom: 0.25rem;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .platform-name {
   font-size: 1.1rem;
   font-weight: 700;
   color: #1f2937;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* Download Features */
@@ -579,12 +627,13 @@ body {
   font-weight: 600;
   color: #374151;
   text-align: center;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .download-modal-footer {
-  padding: 1rem 2rem 2rem 2rem;
+  padding: 0rem 2rem 0.5rem 2rem;
   text-align: center;
+  margin-top: -1rem;
 }
 
 .download-modal-close-btn {
@@ -595,7 +644,7 @@ body {
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 500;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -622,14 +671,20 @@ body {
   .hero-content h2 {
     font-size: 3.2rem;
   }
-  
+
   .hero-content p {
     font-size: 1.3rem;
   }
-  
+
   .hero-download-btn {
     font-size: 1.1rem;
     padding: 1rem 2rem;
+  }
+
+  /* Hide penguin and clouds on tablet and mobile */
+  .hero-penguin,
+  .cloud {
+    display: none;
   }
 }
 
@@ -649,22 +704,154 @@ body {
 }
 
 /* Responsive Design for Modal */
+@media (max-width: 768px) {
+  .download-modal {
+    max-width: 90%;
+    margin: 1rem;
+  }
+
+  .qr-code-image {
+    width: 200px;
+    height: 200px;
+  }
+
+  .qr-code-container {
+    gap: 0.75rem;
+  }
+
+  .qr-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.25rem;
+  }
+
+  .platform-btn {
+    padding: 0.875rem 1.5rem;
+  }
+
+  .hero-download-btn {
+    padding: 12px 28px;
+    font-size: 1rem;
+  }
+}
+
 @media (max-width: 480px) {
   .download-modal {
     margin: 0.5rem;
     max-width: calc(100% - 1rem);
   }
-  
+
   .download-modal-header,
   .download-modal-content,
   .download-modal-footer {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
-  
+
+  .download-modal-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .qr-code-image {
+    width: 180px;
+    height: 180px;
+  }
+
+  .qr-code-container {
+    gap: 0.5rem;
+  }
+
+  .qr-nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+  }
+
   .qr-placeholder {
     width: 150px;
     height: 150px;
+  }
+
+  .qr-instruction {
+    font-size: 0.9rem;
+  }
+
+  .qr-platform-label {
+    font-size: 0.75rem;
+  }
+
+  .platform-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .platform-name {
+    font-size: 1rem;
+  }
+
+  .platform-text {
+    font-size: 0.65rem;
+  }
+
+  .hero-download-btn {
+    padding: 10px 24px;
+    font-size: 0.95rem;
+  }
+
+  .hero-download-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Extra small devices (320px and down) */
+@media (max-width: 360px) {
+  .download-modal {
+    margin: 0.25rem;
+    max-width: calc(100% - 0.5rem);
+  }
+
+  .qr-code-image {
+    width: 160px;
+    height: 160px;
+  }
+
+  .qr-code-container {
+    gap: 0.35rem;
+  }
+
+  .qr-nav-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+  }
+
+  .download-modal-header,
+  .download-modal-content,
+  .download-modal-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .download-modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .qr-instruction {
+    font-size: 0.85rem;
+  }
+
+  .platform-buttons {
+    gap: 0.5rem;
+  }
+
+  .platform-btn {
+    padding: 0.65rem 0.875rem;
+  }
+
+  .hero-download-btn {
+    padding: 8px 20px;
+    font-size: 0.9rem;
   }
 }
 
@@ -684,7 +871,7 @@ body {
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
   margin-top: 1.5rem;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .hero-download-btn:hover {
@@ -790,68 +977,63 @@ body {
   background-color: #fff;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding: 2rem 9% 2rem;
+  align-items: center;
+  padding: 12rem 9% 14rem;
   box-sizing: border-box;
   position: relative;
   z-index: 2;
+  min-height: 130vh;
 }
 
 .about-container {
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  max-width: 1100px;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
   flex-wrap: wrap;
   width: 100%;
+  gap: 4rem;
 }
 
 .about-image {
   max-width: 550px;
-  width: 90%;
-  height: 550px;
+  width: 45%;
+  height: auto;
   object-fit: contain;
   display: block;
-  position: relative;
-  top: -70px;
 }
 
 .about-text {
   flex: 1;
-  min-width: 280px;
-  position: relative;
-  top: -10px;
-  font-family: 'Atkinson Hyperlegible', sans-serif; 
+  min-width: 450px;
+  font-family: 'Poppins', sans-serif;
 }
 
 .about-heading {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
   color: #2a3b73;
+  line-height: 1.2;
 }
 
 .about-description {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #2a2a2a;
-  line-height: 1.6;
-  text-align: justify;
+  line-height: 1.8;
 }
 
 /* ----FEATURES SECTION ------ */
 
 .features-section {
-  background-image: url('../assets/images/Homepage/background-2.png');
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  background-position: top center;
+  background-color: #79C2FB;
   width: 100%;
-  min-height: 155vh;
+  min-height: 140vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
-  padding: 1rem 1rem 2rem;
+  font-family: 'Poppins', sans-serif;
+  padding: 8rem 1rem 12rem;
 }
 
 .features-heading {
@@ -867,10 +1049,12 @@ body {
 .features-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 3rem 6rem;
-  max-width: 1000px;
+  gap: 4rem 8rem;
+  max-width: 1200px;
   width: 100%;
   text-align: center;
+  margin: 0 auto;
+  padding: 0 2rem;
 }
 
 .feature-card {
@@ -878,7 +1062,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   transition: transform 0.3s ease, filter 0.3s ease;
+  padding: 2rem 1.5rem;
 }
 
 .feature-card:hover {
@@ -903,14 +1089,17 @@ body {
 }
 
 .feature-card p {
-  font-size: 1.2rem;
-  line-height: 1.6;
-  max-width: 450px;
+  font-size: 1.15rem;
+  line-height: 1.7;
+  max-width: 500px;
+  text-align: center;
+  margin: 0 auto;
 }
 
 .bear-mascot {
   width: 190px;
-  margin-top: -2rem;
+  margin-top: 3rem;
+  margin-bottom: 2rem;
 }
 
 @media screen and (max-width: 768px) {
@@ -939,87 +1128,68 @@ body {
   background-color: #fff;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding: 0.2rem 6% 0.1rem; 
+  align-items: center;
+  padding: 12rem 6% 14rem;
   box-sizing: border-box;
   position: relative;
   z-index: 2;
+  min-height: 130vh;
 }
 
 .dyslexia-container {
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  max-width: 900;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
   flex-wrap: wrap;
-  gap: 2rem;
+  gap: 4rem;
   width: 100%;
 }
 
 .dyslexia-image {
-  max-width: 700px;
-  width: 100%;
+  max-width: 550px;
+  width: 80%;
   height: auto;
   object-fit: contain;
   display: block;
-  position: relative;
-  top: -100px;
+  margin: 0 auto;
 }
 
 .dyslexia-text {
   flex: 1;
-  min-width: 300px;
-  position: relative;
-  top: 60px;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
-  padding-top: 0;
+  min-width: 450px;
+  font-family: 'Poppins', sans-serif;
 }
 
 .dyslexia-heading {
-  font-size: 2.9rem;
+  font-size: 2.8rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
   color: #2a3b73;
+  line-height: 1.2;
 }
 
 .dyslexia-description {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #2a2a2a;
-  line-height: 1.6;
-  text-align: justify;
+  line-height: 1.8;
 }
 
 /* ----- TEACHING METHODOLOGY ----- */
 
 .teaching-methodology-section {
-  background-image: url('../assets/images/Homepage/Group 4078.png');
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  background-position: top 0 left -10%;
+  background-color: #1C2B4E;
   width: 100%;
-  min-height: 175vh;
+  min-height: 140vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 4rem 2rem 1.2rem;
+  padding: 8rem 2rem 10rem;
   box-sizing: border-box;
   overflow-x: hidden;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-family: 'Poppins', sans-serif;
   position: relative;
-}
-
-.teaching-methodology-section::before {
-  content: '';
-  position: absolute;
-  top: -50px;
-  left: 0;
-  width: 100%;
-  height: 100px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%231e3a8a' fill-opacity='0.8'/%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%233b82f6' fill-opacity='0.6'/%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%2360a5fa' fill-opacity='0.4'/%3E%3C/svg%3E");
-  background-size: cover;
-  background-repeat: no-repeat;
-  z-index: -1;
 }
 
 .teaching-methodology-section .teaching-image {
@@ -1087,12 +1257,13 @@ body {
 
 .why-literexia-section {
   width: 100vw;
-  background-color: #fff; 
+  min-height: 130vh;
+  background-color: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 1rem 9%;
+  justify-content: center;
+  padding: 12rem 9% 14rem;
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -1101,9 +1272,9 @@ body {
 .why-literexia-heading {
   font-size: 2.5rem;
   font-weight: 700;
-  margin-bottom: 2rem;
-  margin-top: -5rem;
-  color: #2a3b73; 
+  margin-bottom: 3rem;
+  margin-top: 0;
+  color: #2a3b73;
   font-family: 'Atkinson Hyperlegible', sans-serif;
   text-align: center;
 }
@@ -1119,12 +1290,12 @@ body {
 }
 
 .why-card {
-  background-color: transparent; 
+  background-color: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: #2a3b73; 
-  font-family: 'Atkinson Hyperlegible', sans-serif;
+  color: #2a3b73;
+  font-family: 'Poppins', sans-serif;
   padding: 1rem;
   border-radius: 8px;
   transition: transform 0.3s ease;

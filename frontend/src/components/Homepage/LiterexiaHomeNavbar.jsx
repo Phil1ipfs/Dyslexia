@@ -52,45 +52,55 @@ function LiterexiaHomeNavbar() {
   };
 
   return (
-    <nav className={`literexia-home-navbar ${scrolled ? "scrolled" : ""}`}>
-      <div className="literexia-home-brand">
-        <img src={logo} alt="Literexia" className="literexia-home-logo" />
-      </div>
-      
-      <ul className={`literexia-home-menu ${mobileMenuOpen ? "active" : ""}`}>
-        {["home", "about", "features", "methodology", "why Choose"].map((section) => (
-          <li key={section}>
-            <button 
-              onClick={() => scrollToSection(section)}
-              className={`literexia-home-menuitem ${activeSection === section ? "active" : ""}`}
-              aria-label={`Go to ${section} section`}
+    <>
+      {/* Backdrop overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="literexia-home-overlay"
+          onClick={toggleMobileMenu}
+        ></div>
+      )}
+
+      <nav className={`literexia-home-navbar ${scrolled ? "scrolled" : ""}`}>
+        <div className="literexia-home-brand">
+          <img src={logo} alt="Literexia" className="literexia-home-logo" />
+        </div>
+
+        <ul className={`literexia-home-menu ${mobileMenuOpen ? "active" : ""}`}>
+          {["home", "about", "features", "methodology", "why Choose"].map((section) => (
+            <li key={section}>
+              <button
+                onClick={() => scrollToSection(section)}
+                className={`literexia-home-menuitem ${activeSection === section ? "active" : ""}`}
+                aria-label={`Go to ${section} section`}
+              >
+                {section.charAt(0).toUpperCase() + section.slice(1)}
+                <span className="literexia-home-menuline"></span>
+              </button>
+            </li>
+          ))}
+          <li>
+            <button
+              className="literexia-home-loginbtn"
+              onClick={handleLoginClick}
+              aria-label="Login to your account"
             >
-              {section.charAt(0).toUpperCase() + section.slice(1)}
-              <span className="literexia-home-menuline"></span>
+              Login Account
             </button>
           </li>
-        ))}
-        <li>
-          <button 
-            className="literexia-home-loginbtn"
-            onClick={handleLoginClick}
-            aria-label="Login to your account"
-          >
-            Login Account
-          </button>
-        </li>
-      </ul>
-      
-      <button 
-        className={`literexia-home-mobilebtn ${mobileMenuOpen ? "active" : ""}`} 
-        aria-label="Toggle menu"
-        onClick={toggleMobileMenu}
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-    </nav>
+        </ul>
+
+        <button
+          className={`literexia-home-mobilebtn ${mobileMenuOpen ? "active" : ""}`}
+          aria-label="Toggle menu"
+          onClick={toggleMobileMenu}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </nav>
+    </>
   );
 }
 

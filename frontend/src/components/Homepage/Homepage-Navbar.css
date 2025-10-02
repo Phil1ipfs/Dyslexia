@@ -18,7 +18,6 @@
 
 .literexia-home-navbar.scrolled {
   padding: 0.8rem 8% !important;
-  background-color: rgba(59, 79, 129, 0.95) !important;
   backdrop-filter: blur(8px) !important;
   box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
 }
@@ -178,10 +177,11 @@
   border: none !important;
   cursor: pointer !important;
   flex-direction: column !important;
-  justify-content: space-between !important;
-  height: 20px !important;
-  width: 28px !important;
+  justify-content: space-around !important;
+  height: 24px !important;
+  width: 30px !important;
   padding: 0 !important;
+  position: relative !important;
 }
 
 .literexia-home-mobilebtn span {
@@ -191,10 +191,26 @@
   background-color: white !important;
   border-radius: 3px !important;
   transition: all 0.3s ease !important;
+  position: absolute !important;
+  left: 0 !important;
+}
+
+.literexia-home-mobilebtn span:nth-child(1) {
+  top: 0 !important;
+}
+
+.literexia-home-mobilebtn span:nth-child(2) {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.literexia-home-mobilebtn span:nth-child(3) {
+  bottom: 0 !important;
 }
 
 .literexia-home-mobilebtn.active span:nth-child(1) {
-  transform: translateY(8px) rotate(45deg) !important;
+  top: 50% !important;
+  transform: translateY(-50%) rotate(45deg) !important;
 }
 
 .literexia-home-mobilebtn.active span:nth-child(2) {
@@ -202,7 +218,29 @@
 }
 
 .literexia-home-mobilebtn.active span:nth-child(3) {
-  transform: translateY(-8px) rotate(-45deg) !important;
+  bottom: 50% !important;
+  transform: translateY(50%) rotate(-45deg) !important;
+}
+
+/* Overlay backdrop for mobile sidebar */
+.literexia-home-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  z-index: 998 !important;
+  animation: fadeIn 0.3s ease !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Responsive styles */
@@ -247,30 +285,37 @@
 
   .literexia-home-menu {
     position: fixed !important;
-    top: 70px !important;
-    left: 0 !important;
-    width: 100% !important;
-    background-color: #3B4F81 !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    background-color: #1C2E56 !important;
     flex-direction: column !important;
-    align-items: center !important;
-    padding: 1.5rem 0 !important;
-    gap: 1.5rem !important;
-    transform: translateY(-150%) !important;
-    opacity: 0 !important;
+    align-items: flex-start !important;
+    padding: 6rem 2rem 2rem !important;
+    gap: 2rem !important;
+    transform: translateX(100%) !important;
     transition: all 0.4s ease !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    z-index: 999 !important;
+    box-shadow: -4px 0 12px rgba(0,0,0,0.3) !important;
+    z-index: 1000 !important;
+    overflow-y: auto !important;
   }
 
   .literexia-home-menu.active {
-    transform: translateY(0) !important;
+    transform: translateX(0) !important;
     opacity: 1 !important;
-    background-color: #3B4F81 !important;
+  }
+
+  .literexia-home-menu .literexia-home-menuitem {
+    width: 100% !important;
+    text-align: left !important;
+    padding: 0.8rem 0 !important;
+    font-size: 1.1rem !important;
   }
 
   .literexia-home-loginbtn {
-    margin: 0.5rem 0 0 0 !important;
-    width: 80% !important;
+    margin: 1rem 0 0 0 !important;
+    width: 100% !important;
     text-align: center !important;
   }
 }
