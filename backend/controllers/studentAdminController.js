@@ -195,46 +195,118 @@ const getStudentCollection = async () => {
   return db.collection('users');
 };
 
-// CREATE student - SIMPLIFIED VALIDATION (frontend handles validation)
+// CREATE student - COMPREHENSIVE VALIDATION
 exports.createStudent = async (req, res) => {
   try {
     const {
       idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
     } = req.body;
 
-    // Minimal validation - just check required fields exist and basic sanitization
-    if (!idNumber || !firstName || !lastName || !age || !gender || !gradeLevel || !section) {
+    console.log('🔍 [STUDENT ADMIN] Create student validation starting...', {
+      idNumber, firstName, lastName, middleName, age, gradeLevel
+    });
+
+    // Comprehensive validation
+    const validationErrors = [];
+
+    // Validate ID number
+    const idNumberResult = adminValidation.validateIdNumber(idNumber);
+    if (!idNumberResult.isValid) {
+      validationErrors.push(...idNumberResult.errors);
+    }
+
+    // Validate first name
+    const firstNameResult = adminValidation.validateName(firstName, 'First Name');
+    if (!firstNameResult.isValid) {
+      validationErrors.push(...firstNameResult.errors);
+    }
+
+    // Validate last name
+    const lastNameResult = adminValidation.validateName(lastName, 'Last Name');
+    if (!lastNameResult.isValid) {
+      validationErrors.push(...lastNameResult.errors);
+    }
+
+    // Validate middle name (optional but must be valid if provided)
+    let middleNameResult = { isValid: true, sanitized: '' };
+    if (middleName && middleName.trim()) {
+      middleNameResult = adminValidation.validateName(middleName, 'Middle Name', true);
+      if (!middleNameResult.isValid) {
+        validationErrors.push(...middleNameResult.errors);
+      }
+    }
+
+    // Validate age
+    const ageResult = adminValidation.validateAge(age);
+    if (!ageResult.isValid) {
+      validationErrors.push(...ageResult.errors);
+    }
+
+    // Validate grade level
+    const gradeLevelResult = adminValidation.validateGradeLevel(gradeLevel);
+    if (!gradeLevelResult.isValid) {
+      validationErrors.push(...gradeLevelResult.errors);
+    }
+
+    // Validate section (required)
+    const sectionResult = adminValidation.validateText(section, 'Section', true, 50);
+    if (!sectionResult.isValid) {
+      validationErrors.push(...sectionResult.errors);
+    }
+
+    // Validate address (optional)
+    const addressResult = adminValidation.validateText(address, 'Address', false, 200);
+    if (!addressResult.isValid) {
+      validationErrors.push(...addressResult.errors);
+    }
+
+    // Validate gender (basic check)
+    if (!gender || typeof gender !== 'string' || !gender.trim()) {
+      validationErrors.push('Gender is required');
+    } else {
+      const validGenders = ['Male', 'Female', 'Other'];
+      if (!validGenders.includes(gender.trim())) {
+        validationErrors.push('Gender must be Male, Female, or Other');
+      }
+    }
+
+    // If there are validation errors, return them
+    if (validationErrors.length > 0) {
+      console.log('🚨 [STUDENT ADMIN] Create validation failed:', validationErrors);
+      console.log('🚨 [STUDENT ADMIN] Received data:', JSON.stringify({
+        idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
+      }, null, 2));
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields',
-        userType: 'student'
+        message: 'Validation failed',
+        userType: 'student',
+        validationErrors: validationErrors,
+        receivedData: {
+          idNumber: idNumber,
+          firstName: firstName,
+          middleName: middleName,
+          lastName: lastName,
+          age: age,
+          gender: gender,
+          gradeLevel: gradeLevel,
+          section: section,
+          address: address
+        },
+        details: 'Please fix the validation errors and try again.'
       });
     }
 
-    // Basic sanitization (trust frontend for detailed validation)
-    const sanitizedData = {
-      idNumber: parseInt(String(idNumber).trim(), 10),
-      firstName: String(firstName).trim(),
-      middleName: middleName ? String(middleName).trim() : '',
-      lastName: String(lastName).trim(),
-      age: parseInt(String(age), 10),
-      gender: String(gender).trim(),
-      gradeLevel: String(gradeLevel).trim(),
-      section: String(section).trim(),
-      address: address ? String(address).trim() : ''
-    };
-
-    console.log('✅ [STUDENT ADMIN] Basic validation passed, proceeding with student creation...');
+    console.log('✅ [STUDENT ADMIN] Create validation passed, proceeding...');
 
     // Check for duplicate ID number
     const collection = await getStudentCollection();
-    const existingStudent = await collection.findOne({ idNumber: sanitizedData.idNumber });
+    const existingStudent = await collection.findOne({ idNumber: idNumberResult.sanitized });
     if (existingStudent) {
       return res.status(400).json({
         success: false,
         message: 'ID Number already exists',
         userType: 'student',
-        validationErrors: [`A student with ID number ${sanitizedData.idNumber} already exists`],
+        validationErrors: [`A student with ID number ${idNumberResult.sanitized} already exists`],
         details: 'Please use a different ID number.'
       });
     }
@@ -245,18 +317,18 @@ exports.createStudent = async (req, res) => {
       profileImageUrl = await uploadToS3(req.file, 'student-profiles');
     }
 
-    // Create student document using sanitized data
+    // Create student document using sanitized data from validation
     const now = new Date();
     const studentDoc = {
-      idNumber: sanitizedData.idNumber,
-      firstName: sanitizedData.firstName,
-      middleName: sanitizedData.middleName,
-      lastName: sanitizedData.lastName,
-      age: sanitizedData.age,
-      gender: sanitizedData.gender,
-      gradeLevel: sanitizedData.gradeLevel,
-      section: sanitizedData.section,
-      address: sanitizedData.address,
+      idNumber: idNumberResult.sanitized,
+      firstName: firstNameResult.sanitized,
+      middleName: middleNameResult.sanitized,
+      lastName: lastNameResult.sanitized,
+      age: ageResult.sanitized,
+      gender: gender.trim(),
+      gradeLevel: gradeLevelResult.sanitized,
+      section: sectionResult.sanitized,
+      address: addressResult.sanitized,
       profileImageUrl: profileImageUrl || '',
       readingLevel: null,
       readingPercentage: null,
