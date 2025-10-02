@@ -1398,3 +1398,388 @@ body {
   visibility: visible;
   transform: translateY(0);
 }
+
+/* ========== MOBILE RESPONSIVE STYLES ========== */
+
+/* Tablet and below (768px) */
+@media (max-width: 768px) {
+  /* Hero Section */
+  .hero-section {
+    min-height: 100vh;
+    padding: 2rem 0 0 0;
+  }
+
+  .hero-content {
+    padding-left: 5%;
+    padding-right: 5%;
+    max-width: 100%;
+  }
+
+  .hero-content h2 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+    margin-top: 0.5rem;
+  }
+
+  .hero-content p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-download-btn {
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+
+  /* Download Modal */
+  .download-modal {
+    max-width: 90%;
+    margin: 1rem;
+  }
+
+  .download-modal-header h3 {
+    font-size: 1.3rem;
+  }
+
+  .qr-code-image {
+    width: 180px;
+    height: 180px;
+  }
+
+  .platform-btn {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .platform-name {
+    font-size: 0.9rem;
+  }
+
+  /* About Section */
+  .about-section {
+    min-height: auto;
+    padding: 6rem 5% 6rem;
+  }
+
+  .about-container {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .about-image {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .about-text {
+    min-width: 100%;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .about-heading {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .about-description {
+    font-size: 1rem;
+  }
+
+  /* Features Section */
+  .features-section {
+    min-height: auto;
+    padding: 4rem 5% 4rem;
+  }
+
+  .features-heading {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    margin-top: 2rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 1rem;
+  }
+
+  .feature-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .feature-card img {
+    width: 80px;
+  }
+
+  .feature-card h4 {
+    font-size: 1.3rem;
+  }
+
+  .feature-card p {
+    font-size: 1rem;
+  }
+
+  .bear-mascot {
+    width: 140px;
+  }
+
+  /* Dyslexia Section */
+  .dyslexia-section {
+    min-height: auto;
+    padding: 6rem 5% 6rem;
+  }
+
+  .dyslexia-container {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .dyslexia-image {
+    max-width: 280px;
+    width: 80%;
+  }
+
+  .dyslexia-text {
+    min-width: 100%;
+  }
+
+  .dyslexia-heading {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .dyslexia-description {
+    font-size: 1rem;
+  }
+
+  /* Teaching Methodology */
+  .teaching-methodology-section {
+    min-height: auto;
+    padding: 4rem 5% 4rem;
+  }
+
+  .teaching-methodology-section .teaching-image {
+    width: 100px;
+  }
+
+  .teaching-methodology-section .features-heading {
+    font-size: 2rem;
+  }
+
+  .teaching-methodology-section .features-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .teaching-methodology-section .feature-card {
+    padding: 1rem;
+  }
+
+  .teaching-methodology-section .feature-card img {
+    width: 70px;
+  }
+
+  .teaching-methodology-section .feature-card h4 {
+    font-size: 1.3rem;
+  }
+
+  .teaching-methodology-section .feature-card p {
+    font-size: 1rem;
+  }
+
+  /* Why Choose Literexia */
+  .why-literexia-section {
+    min-height: auto;
+    padding: 6rem 5% 6rem;
+  }
+
+  .why-literexia-heading {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .why-literexia-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .why-card h4 {
+    font-size: 1.3rem;
+  }
+
+  .why-card p {
+    font-size: 1rem;
+  }
+
+  .why-star {
+    width: 70px;
+  }
+
+  /* Scroll to Top Button */
+  .scroll-top-button {
+    width: 45px;
+    height: 45px;
+    bottom: 20px;
+    right: 20px;
+    font-size: 20px;
+  }
+}
+
+/* Mobile (480px and below) */
+@media (max-width: 480px) {
+  /* Hero Section */
+  .hero-content h2 {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+
+  .hero-content p {
+    font-size: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .hero-download-btn {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+  }
+
+  /* Download Modal */
+  .download-modal {
+    max-width: 95%;
+    margin: 0.5rem;
+  }
+
+  .download-modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .qr-code-image {
+    width: 150px;
+    height: 150px;
+  }
+
+  .platform-btn {
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .platform-name {
+    font-size: 0.85rem;
+  }
+
+  /* About Section */
+  .about-section {
+    padding: 4rem 5% 4rem;
+  }
+
+  .about-heading {
+    font-size: 1.8rem;
+  }
+
+  .about-description {
+    font-size: 0.95rem;
+  }
+
+  /* Features Section */
+  .features-section {
+    padding: 3rem 5% 3rem;
+  }
+
+  .features-heading {
+    font-size: 1.8rem;
+    margin-top: 1rem;
+  }
+
+  .feature-card img {
+    width: 60px;
+  }
+
+  .feature-card h4 {
+    font-size: 1.2rem;
+  }
+
+  .feature-card p {
+    font-size: 0.95rem;
+  }
+
+  .bear-mascot {
+    width: 120px;
+  }
+
+  /* Dyslexia Section */
+  .dyslexia-section {
+    padding: 4rem 5% 4rem;
+  }
+
+  .dyslexia-heading {
+    font-size: 1.8rem;
+  }
+
+  .dyslexia-description {
+    font-size: 0.95rem;
+  }
+
+  .dyslexia-image {
+    max-width: 250px;
+    width: 70%;
+  }
+
+  /* Teaching Methodology */
+  .teaching-methodology-section {
+    padding: 3rem 5% 3rem;
+  }
+
+  .teaching-methodology-section .teaching-image {
+    width: 80px;
+  }
+
+  .teaching-methodology-section .features-heading {
+    font-size: 1.8rem;
+  }
+
+  .teaching-methodology-section .feature-card img {
+    width: 60px;
+  }
+
+  .teaching-methodology-section .feature-card h4 {
+    font-size: 1.2rem;
+  }
+
+  .teaching-methodology-section .feature-card p {
+    font-size: 0.95rem;
+  }
+
+  /* Why Choose Literexia */
+  .why-literexia-section {
+    padding: 4rem 5% 4rem;
+  }
+
+  .why-literexia-heading {
+    font-size: 1.8rem;
+  }
+
+  .why-card h4 {
+    font-size: 1.2rem;
+  }
+
+  .why-card p {
+    font-size: 0.95rem;
+  }
+
+  .why-star {
+    width: 60px;
+  }
+
+  /* Scroll to Top Button */
+  .scroll-top-button {
+    width: 40px;
+    height: 40px;
+    bottom: 15px;
+    right: 15px;
+    font-size: 18px;
+  }
+}
