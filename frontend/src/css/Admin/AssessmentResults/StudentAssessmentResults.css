@@ -1647,6 +1647,11 @@
     border-radius: 0.5rem;
   }
 
+  .student-assessment__pa-correct-pairs strong {
+    color: #1e40af !important;
+    font-weight: 700;
+  }
+
   /* Formatted response styling */
   .student-assessment__formatted-response {
     color: #1e293b;

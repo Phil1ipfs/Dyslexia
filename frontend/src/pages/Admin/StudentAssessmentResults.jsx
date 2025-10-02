@@ -264,9 +264,9 @@ const StudentAssessmentResults = () => {
         default:
           // Default formatting
           if (Array.isArray(response)) {
-            return response.filter(item => item && String(item).trim() !== '').join(', ');
+            return response.filter(item => item && String(item).trim() !== '' && String(item) !== '0').join(', ');
           }
-          return String(response);
+          return String(response) === '0' ? '' : String(response);
       }
     } catch (error) {
       console.error('Error formatting intervention response:', error);
@@ -494,9 +494,9 @@ const StudentAssessmentResults = () => {
         default:
           // Default formatting
           if (Array.isArray(response)) {
-            return response.filter(item => item && String(item).trim() !== '').join(', ');
+            return response.filter(item => item && String(item).trim() !== '' && String(item) !== '0').join(', ');
           }
-          return String(response);
+          return String(response) === '0' ? '' : String(response);
       }
     } catch (error) {
       console.error('Error formatting main assessment response:', error);
@@ -683,15 +683,15 @@ const StudentAssessmentResults = () => {
         if (!student?.readingLevel || student.readingLevel === 'Not Assessed') {
           console.warn(`[DEBUG] Cannot fetch main assessment - student reading level not available or not assessed`);
         } else {
-          const mainAssessmentDetailsResponse = await axios.get(
+        const mainAssessmentDetailsResponse = await axios.get(
             `${API_BASE_URL}/main-assessment/${student.readingLevel}/${category}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`
-              },
-              timeout: 10000
-            }
-          );
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            },
+            timeout: 10000
+          }
+        );
 
           mainAssessment = mainAssessmentDetailsResponse.data?.data;
         }
@@ -1299,8 +1299,8 @@ const StudentAssessmentResults = () => {
                                       )}
 
                                       {response.questionDetails && (
-                                        <>
-                                          {/* Story Title */}
+                                    <>
+                                      {/* Story Title */}
                                           {(response.questionDetails.storyTitle || response.questionDetails.question) && (
                                             <div style={{
                                               fontSize: '1.125rem',
@@ -1311,8 +1311,8 @@ const StudentAssessmentResults = () => {
                                               borderBottom: '2px solid #e2e8f0'
                                             }}>
                                               Story: {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
-                                            </div>
-                                          )}
+                                        </div>
+                                      )}
 
                                       {/* Reading Passages */}
                                       {response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
@@ -1707,8 +1707,8 @@ const StudentAssessmentResults = () => {
                                   )}
 
                                   {response.questionDetails && (
-                                    <>
-                                      {/* Story Title */}
+                                <>
+                                  {/* Story Title */}
                                       {(response.questionDetails.storyTitle || response.questionDetails.question) && (
                                         <div style={{
                                           fontSize: '1.125rem',
@@ -1719,8 +1719,8 @@ const StudentAssessmentResults = () => {
                                           borderBottom: '2px solid #e2e8f0'
                                         }}>
                                           Story: {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
-                                        </div>
-                                      )}
+                                    </div>
+                                  )}
 
                                   {/* Reading Passages */}
                                   {response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
