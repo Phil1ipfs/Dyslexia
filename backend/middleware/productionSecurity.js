@@ -8,8 +8,19 @@ const createProductionSecurityConfig = () => {
   return {
     // Enhanced Helmet configuration for production
     helmet: helmet({
-      contentSecurityPolicy: false,
-      hsts: {
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+          imgSrc: ["'self'", "data:", "https:", "*.amazonaws.com", "*.s3.amazonaws.com"],
+          scriptSrc: ["'self'"],
+          connectSrc: ["'self'", "*.amazonaws.com", "https://literexia.com"],
+          frameSrc: ["'none'"],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: []
+        }
+      }, hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
         preload: true
