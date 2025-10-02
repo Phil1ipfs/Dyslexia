@@ -705,34 +705,36 @@ const StudentListPage = () => {
 
       // Client-side validation check before sending to backend
       const requiredFields = ['idNumber', 'firstName', 'lastName', 'age', 'gender', 'gradeLevel', 'section', 'address'];
+      const missingFields = [];
       for (const field of requiredFields) {
         if (!formData[field] || formData[field].toString().trim() === '') {
-          // This case should ideally be caught by handleFinalSubmit validation,
-          // but adding a safeguard here before the API call.
-          console.error(`Validation failed: ${field} is required.`);
-          setValidationError(`${getFieldLabel(field)} is required`);
-          setIsLoading(false);
-          return;
+          missingFields.push(getFieldLabel(field));
         }
+      }
+
+      if (missingFields.length > 0) {
+        setValidationError(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+        setIsLoading(false);
+        return;
       }
 
       const data = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') { // Also check for empty string
-           data.append(key, value);
-        } else if (key === 'profileImage' && value === null) {
-          // Explicitly don't append profileImage if null/empty
-        } else if (requiredFields.includes(key) && value === '') {
-          // For required fields that are empty strings, the validation above should catch this.
-          // This else-if is mainly for clarity, though the above return makes it redundant for required fields.
+        // Skip profileImage if it's null or empty
+        if (key === 'profileImage' && (value === null || value === undefined || value === '')) {
+          return;
         }
-         else if (!requiredFields.includes(key) && value === '') {
-          // For non-required fields that are empty strings, don't append them.
+
+        // Always append required fields with proper conversion to string
+        if (requiredFields.includes(key)) {
+          // Convert to string, handling null/undefined as empty string
+          const stringValue = (value === null || value === undefined) ? '' : String(value);
+          data.append(key, stringValue);
         }
-         else {
-          // For other cases (e.g., non-required fields with actual values, or required fields with values)
-           data.append(key, value);
-         }
+        // For non-required fields, only append if they have a value
+        else if (value !== undefined && value !== null && value !== '') {
+          data.append(key, String(value));
+        }
       });
 
       const response = await axios.post(`${API_BASE_URL}/admin/manage/students`, data, {
@@ -762,9 +764,23 @@ const StudentListPage = () => {
      try {
       setLoading(true);
       const data = new FormData();
-       // Append all form data fields
+      const requiredFields = ['idNumber', 'firstName', 'lastName', 'age', 'gender', 'gradeLevel', 'section', 'address'];
+
+      // Append all form data fields
       Object.entries(formData).forEach(([key, value]) => {
-         if (value !== undefined && value !== null) data.append(key, value); // Check for undefined/null
+        // Skip profileImage if it's null or empty
+        if (key === 'profileImage' && (value === null || value === undefined || value === '')) {
+          return;
+        }
+
+        // Always append required fields (even if empty) so backend validation can report proper errors
+        if (requiredFields.includes(key)) {
+          data.append(key, value || ''); // Convert null/undefined to empty string
+        }
+        // For non-required fields, only append if they have a value
+        else if (value !== undefined && value !== null && value !== '') {
+          data.append(key, value);
+        }
       });
       const response = await axios.put(`${API_BASE_URL}/admin/manage/students/${formData._id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }

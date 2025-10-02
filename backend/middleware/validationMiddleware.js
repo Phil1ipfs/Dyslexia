@@ -100,49 +100,131 @@ const studentValidation = {
 
   createStudent: [
     body('idNumber')
-      .isNumeric()
-      .withMessage('ID Number must be numeric')
-      .isInt({ min: 1, max: 999999999 })
-      .withMessage('ID Number must be a valid integer between 1 and 999999999'),
+      .exists().withMessage('ID Number is required')
+      .custom((value) => {
+        if (!value || value.toString().trim() === '') {
+          throw new Error('ID Number cannot be empty');
+        }
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          throw new Error('ID Number must be numeric');
+        }
+        if (numValue < 1 || numValue > 999999999) {
+          throw new Error('ID Number must be between 1 and 999999999');
+        }
+        return true;
+      }),
 
     body('firstName')
-      .isLength({ min: 1, max: 50 })
-      .withMessage('First name is required and must be less than 50 characters')
-      .matches(/^[a-zA-Z\s\-'\.]+$/)
-      .withMessage('First name can only contain letters, spaces, hyphens, apostrophes, and periods'),
+      .exists().withMessage('First name is required')
+      .custom((value) => {
+        if (!value || value.toString().trim() === '') {
+          throw new Error('First name cannot be empty');
+        }
+        const trimmed = value.toString().trim();
+        if (trimmed.length > 50) {
+          throw new Error('First name must be less than 50 characters');
+        }
+        if (!/^[a-zA-Z\s\-'\.]+$/.test(trimmed)) {
+          throw new Error('First name can only contain letters, spaces, hyphens, apostrophes, and periods');
+        }
+        return true;
+      }),
 
     body('lastName')
-      .isLength({ min: 1, max: 50 })
-      .withMessage('Last name is required and must be less than 50 characters')
-      .matches(/^[a-zA-Z\s\-'\.]+$/)
-      .withMessage('Last name can only contain letters, spaces, hyphens, apostrophes, and periods'),
+      .exists().withMessage('Last name is required')
+      .custom((value) => {
+        if (!value || value.toString().trim() === '') {
+          throw new Error('Last name cannot be empty');
+        }
+        const trimmed = value.toString().trim();
+        if (trimmed.length > 50) {
+          throw new Error('Last name must be less than 50 characters');
+        }
+        if (!/^[a-zA-Z\s\-'\.]+$/.test(trimmed)) {
+          throw new Error('Last name can only contain letters, spaces, hyphens, apostrophes, and periods');
+        }
+        return true;
+      }),
 
     body('age')
-      .isInt({ min: 5, max: 18 })
-      .withMessage('Age must be between 5 and 18'),
+      .exists().withMessage('Age is required')
+      .custom((value) => {
+        if (!value || value.toString().trim() === '') {
+          throw new Error('Age cannot be empty');
+        }
+        const numValue = Number(value);
+        if (isNaN(numValue) || numValue < 5 || numValue > 18) {
+          throw new Error('Age must be between 5 and 18');
+        }
+        return true;
+      }),
 
     body('gender')
-      .isIn(['Male', 'Female', 'Other'])
-      .withMessage('Gender must be Male, Female, or Other'),
+      .exists().withMessage('Gender is required')
+      .custom((value) => {
+        if (!value || value.toString().trim() === '') {
+          throw new Error('Gender cannot be empty');
+        }
+        if (!['Male', 'Female', 'Other'].includes(value.toString().trim())) {
+          throw new Error('Gender must be Male, Female, or Other');
+        }
+        return true;
+      }),
 
     body('gradeLevel')
-      .isIn(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'])
-      .withMessage('Grade level must be between Grade 1 and Grade 6'),
+      .exists().withMessage('Grade level is required')
+      .custom((value) => {
+        if (!value || value.toString().trim() === '') {
+          throw new Error('Grade level cannot be empty');
+        }
+        const validGrades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
+        if (!validGrades.includes(value.toString().trim())) {
+          throw new Error('Grade level must be between Grade 1 and Grade 6');
+        }
+        return true;
+      }),
 
     body('section')
-      .isLength({ min: 1, max: 20 })
-      .withMessage('Section is required and must be less than 20 characters')
-      .matches(/^[a-zA-Z0-9\s\-]+$/)
-      .withMessage('Section can only contain letters, numbers, spaces, and hyphens'),
+      .exists().withMessage('Section is required')
+      .custom((value) => {
+        if (!value || value.toString().trim() === '') {
+          throw new Error('Section cannot be empty');
+        }
+        const trimmed = value.toString().trim();
+        if (trimmed.length > 20) {
+          throw new Error('Section must be less than 20 characters');
+        }
+        if (!/^[a-zA-Z0-9\s\-]+$/.test(trimmed)) {
+          throw new Error('Section can only contain letters, numbers, spaces, and hyphens');
+        }
+        return true;
+      }),
 
     body('address')
-      .isLength({ min: 1, max: 200 })
-      .withMessage('Address is required and must be less than 200 characters'),
+      .exists().withMessage('Address is required')
+      .custom((value) => {
+        if (!value || value.toString().trim() === '') {
+          throw new Error('Address cannot be empty');
+        }
+        const trimmed = value.toString().trim();
+        if (trimmed.length > 200) {
+          throw new Error('Address must be less than 200 characters');
+        }
+        return true;
+      }),
 
     body('readingLevel')
       .optional()
-      .isIn(['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'])
-      .withMessage('Invalid reading level'),
+      .custom((value) => {
+        if (value) {
+          const validLevels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+          if (!validLevels.includes(value.toString().trim())) {
+            throw new Error('Invalid reading level');
+          }
+        }
+        return true;
+      }),
 
     handleValidationErrors
   ]

@@ -9,10 +9,7 @@
       "Bash(cp:*)",
       "Bash(npm run build:*)",
       "Bash(cat:*)",
-      "Bash(chmod:*)",
-      "Bash(git merge:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

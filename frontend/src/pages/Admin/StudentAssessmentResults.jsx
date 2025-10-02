@@ -678,21 +678,23 @@ const StudentAssessmentResults = () => {
       try {
         const user = JSON.parse(localStorage.getItem('user'));
         const token = user?.token;
-        const mainAssessmentDetailsResponse = await axios.get(
-          `${API_BASE_URL}/main-assessment`,
-          {
-            params: {
-              category: category,
-              readingLevel: student?.readingLevel || 'High Emerging'
-            },
-            headers: {
-              Authorization: `Bearer ${token}`
-            },
-            timeout: 10000
-          }
-        );
 
-        mainAssessment = mainAssessmentDetailsResponse.data?.data;
+        // Only fetch if student has a valid reading level
+        if (!student?.readingLevel || student.readingLevel === 'Not Assessed') {
+          console.warn(`[DEBUG] Cannot fetch main assessment - student reading level not available or not assessed`);
+        } else {
+          const mainAssessmentDetailsResponse = await axios.get(
+            `${API_BASE_URL}/main-assessment/${student.readingLevel}/${category}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`
+              },
+              timeout: 10000
+            }
+          );
+
+          mainAssessment = mainAssessmentDetailsResponse.data?.data;
+        }
       } catch (error) {
         console.error(`[DEBUG] Error fetching main assessment for ${category}:`, error);
       }
@@ -1277,21 +1279,40 @@ const StudentAssessmentResults = () => {
                                   )}
 
                                   {/* Special handling for Reading Comprehension */}
-                                  {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails && (
+                                  {selectedCategory?.categoryName === 'Reading Comprehension' && (
                                     <>
-                                      {/* Story Title */}
-                                      {(response.questionDetails.storyTitle || response.questionDetails.question) && (
+                                      {!response.questionDetails && (
                                         <div style={{
-                                          fontSize: '1.125rem',
-                                          fontWeight: '600',
-                                          color: '#1e293b',
-                                          marginBottom: '1rem',
-                                          paddingBottom: '0.75rem',
-                                          borderBottom: '2px solid #e2e8f0'
+                                          padding: '1rem',
+                                          backgroundColor: '#fef3c7',
+                                          border: '1px solid #fbbf24',
+                                          borderRadius: '0.5rem',
+                                          color: '#92400e',
+                                          marginBottom: '1rem'
                                         }}>
-                                          Story: {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
+                                          <strong>⚠️ Question details not available</strong>
+                                          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem' }}>
+                                            The reading passage and questions for {response.questionId} could not be loaded.
+                                            This may be due to missing assessment data for reading level "{student?.readingLevel}".
+                                          </p>
                                         </div>
                                       )}
+
+                                      {response.questionDetails && (
+                                        <>
+                                          {/* Story Title */}
+                                          {(response.questionDetails.storyTitle || response.questionDetails.question) && (
+                                            <div style={{
+                                              fontSize: '1.125rem',
+                                              fontWeight: '600',
+                                              color: '#1e293b',
+                                              marginBottom: '1rem',
+                                              paddingBottom: '0.75rem',
+                                              borderBottom: '2px solid #e2e8f0'
+                                            }}>
+                                              Story: {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
+                                            </div>
+                                          )}
 
                                       {/* Reading Passages */}
                                       {response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
@@ -1500,6 +1521,8 @@ const StudentAssessmentResults = () => {
                                           </div>
                                         </div>
                                       )}
+                                        </>
+                                      )}
                                     </>
                                   )}
 
@@ -1665,21 +1688,39 @@ const StudentAssessmentResults = () => {
                               )}
 
                               {/* Special handling for Reading Comprehension in intervention results */}
-                              {selectedCategory?.categoryName === 'Reading Comprehension' && response.questionDetails && (
+                              {selectedCategory?.categoryName === 'Reading Comprehension' && (
                                 <>
-                                  {/* Story Title */}
-                                  {(response.questionDetails.storyTitle || response.questionDetails.question) && (
+                                  {!response.questionDetails && (
                                     <div style={{
-                                      fontSize: '1.125rem',
-                                      fontWeight: '600',
-                                      color: '#1e293b',
-                                      marginBottom: '1rem',
-                                      paddingBottom: '0.75rem',
-                                      borderBottom: '2px solid #e2e8f0'
+                                      padding: '1rem',
+                                      backgroundColor: '#fef3c7',
+                                      border: '1px solid #fbbf24',
+                                      borderRadius: '0.5rem',
+                                      color: '#92400e',
+                                      marginBottom: '1rem'
                                     }}>
-                                      Story: {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
+                                      <strong>⚠️ Question details not available</strong>
+                                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem' }}>
+                                        The reading passage and questions for {response.questionId} could not be loaded.
+                                      </p>
                                     </div>
                                   )}
+
+                                  {response.questionDetails && (
+                                    <>
+                                      {/* Story Title */}
+                                      {(response.questionDetails.storyTitle || response.questionDetails.question) && (
+                                        <div style={{
+                                          fontSize: '1.125rem',
+                                          fontWeight: '600',
+                                          color: '#1e293b',
+                                          marginBottom: '1rem',
+                                          paddingBottom: '0.75rem',
+                                          borderBottom: '2px solid #e2e8f0'
+                                        }}>
+                                          Story: {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
+                                        </div>
+                                      )}
 
                                   {/* Reading Passages */}
                                   {response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
@@ -1887,6 +1928,8 @@ const StudentAssessmentResults = () => {
                                       })}
                                       </div>
                                     </div>
+                                  )}
+                                    </>
                                   )}
                                 </>
                               )}
