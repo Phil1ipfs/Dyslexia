@@ -678,17 +678,23 @@ const StudentAssessmentResults = () => {
       try {
         const user = JSON.parse(localStorage.getItem('user'));
         const token = user?.token;
-        const mainAssessmentDetailsResponse = await axios.get(
-          `${API_BASE_URL}/main-assessment/${student?.readingLevel || 'High Emerging'}/${category}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            },
-            timeout: 10000
-          }
-        );
 
-        mainAssessment = mainAssessmentDetailsResponse.data?.data;
+        // Only fetch if student has a valid reading level
+        if (!student?.readingLevel || student.readingLevel === 'Not Assessed') {
+          console.warn(`[DEBUG] Cannot fetch main assessment - student reading level not available or not assessed`);
+        } else {
+          const mainAssessmentDetailsResponse = await axios.get(
+            `${API_BASE_URL}/main-assessment/${student.readingLevel}/${category}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`
+              },
+              timeout: 10000
+            }
+          );
+
+          mainAssessment = mainAssessmentDetailsResponse.data?.data;
+        }
       } catch (error) {
         console.error(`[DEBUG] Error fetching main assessment for ${category}:`, error);
       }
