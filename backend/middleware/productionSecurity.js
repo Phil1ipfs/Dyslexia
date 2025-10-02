@@ -15,7 +15,7 @@ const createProductionSecurityConfig = () => {
           fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
           imgSrc: ["'self'", "data:", "https:", "*.amazonaws.com", "*.s3.amazonaws.com"],
           scriptSrc: ["'self'"],
-          connectSrc: ["'self'", "*.amazonaws.com"],
+          connectSrc: ["'self'", "*.amazonaws.com", "https://literexia.com"],
           frameSrc: ["'none'"],
           objectSrc: ["'none'"],
           upgradeInsecureRequests: []
