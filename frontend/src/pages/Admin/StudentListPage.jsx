@@ -720,9 +720,12 @@ const StudentListPage = () => {
 
       const data = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        // Skip profileImage if it's null or empty
-        if (key === 'profileImage' && (value === null || value === undefined || value === '')) {
-          return;
+        // Handle profileImage specially (keep as File object, don't convert to string)
+        if (key === 'profileImage') {
+          if (value && value instanceof File) {
+            data.append(key, value); // Append File object directly
+          }
+          return; // Skip further processing for profileImage
         }
 
         // Always append required fields with proper conversion to string
