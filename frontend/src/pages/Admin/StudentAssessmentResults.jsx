@@ -1352,11 +1352,28 @@ const StudentAssessmentResults = () => {
                                         <div className="student-assessment__rc-sentence-questions">
                                           <strong>Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
                                           {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
-                                            const questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
-                                            const correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim() : '';
-                                            const sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim() : '';
+                                            // Sanitize question text - remove excessive repetition
+                                            let questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
+                                            // Remove repeated patterns (e.g., "texttext" → "text")
+                                            const words = questionText.split(' ');
+                                            const uniqueWords = [];
+                                            for (let i = 0; i < words.length; i++) {
+                                              if (i === 0 || words[i] !== words[i-1]) {
+                                                uniqueWords.push(words[i]);
+                                              }
+                                            }
+                                            questionText = uniqueWords.join(' ').substring(0, 200); // Limit to 200 chars
+
+                                            // Sanitize correct answer
+                                            let correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim().substring(0, 100) : '';
+                                            let sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim().substring(0, 100) : '';
                                             const finalCorrectAnswer = correctAnswer || sentenceCorrectAnswer;
-                                            
+
+                                            // Sanitize acceptable answers - remove duplicates and excessive repetition
+                                            const acceptableAnswers = (sq.acceptableAnswers || sq.sentenceAcceptableAnswer || [])
+                                              .map(answer => String(answer).trim().substring(0, 100))
+                                              .filter((answer, index, self) => self.indexOf(answer) === index); // Remove duplicates
+
                                             return (
                                               <div key={sqIndex} className="student-assessment__sentence-question">
                                                 <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
@@ -1366,9 +1383,9 @@ const StudentAssessmentResults = () => {
                                                 {finalCorrectAnswer && (
                                                   <div className="student-assessment__sq-correct">Correct Answer: {finalCorrectAnswer}</div>
                                                 )}
-                                                {(sq.acceptableAnswers || sq.sentenceAcceptableAnswer) && (sq.acceptableAnswers?.length > 0 || sq.sentenceAcceptableAnswer?.length > 0) && (
+                                                {acceptableAnswers.length > 0 && (
                                                   <div className="student-assessment__sq-options">
-                                                    Acceptable Answers: {(sq.acceptableAnswers || sq.sentenceAcceptableAnswer || []).map(answer => String(answer).trim()).join(', ')}
+                                                    Acceptable Answers: {acceptableAnswers.join(', ')}
                                                   </div>
                                                 )}
                                               </div>
@@ -1562,11 +1579,28 @@ const StudentAssessmentResults = () => {
                                     <div className="student-assessment__rc-sentence-questions">
                                       <strong>Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
                                       {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
-                                        const questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
-                                        const correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim() : '';
-                                        const sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim() : '';
+                                        // Sanitize question text - remove excessive repetition
+                                        let questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
+                                        // Remove repeated patterns (e.g., "texttext" → "text")
+                                        const words = questionText.split(' ');
+                                        const uniqueWords = [];
+                                        for (let i = 0; i < words.length; i++) {
+                                          if (i === 0 || words[i] !== words[i-1]) {
+                                            uniqueWords.push(words[i]);
+                                          }
+                                        }
+                                        questionText = uniqueWords.join(' ').substring(0, 200); // Limit to 200 chars
+
+                                        // Sanitize correct answer
+                                        let correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim().substring(0, 100) : '';
+                                        let sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim().substring(0, 100) : '';
                                         const finalCorrectAnswer = correctAnswer || sentenceCorrectAnswer;
-                                        
+
+                                        // Sanitize acceptable answers - remove duplicates and excessive repetition
+                                        const acceptableAnswers = (sq.acceptableAnswers || sq.sentenceAcceptableAnswer || [])
+                                          .map(answer => String(answer).trim().substring(0, 100))
+                                          .filter((answer, index, self) => self.indexOf(answer) === index); // Remove duplicates
+
                                         return (
                                           <div key={sqIndex} className="student-assessment__sentence-question">
                                             <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
@@ -1576,9 +1610,9 @@ const StudentAssessmentResults = () => {
                                             {finalCorrectAnswer && (
                                               <div className="student-assessment__sq-correct">Correct Answer: {finalCorrectAnswer}</div>
                                             )}
-                                            {(sq.acceptableAnswers || sq.sentenceAcceptableAnswer) && (sq.acceptableAnswers?.length > 0 || sq.sentenceAcceptableAnswer?.length > 0) && (
+                                            {acceptableAnswers.length > 0 && (
                                               <div className="student-assessment__sq-options">
-                                                Acceptable Answers: {(sq.acceptableAnswers || sq.sentenceAcceptableAnswer || []).map(answer => String(answer).trim()).join(', ')}
+                                                Acceptable Answers: {acceptableAnswers.join(', ')}
                                               </div>
                                             )}
                                           </div>
