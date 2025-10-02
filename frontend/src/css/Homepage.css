@@ -208,6 +208,16 @@ body {
   margin-bottom: 1rem;
 }
 
+.qr-code-image {
+  width: 250px;
+  height: 250px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  background: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
 .qr-placeholder {
   width: 200px;
   height: 200px;

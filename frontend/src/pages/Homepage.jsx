@@ -13,6 +13,7 @@ import heroCloud2 from "../assets/images/Homepage/hero-clouds2.png";
 import heroCloud3 from "../assets/images/Homepage/hero-clouds3.png";
 import heroPenguin from "../assets/images/Homepage/hero-penguin.png";
 import heroImage from "../assets/images/Homepage/Group 4076.png";
+import qrCodeImage from "../assets/images/android.PNG";
 
 // About section assets
 import phones from "../assets/images/Homepage/phone.png";
@@ -43,15 +44,16 @@ function Homepage() {
   // Handle platform button clicks with animation
   const handlePlatformClick = (platform) => {
     setClickedButton(platform);
-    
+
     // Reset animation after 600ms
     setTimeout(() => {
       setClickedButton(null);
     }, 600);
-    
-    // Here you would typically redirect to the actual app store
-    // For now, we'll just show a console log
-    console.log(`Downloading for ${platform}...`);
+
+    // Download the Android APK
+    if (platform === 'android') {
+      window.open('https://drive.google.com/uc?export=download&id=12zk_OyBrbiAxArTFpwPKGRAi3hk_zw5u', '_blank');
+    }
   };
 
   // Add scroll reveal animation effect
@@ -121,7 +123,7 @@ function Homepage() {
           </p>
           <button
             className="hero-download-btn"
-            onClick={() => window.open('https://drive.google.com/uc?export=download&id=12zk_OyBrbiAxArTFpwPKGRAi3hk_zw5u', '_blank')}
+            onClick={() => setIsDownloadModalOpen(true)}
             aria-label="Download Literexia App"
           >
             <svg
@@ -346,20 +348,11 @@ function Homepage() {
               <div className="qr-section">
                 <p className="qr-instruction">Scan the QR code to download the app</p>
                 <div className="qr-code">
-                  {/* Placeholder QR code - replace with actual QR code image */}
-                  <div className="qr-placeholder">
-                    <div className="qr-pattern">
-                      <div className="qr-square"></div>
-                      <div className="qr-square"></div>
-                      <div className="qr-square"></div>
-                      <div className="qr-square"></div>
-                      <div className="qr-square"></div>
-                      <div className="qr-square"></div>
-                      <div className="qr-square"></div>
-                      <div className="qr-square"></div>
-                      <div className="qr-square"></div>
-                    </div>
-                  </div>
+                  <img
+                    src={qrCodeImage}
+                    alt="QR Code to download Literexia app"
+                    className="qr-code-image"
+                  />
                 </div>
               </div>
               
@@ -396,7 +389,7 @@ function Homepage() {
                     </div>
                     <div className="platform-info">
                       <div className="platform-text">GET IT ON</div>
-                      <div className="platform-name">Google Play</div>
+                      <div className="platform-name">Android</div>
                     </div>
                     <div className="click-ripple"></div>
                   </button>
