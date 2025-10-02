@@ -1316,81 +1316,174 @@ const StudentAssessmentResults = () => {
                                     <>
                                       {/* Story Title */}
                                       {(response.questionDetails.storyTitle || response.questionDetails.question) && (
-                                        <div className="student-assessment__story-title">
-                                          <strong>Story:</strong> {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
+                                        <div style={{
+                                          fontSize: '1.125rem',
+                                          fontWeight: '600',
+                                          color: '#1e293b',
+                                          marginBottom: '1rem',
+                                          paddingBottom: '0.75rem',
+                                          borderBottom: '2px solid #e2e8f0'
+                                        }}>
+                                          Story: {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
                                         </div>
                                       )}
 
                                       {/* Reading Passages */}
                                       {response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
-                                        <div className="student-assessment__rc-passages">
-                                          <strong>Reading Passage:</strong>
-                                          {response.questionDetails.passages.map((passage, passageIndex) => {
-                                            const passageText = passage.pageText || passage.text || passage;
-                                            const cleanText = typeof passageText === 'string' ? String(passageText).trim() : '';
-                                            
-                                            return (
-                                              <div key={passageIndex} className="student-assessment__passage">
-                                                {cleanText && (
-                                                  <p className="student-assessment__passage-text">{cleanText}</p>
-                                                )}
-                                                {(passage.pageImage || passage.image) && (
-                                                  <img
-                                                    src={passage.pageImage || passage.image}
-                                                    alt="Passage illustration"
-                                                    style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
-                                                  />
-                                                )}
-                                              </div>
-                                            );
-                                          })}
+                                        <div style={{ marginBottom: '1.5rem' }}>
+                                          <h4 style={{
+                                            fontSize: '0.9375rem',
+                                            fontWeight: '600',
+                                            color: '#475569',
+                                            marginBottom: '0.75rem'
+                                          }}>
+                                            Reading Passage
+                                          </h4>
+                                          <div style={{
+                                            backgroundColor: '#f8fafc',
+                                            padding: '1rem',
+                                            borderRadius: '0.5rem',
+                                            border: '1px solid #e2e8f0'
+                                          }}>
+                                            {response.questionDetails.passages.map((passage, passageIndex) => {
+                                              const passageText = passage.pageText || passage.text || passage;
+                                              const cleanText = typeof passageText === 'string' ? String(passageText).trim() : '';
+
+                                              return (
+                                                <div key={passageIndex} style={{ marginBottom: passageIndex < response.questionDetails.passages.length - 1 ? '0.75rem' : '0' }}>
+                                                  {(passage.pageImage || passage.image) && (
+                                                    <div style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
+                                                      <img
+                                                        src={passage.pageImage || passage.image}
+                                                        alt="Passage illustration"
+                                                        style={{
+                                                          maxWidth: '100%',
+                                                          height: 'auto',
+                                                          borderRadius: '0.375rem',
+                                                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  )}
+                                                  {cleanText && (
+                                                    <p style={{
+                                                      fontSize: '0.9375rem',
+                                                      lineHeight: '1.6',
+                                                      color: '#334155',
+                                                      margin: 0
+                                                    }}>
+                                                      {cleanText}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
                                         </div>
                                       )}
 
                                       {/* Sentence Questions */}
                                       {response.questionDetails.sentenceQuestions && response.questionDetails.sentenceQuestions.length > 0 && (
-                                        <div className="student-assessment__rc-sentence-questions">
-                                          <strong>Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
-                                          {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
-                                            // Sanitize question text - remove excessive repetition
-                                            let questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
-                                            // Remove repeated patterns (e.g., "texttext" → "text")
-                                            const words = questionText.split(' ');
-                                            const uniqueWords = [];
-                                            for (let i = 0; i < words.length; i++) {
-                                              if (i === 0 || words[i] !== words[i-1]) {
-                                                uniqueWords.push(words[i]);
+                                        <div>
+                                          <h4 style={{
+                                            fontSize: '0.9375rem',
+                                            fontWeight: '600',
+                                            color: '#475569',
+                                            marginBottom: '0.75rem'
+                                          }}>
+                                            Questions ({response.questionDetails.sentenceQuestions.length} questions)
+                                          </h4>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
+                                              // Sanitize question text - remove excessive repetition
+                                              let questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
+                                              const words = questionText.split(' ');
+                                              const uniqueWords = [];
+                                              for (let i = 0; i < words.length; i++) {
+                                                if (i === 0 || words[i] !== words[i-1]) {
+                                                  uniqueWords.push(words[i]);
+                                                }
                                               }
-                                            }
-                                            questionText = uniqueWords.join(' ').substring(0, 200); // Limit to 200 chars
+                                              questionText = uniqueWords.join(' ').substring(0, 200);
 
-                                            // Sanitize correct answer
-                                            let correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim().substring(0, 100) : '';
-                                            let sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim().substring(0, 100) : '';
-                                            const finalCorrectAnswer = correctAnswer || sentenceCorrectAnswer;
+                                              // Sanitize correct answer
+                                              let correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim().substring(0, 100) : '';
+                                              let sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim().substring(0, 100) : '';
+                                              const finalCorrectAnswer = correctAnswer || sentenceCorrectAnswer;
 
-                                            // Sanitize acceptable answers - remove duplicates and excessive repetition
-                                            const acceptableAnswers = (sq.acceptableAnswers || sq.sentenceAcceptableAnswer || [])
-                                              .map(answer => String(answer).trim().substring(0, 100))
-                                              .filter((answer, index, self) => self.indexOf(answer) === index); // Remove duplicates
+                                              // Sanitize acceptable answers - remove duplicates
+                                              const acceptableAnswers = (sq.acceptableAnswers || sq.sentenceAcceptableAnswer || [])
+                                                .map(answer => String(answer).trim().substring(0, 100))
+                                                .filter((answer, index, self) => self.indexOf(answer) === index);
 
-                                            return (
-                                              <div key={sqIndex} className="student-assessment__sentence-question">
-                                                <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
-                                                {questionText && (
-                                                  <div className="student-assessment__sq-text">{questionText}</div>
-                                                )}
-                                                {finalCorrectAnswer && (
-                                                  <div className="student-assessment__sq-correct">Correct Answer: {finalCorrectAnswer}</div>
-                                                )}
-                                                {acceptableAnswers.length > 0 && (
-                                                  <div className="student-assessment__sq-options">
-                                                    Acceptable Answers: {acceptableAnswers.join(', ')}
+                                              return (
+                                                <div
+                                                  key={sqIndex}
+                                                  style={{
+                                                    backgroundColor: '#f8fafc',
+                                                    padding: '0.75rem',
+                                                    borderRadius: '0.5rem',
+                                                    border: '1px solid #e2e8f0'
+                                                  }}
+                                                >
+                                                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                    <span style={{
+                                                      backgroundColor: '#3B4F81',
+                                                      color: 'white',
+                                                      padding: '0.125rem 0.5rem',
+                                                      borderRadius: '0.25rem',
+                                                      fontSize: '0.8125rem',
+                                                      fontWeight: '600',
+                                                      flexShrink: 0
+                                                    }}>
+                                                      Q{sqIndex + 1}
+                                                    </span>
+                                                    {questionText && (
+                                                      <p style={{ fontSize: '0.875rem', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>
+                                                        {questionText}
+                                                      </p>
+                                                    )}
                                                   </div>
-                                                )}
-                                              </div>
-                                            );
-                                          })}
+
+                                                  {finalCorrectAnswer && (
+                                                    <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
+                                                      <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#6b7280', marginBottom: '0.25rem' }}>
+                                                        Correct Answer
+                                                      </div>
+                                                      <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#16a34a' }}>
+                                                        {finalCorrectAnswer}
+                                                      </div>
+                                                    </div>
+                                                  )}
+
+                                                  {acceptableAnswers.length > 0 && (
+                                                    <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
+                                                      <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#6b7280', marginBottom: '0.375rem' }}>
+                                                        Acceptable Answers
+                                                      </div>
+                                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                                                        {acceptableAnswers.map((answer, idx) => (
+                                                          <span
+                                                            key={idx}
+                                                            style={{
+                                                              backgroundColor: '#dbeafe',
+                                                              color: '#1e40af',
+                                                              padding: '0.125rem 0.5rem',
+                                                              borderRadius: '9999px',
+                                                              fontSize: '0.8125rem',
+                                                              fontWeight: '500'
+                                                            }}
+                                                          >
+                                                            {answer}
+                                                          </span>
+                                                        ))}
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
                                         </div>
                                       )}
                                     </>
@@ -1543,81 +1636,174 @@ const StudentAssessmentResults = () => {
                                 <>
                                   {/* Story Title */}
                                   {(response.questionDetails.storyTitle || response.questionDetails.question) && (
-                                    <div className="student-assessment__story-title">
-                                      <strong>Story:</strong> {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
+                                    <div style={{
+                                      fontSize: '1.125rem',
+                                      fontWeight: '600',
+                                      color: '#1e293b',
+                                      marginBottom: '1rem',
+                                      paddingBottom: '0.75rem',
+                                      borderBottom: '2px solid #e2e8f0'
+                                    }}>
+                                      Story: {String(response.questionDetails.storyTitle || response.questionDetails.question).trim()}
                                     </div>
                                   )}
 
                                   {/* Reading Passages */}
                                   {response.questionDetails.passages && response.questionDetails.passages.length > 0 && (
-                                    <div className="student-assessment__rc-passages">
-                                      <strong>Reading Passage:</strong>
-                                      {response.questionDetails.passages.map((passage, passageIndex) => {
-                                        const passageText = passage.pageText || passage.text || passage;
-                                        const cleanText = typeof passageText === 'string' ? String(passageText).trim() : '';
-                                        
-                                        return (
-                                          <div key={passageIndex} className="student-assessment__passage">
-                                            {cleanText && (
-                                              <p className="student-assessment__passage-text">{cleanText}</p>
-                                            )}
-                                            {(passage.pageImage || passage.image) && (
-                                              <img
-                                                src={passage.pageImage || passage.image}
-                                                alt="Passage illustration"
-                                                style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
-                                              />
-                                            )}
-                                          </div>
-                                        );
-                                      })}
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                      <h4 style={{
+                                        fontSize: '0.9375rem',
+                                        fontWeight: '600',
+                                        color: '#475569',
+                                        marginBottom: '0.75rem'
+                                      }}>
+                                        Reading Passage
+                                      </h4>
+                                      <div style={{
+                                        backgroundColor: '#f8fafc',
+                                        padding: '1rem',
+                                        borderRadius: '0.5rem',
+                                        border: '1px solid #e2e8f0'
+                                      }}>
+                                        {response.questionDetails.passages.map((passage, passageIndex) => {
+                                          const passageText = passage.pageText || passage.text || passage;
+                                          const cleanText = typeof passageText === 'string' ? String(passageText).trim() : '';
+
+                                          return (
+                                            <div key={passageIndex} style={{ marginBottom: passageIndex < response.questionDetails.passages.length - 1 ? '0.75rem' : '0' }}>
+                                              {(passage.pageImage || passage.image) && (
+                                                <div style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
+                                                  <img
+                                                    src={passage.pageImage || passage.image}
+                                                    alt="Passage illustration"
+                                                    style={{
+                                                      maxWidth: '100%',
+                                                      height: 'auto',
+                                                      borderRadius: '0.375rem',
+                                                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                                    }}
+                                                  />
+                                                </div>
+                                              )}
+                                              {cleanText && (
+                                                <p style={{
+                                                  fontSize: '0.9375rem',
+                                                  lineHeight: '1.6',
+                                                  color: '#334155',
+                                                  margin: 0
+                                                }}>
+                                                  {cleanText}
+                                                </p>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                   )}
 
                                   {/* Sentence Questions */}
                                   {response.questionDetails.sentenceQuestions && response.questionDetails.sentenceQuestions.length > 0 && (
-                                    <div className="student-assessment__rc-sentence-questions">
-                                      <strong>Questions ({response.questionDetails.sentenceQuestions.length} questions):</strong>
-                                      {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
-                                        // Sanitize question text - remove excessive repetition
-                                        let questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
-                                        // Remove repeated patterns (e.g., "texttext" → "text")
-                                        const words = questionText.split(' ');
-                                        const uniqueWords = [];
-                                        for (let i = 0; i < words.length; i++) {
-                                          if (i === 0 || words[i] !== words[i-1]) {
-                                            uniqueWords.push(words[i]);
+                                    <div>
+                                      <h4 style={{
+                                        fontSize: '0.9375rem',
+                                        fontWeight: '600',
+                                        color: '#475569',
+                                        marginBottom: '0.75rem'
+                                      }}>
+                                        Questions ({response.questionDetails.sentenceQuestions.length} questions)
+                                      </h4>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        {response.questionDetails.sentenceQuestions.map((sq, sqIndex) => {
+                                          // Sanitize question text - remove excessive repetition
+                                          let questionText = typeof sq.questionText === 'string' ? String(sq.questionText).trim() : '';
+                                          const words = questionText.split(' ');
+                                          const uniqueWords = [];
+                                          for (let i = 0; i < words.length; i++) {
+                                            if (i === 0 || words[i] !== words[i-1]) {
+                                              uniqueWords.push(words[i]);
+                                            }
                                           }
-                                        }
-                                        questionText = uniqueWords.join(' ').substring(0, 200); // Limit to 200 chars
+                                          questionText = uniqueWords.join(' ').substring(0, 200);
 
-                                        // Sanitize correct answer
-                                        let correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim().substring(0, 100) : '';
-                                        let sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim().substring(0, 100) : '';
-                                        const finalCorrectAnswer = correctAnswer || sentenceCorrectAnswer;
+                                          // Sanitize correct answer
+                                          let correctAnswer = typeof sq.correctAnswer === 'string' ? String(sq.correctAnswer).trim().substring(0, 100) : '';
+                                          let sentenceCorrectAnswer = typeof sq.sentenceCorrectAnswer === 'string' ? String(sq.sentenceCorrectAnswer).trim().substring(0, 100) : '';
+                                          const finalCorrectAnswer = correctAnswer || sentenceCorrectAnswer;
 
-                                        // Sanitize acceptable answers - remove duplicates and excessive repetition
-                                        const acceptableAnswers = (sq.acceptableAnswers || sq.sentenceAcceptableAnswer || [])
-                                          .map(answer => String(answer).trim().substring(0, 100))
-                                          .filter((answer, index, self) => self.indexOf(answer) === index); // Remove duplicates
+                                          // Sanitize acceptable answers - remove duplicates
+                                          const acceptableAnswers = (sq.acceptableAnswers || sq.sentenceAcceptableAnswer || [])
+                                            .map(answer => String(answer).trim().substring(0, 100))
+                                            .filter((answer, index, self) => self.indexOf(answer) === index);
 
-                                        return (
-                                          <div key={sqIndex} className="student-assessment__sentence-question">
-                                            <div className="student-assessment__sq-number">Q{sqIndex + 1}:</div>
-                                            {questionText && (
-                                              <div className="student-assessment__sq-text">{questionText}</div>
-                                            )}
-                                            {finalCorrectAnswer && (
-                                              <div className="student-assessment__sq-correct">Correct Answer: {finalCorrectAnswer}</div>
-                                            )}
-                                            {acceptableAnswers.length > 0 && (
-                                              <div className="student-assessment__sq-options">
-                                                Acceptable Answers: {acceptableAnswers.join(', ')}
+                                          return (
+                                            <div
+                                              key={sqIndex}
+                                              style={{
+                                                backgroundColor: '#f8fafc',
+                                                padding: '0.75rem',
+                                                borderRadius: '0.5rem',
+                                                border: '1px solid #e2e8f0'
+                                              }}
+                                            >
+                                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                <span style={{
+                                                  backgroundColor: '#3B4F81',
+                                                  color: 'white',
+                                                  padding: '0.125rem 0.5rem',
+                                                  borderRadius: '0.25rem',
+                                                  fontSize: '0.8125rem',
+                                                  fontWeight: '600',
+                                                  flexShrink: 0
+                                                }}>
+                                                  Q{sqIndex + 1}
+                                                </span>
+                                                {questionText && (
+                                                  <p style={{ fontSize: '0.875rem', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>
+                                                    {questionText}
+                                                  </p>
+                                                )}
                                               </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
+
+                                              {finalCorrectAnswer && (
+                                                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
+                                                  <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#6b7280', marginBottom: '0.25rem' }}>
+                                                    Correct Answer
+                                                  </div>
+                                                  <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#16a34a' }}>
+                                                    {finalCorrectAnswer}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                              {acceptableAnswers.length > 0 && (
+                                                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
+                                                  <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#6b7280', marginBottom: '0.375rem' }}>
+                                                    Acceptable Answers
+                                                  </div>
+                                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                                                    {acceptableAnswers.map((answer, idx) => (
+                                                      <span
+                                                        key={idx}
+                                                        style={{
+                                                          backgroundColor: '#dbeafe',
+                                                          color: '#1e40af',
+                                                          padding: '0.125rem 0.5rem',
+                                                          borderRadius: '9999px',
+                                                          fontSize: '0.8125rem',
+                                                          fontWeight: '500'
+                                                        }}
+                                                      >
+                                                        {answer}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                   )}
                                 </>
