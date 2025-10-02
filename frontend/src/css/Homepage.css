@@ -56,6 +56,36 @@ body {
   font-family: 'Atkinson Hyperlegible', sans-serif;
 }
 
+/* Hero Download Button */
+.hero-download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  margin-top: 1.5rem;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+}
+
+.hero-download-btn:hover {
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.hero-download-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3);
+}
+
 .hero-animations {
   position: absolute;
   top: 0;
