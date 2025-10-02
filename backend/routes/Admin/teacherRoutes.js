@@ -159,7 +159,21 @@ router.put('/teachers/:id', upload.single('profileImage'), teacherProfileControl
 router.delete('/teachers/:id', teacherProfileController.deleteTeacher);
 
 // Add new student (Create)
-router.post('/students', upload.single('profileImage'), sanitizeRequest, studentValidation.createStudent, studentAdminController.createStudent);
+router.post('/students',
+  upload.single('profileImage'),
+  (req, res, next) => {
+    console.log('🔍 [ROUTE DEBUG] After multer - req.body:', req.body);
+    console.log('🔍 [ROUTE DEBUG] After multer - req.file:', req.file);
+    next();
+  },
+  sanitizeRequest,
+  (req, res, next) => {
+    console.log('🔍 [ROUTE DEBUG] After sanitize - req.body:', req.body);
+    next();
+  },
+  studentValidation.createStudent,
+  studentAdminController.createStudent
+);
 
 // Update student (PUT)
 router.put('/students/:id', upload.single('profileImage'), validateParams.id, sanitizeRequest, studentAdminController.updateStudent);
