@@ -314,7 +314,21 @@ exports.createStudent = async (req, res) => {
     // Handle profile image upload
     let profileImageUrl = '';
     if (req.file) {
-      profileImageUrl = await uploadToS3(req.file, 'student-profiles');
+      try {
+        console.log('📸 [STUDENT ADMIN] Uploading profile image to S3...', {
+          filename: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        });
+        profileImageUrl = await uploadToS3(req.file, 'student-profiles');
+        console.log('✅ [STUDENT ADMIN] Profile image uploaded successfully:', profileImageUrl);
+      } catch (uploadError) {
+        console.error('🚨 [STUDENT ADMIN] S3 upload failed:', uploadError);
+        // Continue with student creation even if image upload fails
+        console.warn('⚠️ [STUDENT ADMIN] Proceeding without profile image');
+      }
+    } else {
+      console.log('ℹ️ [STUDENT ADMIN] No profile image provided');
     }
 
     // Create student document using sanitized data from validation
