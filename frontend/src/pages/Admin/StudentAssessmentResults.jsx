@@ -679,12 +679,8 @@ const StudentAssessmentResults = () => {
         const user = JSON.parse(localStorage.getItem('user'));
         const token = user?.token;
         const mainAssessmentDetailsResponse = await axios.get(
-          `${API_BASE_URL}/main-assessment`,
+          `${API_BASE_URL}/main-assessment/${student?.readingLevel || 'High Emerging'}/${category}`,
           {
-            params: {
-              category: category,
-              readingLevel: student?.readingLevel || 'High Emerging'
-            },
             headers: {
               Authorization: `Bearer ${token}`
             },
