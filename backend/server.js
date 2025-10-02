@@ -62,8 +62,8 @@ const requestLogger = (req, res, next) => {
 app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
-      'https://literexia.com',
-      'https://literexia.com',
+      'http://localhost:5173',
+      'http://localhost:5174',
       'http://192.168.56.1:5173',
       'http://192.168.1.4:5173',
       'https://literexia.com',
@@ -77,14 +77,10 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With', 'Origin'],
-  exposedHeaders: ['Content-Length', 'X-Requested-With'],
-  maxAge: 86400 // 24 hours preflight cache
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With']
 }));
-
-// Handle preflight requests explicitly
-app.options('*', cors());
+console.error('Blocked by CORS:', origin);
 
 // Increase body parser limits for larger file uploads
 app.use(express.json({ limit: '50mb' }));
