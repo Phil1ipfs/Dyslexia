@@ -737,7 +737,9 @@ const StudentListPage = () => {
         }
       });
 
-      const response = await axios.post(`${API_BASE_URL}/admin/manage/students`, data);
+      const response = await axios.post(`${API_BASE_URL}/admin/manage/students`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       if (response.data.success) {
         // Assuming the backend returns the new student profile
         setStudents([...students, response.data.data.studentProfile]);
