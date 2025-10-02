@@ -6,7 +6,14 @@ const studentAdminController = require('../../controllers/studentAdminController
 const { studentValidation, sanitizeRequest } = require('../../middleware/validationMiddleware');
 const { validateParams } = require('../../middleware/objectIdValidation');
 const multer = require('multer');
-const upload = multer();
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB max file size
+    fieldSize: 10 * 1024 * 1024  // 10MB max field size
+  }
+});
 
 console.log('teacherRoutes.js loaded');
 
