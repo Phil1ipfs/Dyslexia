@@ -1399,7 +1399,165 @@ body {
   transform: translateY(0);
 }
 
-/* ========== MOBILE RESPONSIVE STYLES ========== */
+/* ========== RESPONSIVE STYLES ========== */
+
+/* Large Laptops and Desktops (1440px and up) */
+@media (min-width: 1440px) {
+  /* Download Modal for Large Screens */
+  .download-modal {
+    max-width: 550px;
+  }
+
+  .download-modal-header h3 {
+    font-size: 1.8rem;
+  }
+
+  .qr-code-image {
+    width: 300px;
+    height: 300px;
+  }
+
+  .qr-instruction {
+    font-size: 1.1rem;
+  }
+
+  .qr-platform-label {
+    font-size: 1rem;
+  }
+
+  .platform-btn {
+    padding: 1.2rem 2rem;
+    font-size: 1.1rem;
+  }
+
+  .platform-name {
+    font-size: 1.1rem;
+  }
+
+  .hero-content h2 {
+    font-size: 4.8rem;
+  }
+
+  .hero-content p {
+    font-size: 1.6rem;
+    max-width: 650px;
+  }
+
+  .about-section,
+  .dyslexia-section {
+    padding: 14rem 10% 16rem;
+  }
+
+  .about-heading,
+  .dyslexia-heading {
+    font-size: 3.2rem;
+  }
+
+  .about-description,
+  .dyslexia-description {
+    font-size: 1.4rem;
+  }
+
+  .features-section,
+  .teaching-methodology-section,
+  .why-literexia-section {
+    padding: 10rem 10% 14rem;
+  }
+
+  .features-heading,
+  .teaching-methodology-section .features-heading,
+  .why-literexia-heading {
+    font-size: 3.2rem;
+  }
+
+  .features-grid,
+  .teaching-methodology-section .features-grid {
+    max-width: 1400px;
+    gap: 5rem 10rem;
+  }
+
+  .why-literexia-grid {
+    max-width: 1400px;
+    gap: 4rem;
+  }
+}
+
+/* Standard Laptops (1024px to 1439px) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  /* Download Modal for Standard Laptops */
+  .download-modal {
+    max-width: 500px;
+  }
+
+  .download-modal-header h3 {
+    font-size: 1.6rem;
+  }
+
+  .qr-code-image {
+    width: 280px;
+    height: 280px;
+  }
+
+  .qr-instruction {
+    font-size: 1.05rem;
+  }
+
+  .platform-btn {
+    padding: 1.1rem 1.8rem;
+    font-size: 1.05rem;
+  }
+
+  .platform-name {
+    font-size: 1.05rem;
+  }
+
+  .hero-content {
+    padding-left: 6%;
+  }
+
+  .hero-content h2 {
+    font-size: 3.8rem;
+  }
+
+  .hero-content p {
+    font-size: 1.4rem;
+    max-width: 600px;
+  }
+
+  .about-section,
+  .dyslexia-section {
+    padding: 10rem 7% 12rem;
+  }
+
+  .about-container,
+  .dyslexia-container {
+    max-width: 1100px;
+  }
+
+  .about-heading,
+  .dyslexia-heading {
+    font-size: 2.6rem;
+  }
+
+  .features-section,
+  .teaching-methodology-section {
+    padding: 6rem 5% 10rem;
+  }
+
+  .features-grid,
+  .teaching-methodology-section .features-grid {
+    max-width: 1000px;
+    gap: 3rem 6rem;
+  }
+
+  .why-literexia-section {
+    padding: 8rem 7% 10rem;
+  }
+
+  .why-literexia-grid {
+    max-width: 1100px;
+  }
+}
 
 /* Tablet and below (768px) */
 @media (max-width: 768px) {

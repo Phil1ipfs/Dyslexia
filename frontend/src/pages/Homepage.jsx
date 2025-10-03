@@ -13,7 +13,6 @@ import heroCloud2 from "../assets/images/Homepage/hero-clouds2.png";
 import heroCloud3 from "../assets/images/Homepage/hero-clouds3.png";
 import heroPenguin from "../assets/images/Homepage/hero-penguin.png";
 import qrCodeAndroid from "../assets/images/android.PNG";
-import qrCodeIOS from "../assets/images/iOS.PNG";
 
 // About section assets
 import phones from "../assets/images/Homepage/phone.svg";
@@ -40,7 +39,6 @@ import starIcon from "../assets/icons/Homepage/star.png";
 function Homepage() {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [clickedButton, setClickedButton] = useState(null);
-  const [currentQRPlatform, setCurrentQRPlatform] = useState('android'); // 'android' or 'ios'
 
   // Handle platform button clicks with animation
   const handlePlatformClick = (platform) => {
@@ -335,8 +333,8 @@ function Homepage() {
           <div className="download-modal" onClick={(e) => e.stopPropagation()}>
             <div className="download-modal-header">
               <h3>Download Literexia</h3>
-              <button 
-                className="download-modal-close" 
+              <button
+                className="download-modal-close"
                 onClick={() => setIsDownloadModalOpen(false)}
                 aria-label="Close modal"
               >
@@ -348,54 +346,24 @@ function Homepage() {
               <div className="qr-section">
                 <p className="qr-instruction">Scan the QR code to download the app</p>
                 <div className="qr-code-container">
-                  <button
-                    className="qr-nav-btn qr-prev-btn"
-                    onClick={() => setCurrentQRPlatform(currentQRPlatform === 'android' ? 'ios' : 'android')}
-                    aria-label="Previous QR Code"
-                  >
-                    ‹
-                  </button>
                   <div className="qr-code">
                     <img
-                      src={currentQRPlatform === 'android' ? qrCodeAndroid : qrCodeIOS}
-                      alt={`QR Code to download Literexia app for ${currentQRPlatform === 'android' ? 'Android' : 'iOS'}`}
+                      src={qrCodeAndroid}
+                      alt="QR Code to download Literexia app for Android"
                       className="qr-code-image"
                     />
-                    <p className="qr-platform-label">{currentQRPlatform === 'android' ? 'Android' : 'iOS'}</p>
+                    <p className="qr-platform-label">Android</p>
                   </div>
-                  <button
-                    className="qr-nav-btn qr-next-btn"
-                    onClick={() => setCurrentQRPlatform(currentQRPlatform === 'android' ? 'ios' : 'android')}
-                    aria-label="Next QR Code"
-                  >
-                    ›
-                  </button>
                 </div>
               </div>
-              
+
               <div className="divider">
                 <span>or</span>
               </div>
-              
+
               <div className="download-platforms">
                 <div className="platform-buttons">
-                  <button 
-                    className={`platform-btn ios-btn ${clickedButton === 'ios' ? 'clicked' : ''}`}
-                    onClick={() => handlePlatformClick('ios')}
-                  >
-                    <div className="platform-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.96-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.03-3.11z"/>
-                      </svg>
-                    </div>
-                    <div className="platform-info">
-                      <div className="platform-text">Download on the</div>
-                      <div className="platform-name">iOS</div>
-                    </div>
-                    <div className="click-ripple"></div>
-                  </button>
-                  
-                  <button 
+                  <button
                     className={`platform-btn android-btn ${clickedButton === 'android' ? 'clicked' : ''}`}
                     onClick={() => handlePlatformClick('android')}
                   >
@@ -440,12 +408,6 @@ function Homepage() {
             </div>
             
             <div className="download-modal-footer">
-              <button 
-                className="download-modal-close-btn" 
-                onClick={() => setIsDownloadModalOpen(false)}
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
