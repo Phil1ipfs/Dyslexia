@@ -22,7 +22,7 @@ frontend:
         - echo "Build completed! Checking output..."
         - ls -la frontend/dist/
         - echo "Verifying _headers file..."
-        - ls -la frontend/dist/_headers && cat frontend/dist/_headers | head -20 || echo "WARNING: _headers file not found in dist!"
+        - "ls -la frontend/dist/_headers && cat frontend/dist/_headers | head -20 || echo 'WARNING _headers file not found in dist'"
   artifacts:
     baseDirectory: frontend/dist
     files:
