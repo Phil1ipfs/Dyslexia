@@ -59,15 +59,11 @@ export default defineConfig(({ command, mode }) => {
         },
         format: {
           comments: false, // OWASP ZAP Fix: Remove all comments from production builds
-          preamble: '', // Remove build timestamp comments
+          preamble: '' // Remove build timestamp comments
         },
         mangle: {
           safari10: true,
           keep_fnames: false // Obfuscate function names for security
-        },
-        // OWASP ZAP Fix: Remove timestamp disclosures
-        output: {
-          comments: false
         }
       },
       rollupOptions: {
