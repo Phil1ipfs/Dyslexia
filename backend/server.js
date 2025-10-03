@@ -109,8 +109,12 @@ if (process.env.NODE_ENV === 'production') {
   app.use(prodConfig.helmet);
   app.use(prodConfig.compression);
   app.set('trust proxy', prodConfig.trustProxy);
+
+  // Additional server fingerprinting protection for production
+  app.disable('x-powered-by');
 } else {
   app.use(securityHeaders);
+  app.disable('x-powered-by');
 }
 
 app.use('/api/', apiLimiter); // Apply general API rate limiting
