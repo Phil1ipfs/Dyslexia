@@ -1,40 +1,87 @@
-# Security Headers for AWS Amplify Deployment
-# This file configures security headers for the frontend application
+# OWASP ZAP Security Compliance - Complete Fix
+# Addresses all MEDIUM and LOW priority findings
 
+# ROOT PATH - HTML files (Main application)
 /*
-  # Content Security Policy - Prevents XSS and data injection attacks
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  # OWASP ZAP Fix: Content Security Policy (MEDIUM priority)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://api.literexia.com https://literexia.com https://*.amazonaws.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
-  # Anti-clickjacking protection
+  # OWASP ZAP Fix: Anti-clickjacking Header (MEDIUM priority)
   X-Frame-Options: DENY
 
-  # MIME-sniffing protection
+  # OWASP ZAP Fix: X-Content-Type-Options (LOW priority)
   X-Content-Type-Options: nosniff
 
-  # XSS protection
-  X-XSS-Protection: 1; mode=block
-
-  # Referrer policy
-  Referrer-Policy: strict-origin-when-cross-origin
-
-  # Feature policy - Restrict browser features
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
-
-  # HTTPS enforcement (only set on HTTPS)
+  # OWASP ZAP Fix: Strict-Transport-Security (LOW priority)
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 
-  # Cache control for static assets
-  Cache-Control: public, max-age=31536000
+  # XSS Protection
+  X-XSS-Protection: 1; mode=block
 
-# API routes (if any are served from the same domain)
-/api/*
-  Content-Security-Policy: default-src 'self'; script-src 'none'; style-src 'none'; img-src 'none'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'
+  # Referrer Policy
+  Referrer-Policy: strict-origin-when-cross-origin
 
-# Service worker
-/sw.js
-  Cache-Control: no-cache, no-store, must-revalidate
+  # Feature Policy
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
 
-# Manifest file
-/manifest.json
-  Content-Type: application/manifest+json
+  # Cache control for HTML files (OWASP ZAP Informational fix)
+  Cache-Control: no-cache, no-store, must-revalidate, private
+  Pragma: no-cache
+  Expires: 0
+
+# STATIC ASSETS - JavaScript, CSS, Images (with hash)
+/assets/*
+  # Security headers
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-XSS-Protection: 1; mode=block
+
+  # Cache immutable versioned assets (OWASP ZAP Informational fix)
+  Cache-Control: public, max-age=31536000, immutable
+
+# ROBOTS.TXT - OWASP ZAP MEDIUM Priority Fix
+/robots.txt
+  # OWASP ZAP Fix: CSP for robots.txt
+  Content-Security-Policy: default-src 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Content-Type: text/plain
+  # Cache for 1 day
   Cache-Control: public, max-age=86400
+
+# SITEMAP.XML - OWASP ZAP MEDIUM Priority Fix
+/sitemap.xml
+  # OWASP ZAP Fix: CSP for sitemap.xml
+  Content-Security-Policy: default-src 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Content-Type: application/xml
+  # Cache for 1 day
+  Cache-Control: public, max-age=86400
+
+# MANIFEST.JSON
+/manifest.json
+  # Security headers
+  Content-Security-Policy: default-src 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Content-Type: application/manifest+json
+  # Cache for 1 day
+  Cache-Control: public, max-age=86400
+
+# SERVICE WORKER - Never cache
+/sw.js
+  # Security headers
+  Content-Security-Policy: default-src 'self'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  # No cache
+  Cache-Control: no-cache, no-store, must-revalidate, private
+  Pragma: no-cache
+  Expires: 0

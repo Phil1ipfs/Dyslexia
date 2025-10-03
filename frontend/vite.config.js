@@ -54,7 +54,14 @@ export default defineConfig(({ command, mode }) => {
       terserOptions: {
         compress: {
           drop_console: isProd, // Remove console logs in production
-          drop_debugger: isProd
+          drop_debugger: isProd,
+          pure_funcs: isProd ? ['console.log', 'console.info', 'console.debug', 'console.warn'] : []
+        },
+        format: {
+          comments: false // OWASP ZAP: Remove all comments from production builds
+        },
+        mangle: {
+          safari10: true
         }
       },
       rollupOptions: {
