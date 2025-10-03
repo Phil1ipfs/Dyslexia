@@ -22,7 +22,6 @@ Sentry.init({
   environment: process.env.NODE_ENV || 'production'
 });
 
-
 // Create a root
 const container = document.getElementById('root');
 const root = createRoot(container);

@@ -159,43 +159,16 @@ const createAccountLimiter = (maxAttempts = 3, windowMs = 60 * 60 * 1000) => {
   };
 };
 
-// Security headers middleware - OWASP ZAP compliant
+// Security headers middleware
 const securityHeaders = (req, res, next) => {
-  // Remove X-Powered-By header to prevent server version disclosure
+  // Remove X-Powered-By header
   res.removeHeader('X-Powered-By');
 
-  // Hide server information completely
-  res.removeHeader('Server');
-
-  // OWASP ZAP Fix 1: X-Content-Type-Options Header (prevents MIME-sniffing attacks)
+  // Add security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
-
-  // OWASP ZAP Fix 2: Anti-clickjacking Header (X-Frame-Options)
   res.setHeader('X-Frame-Options', 'DENY');
-
-  // OWASP ZAP Fix 3: Content Security Policy (CSP) Header
-  res.setHeader('Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://literexia.com https://*.amazonaws.com; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://literexia.com; " +
-    "font-src 'self' https://fonts.gstatic.com data:; " +
-    "img-src 'self' data: https: blob:; " +
-    "connect-src 'self' https://literexia.com https://*.amazonaws.com ws: wss:; " +
-    "frame-ancestors 'none'; " +
-    "base-uri 'self'; " +
-    "form-action 'self';"
-  );
-
-  // XSS Protection (legacy but still useful for older browsers)
   res.setHeader('X-XSS-Protection', '1; mode=block');
-
-  // Referrer Policy (privacy protection)
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-  // Permissions Policy (restrict browser features)
-  res.setHeader('Permissions-Policy',
-    'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()'
-  );
 
   // Add CORS headers for authentication endpoints
   if (req.path.startsWith('/api/auth/')) {

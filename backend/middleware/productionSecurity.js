@@ -3,41 +3,21 @@ const compression = require('compression');
 const cluster = require('cluster');
 const os = require('os');
 
-// AWS EC2 Production Security Configuration - OWASP ZAP Compliant
+// AWS EC2 Production Security Configuration
 const createProductionSecurityConfig = () => {
   return {
-    // Enhanced Helmet configuration for production with CSP
+    // Enhanced Helmet configuration for production
     helmet: helmet({
-      // OWASP ZAP Fix: Enable Content Security Policy
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://literexia.com", "https://*.amazonaws.com"],
-          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://literexia.com"],
-          fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-          imgSrc: ["'self'", "data:", "https:", "blob:"],
-          connectSrc: ["'self'", "https://literexia.com", "https://*.amazonaws.com", "ws:", "wss:"],
-          frameAncestors: ["'none'"],
-          baseUri: ["'self'"],
-          formAction: ["'self'"]
-        }
-      },
-      // HTTPS Strict Transport Security
+      contentSecurityPolicy: false,
       hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
         preload: true
       },
-      // OWASP ZAP Fix: X-Content-Type-Options
       noSniff: true,
-      // OWASP ZAP Fix: Anti-clickjacking (X-Frame-Options)
       frameguard: { action: 'deny' },
-      // XSS Filter
       xssFilter: true,
-      // Referrer Policy
-      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-      // OWASP ZAP Fix: Hide server information
-      hidePoweredBy: true
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" }
     }),
 
     // Compression for AWS EC2 bandwidth optimization
