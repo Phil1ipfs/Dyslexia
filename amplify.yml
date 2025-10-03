@@ -21,6 +21,10 @@ frontend:
         - npm --prefix frontend run build
         - echo "Build completed! Checking output..."
         - ls -la frontend/dist/
+        - echo "Verifying _headers file was copied..."
+        - ls -la frontend/dist/_headers
+        - echo "First 20 lines of _headers file:"
+        - head -20 frontend/dist/_headers
   artifacts:
     baseDirectory: frontend/dist
     files:
