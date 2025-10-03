@@ -13,7 +13,7 @@
   X-Content-Type-Options: nosniff
 
   # OWASP ZAP Fix: Strict-Transport-Security (LOW priority)
-  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 
   # XSS Protection
   X-XSS-Protection: 1; mode=block
@@ -35,7 +35,7 @@
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
-  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-XSS-Protection: 1; mode=block
 
   # Cache immutable versioned assets (OWASP ZAP Informational fix)
@@ -47,7 +47,7 @@
   Content-Security-Policy: default-src 'none'
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
-  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   Content-Type: text/plain
   # Cache for 1 day
   Cache-Control: public, max-age=86400
@@ -58,7 +58,7 @@
   Content-Security-Policy: default-src 'none'
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
-  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   Content-Type: application/xml
   # Cache for 1 day
   Cache-Control: public, max-age=86400
@@ -69,7 +69,7 @@
   Content-Security-Policy: default-src 'none'
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
-  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   Content-Type: application/manifest+json
   # Cache for 1 day
   Cache-Control: public, max-age=86400
@@ -80,7 +80,7 @@
   Content-Security-Policy: default-src 'self'
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
-  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   # No cache
   Cache-Control: no-cache, no-store, must-revalidate, private
   Pragma: no-cache
