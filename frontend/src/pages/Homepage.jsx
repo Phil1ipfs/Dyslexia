@@ -51,7 +51,7 @@ function Homepage() {
 
     // Download the Android APK
     if (platform === 'android') {
-      window.open('https://drive.google.com/uc?export=download&id=12zk_OyBrbiAxArTFpwPKGRAi3hk_zw5u', '_blank');
+      window.open('https://drive.google.com/uc?export=download&id=1emDP41QVpoq0fa3g1RLiFgfc7nD8Ropi', '_blank');
     }
   };
 
