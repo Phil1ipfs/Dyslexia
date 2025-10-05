@@ -438,14 +438,14 @@
 }
 
 .sdx-save-recommendation-btn {
-  background: linear-gradient(135deg, #10B981, #059669);
+  background: linear-gradient(135deg, #3B4F81, #2a3d6b);
   color: white;
 }
 
 .sdx-save-recommendation-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669, #047857);
+  background: linear-gradient(135deg, #2a3d6b, #1e2d4f);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);
 }
 
 .sdx-save-recommendation-btn:disabled {
@@ -474,13 +474,13 @@
   gap: 1rem;
   align-items: flex-start;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  background: #f8fafc;
   border-radius: 8px;
-  border-left: 4px solid #10B981;
+  border-left: 4px solid #3B4F81;
 }
 
 .sdx-recommendation-icon {
-  color: #10B981;
+  color: #3B4F81;
   font-size: 1.5rem;
   flex-shrink: 0;
   margin-top: 0.25rem;
