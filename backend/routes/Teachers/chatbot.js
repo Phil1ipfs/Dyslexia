@@ -9,30 +9,36 @@ require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const OpenAI = require('openai').default;
 // Lightweight title generator for sessions (no external API)
 function generateSessionTitle(messages = []) {
-  const textPool = (messages.filter(m => m.sender === 'user').length > 0
-    ? messages.filter(m => m.sender === 'user')
-    : messages).map(m => (m.text || ''));
+  if (!Array.isArray(messages) || messages.length === 0) return 'Chat';
 
-  const corpus = textPool.join(' ').toLowerCase();
-  const stopWords = new Set([
-    'the','a','an','and','or','to','for','of','in','on','with','is','are','was','were','be','been','being','that','this','those','these','i','you','we','they','he','she','it','at','as','by','from','about','into','over','after','before','how','what','why','when','where','which','can','could','should','would','may','might','will','do','does','did','have','has','had','your','my','our','their','them','me'
-  ]);
+  // Prefer the first user message; skip the static welcome bot message
+  const welcomeSignature = 'Literexia Teaching Assistant';
+  const userFirst = messages.find(m => m.sender === 'user' && m.text);
+  const nonWelcomeBot = messages.find(m => m.sender === 'bot' && m.text && !m.text.includes(welcomeSignature));
+  // Prefer assistant's first substantive reply; fallback to user's first, then any first message
+  const source = (nonWelcomeBot?.text || userFirst?.text || messages[0].text || '').trim();
 
-  const counts = Object.create(null);
-  corpus.split(/[^a-z0-9]+/i).forEach(word => {
-    const w = word.trim();
-    if (!w || w.length < 3 || stopWords.has(w)) return;
-    counts[w] = (counts[w] || 0) + 1;
-  });
+  if (!source) return 'Chat';
 
-  const top = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0,6).map(([w]) => w);
-  let title = top.join(' ');
-  if (!title) {
-    title = (textPool[0] || 'Chat').substring(0, 80);
-  } else {
-    title = title.substring(0, 80);
+  // Take the first sentence or up to 10 words, whichever is shorter
+  const firstSentence = source.split(/[.!?\n]/)[0];
+  const words = firstSentence.trim().split(/\s+/).slice(0, 10).join(' ');
+  let title = words;
+
+  // Clean excessive whitespace and trailing punctuation
+  title = title.replace(/\s+/g, ' ').replace(/[,;:\-]+$/,'').trim();
+
+  // Capitalize first letter; keep original casing of the rest (works for Filipino/English)
+  if (title.length > 0) {
+    title = title.charAt(0).toUpperCase() + title.slice(1);
   }
-  return title.charAt(0).toUpperCase() + title.slice(1);
+
+  // Fallback if title too generic
+  if (title.length < 3) title = 'Chat';
+
+  // Limit length
+  if (title.length > 80) title = title.substring(0, 80);
+  return title;
 }
 const ChatHistory = require('../../models/chatHistoryModel');
 
