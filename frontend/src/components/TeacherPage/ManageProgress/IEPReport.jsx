@@ -3329,6 +3329,22 @@ const IEPReport = ({
                   </div>
                 )}
 
+                {/* ✅ NEW: General Recommendations Section - Before Signatures */}
+                <div className="iep-pdf-general-recommendation">
+                  <div className="iep-pdf-section-title">General Recommendations</div>
+                  <div className="iep-pdf-recommendation-content">
+                    {currentIepData?.generalRecommendation && currentIepData.generalRecommendation.trim() !== '' ? (
+                      <p className="iep-pdf-recommendation-text">
+                        {currentIepData.generalRecommendation}
+                      </p>
+                    ) : (
+                      <p className="iep-pdf-recommendation-empty">
+                        No general recommendations have been provided at this time. Teachers may add personalized recommendations based on the student's overall progress and learning needs.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Authorized Personnel - Stay on page 4 with last 2 categories */}
                 <div className="iep-pdf-page-4-section">
                   <div className="iep-pdf-signatures">
