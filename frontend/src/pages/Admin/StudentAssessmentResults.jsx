@@ -702,19 +702,43 @@ const StudentAssessmentResults = () => {
       // Enhance main assessment responses with question details
       if (mainAssessment && mainAssessmentResponses.length > 0) {
         if (category === 'Reading Comprehension') {
-          // Group Reading Comprehension questions
-          const groupedQuestions = groupReadingComprehensionQuestions(mainAssessmentResponses);
-          
-          mainAssessmentResponses = groupedQuestions.map(group => {
-            const questionDetails = mainAssessment?.questions?.find(q => q.questionId === group.baseQuestionId);
-            
+          // For Reading Comprehension, responses might be split like RC_001_1, RC_001_2, RC_001_3
+          // OR they might be single like RC_001 with array of answers
+          // Group by base questionId first
+          const groupedByBase = {};
+
+          mainAssessmentResponses.forEach(response => {
+            // Extract base questionId (RC_001 from RC_001_1)
+            const baseQuestionId = response.questionId.replace(/_\d+$/, '');
+
+            if (!groupedByBase[baseQuestionId]) {
+              groupedByBase[baseQuestionId] = [];
+            }
+            groupedByBase[baseQuestionId].push(response);
+          });
+
+          // Convert back to array with enhanced details
+          mainAssessmentResponses = Object.keys(groupedByBase).map(baseQuestionId => {
+            const responses = groupedByBase[baseQuestionId];
+            const firstResponse = responses[0];
+
+            // Find question details using base questionId
+            const questionDetails = mainAssessment?.questions?.find(q => q.questionId === baseQuestionId);
+
+            console.log(`[RC DEBUG] Processing ${baseQuestionId}:`, {
+              hasQuestionDetails: !!questionDetails,
+              responseCount: responses.length,
+              responseArray: firstResponse.response,
+              storyTitle: questionDetails?.storyTitle,
+              passagesCount: questionDetails?.passages?.length,
+              sentenceQuestionsCount: questionDetails?.sentenceQuestions?.length,
+              baseQuestionId,
+              originalQuestionIds: responses.map(r => r.questionId)
+            });
+
             return {
-              questionId: group.baseQuestionId,
-              category: category,
-              isCorrect: group.responses.every(r => r.isCorrect),
-              responseTime: group.responses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / group.responses.length,
-              answeredAt: group.responses[0]?.answeredAt, // Use first response date
-              response: group.responses.map(r => r.response).flat(), // Combine all responses
+              ...firstResponse,
+              questionId: baseQuestionId, // Use base questionId
               questionDetails: questionDetails ? {
                 question: questionDetails.questionText,
                 questionType: questionDetails.questionType,
@@ -730,12 +754,11 @@ const StudentAssessmentResults = () => {
                 displaySequence: questionDetails.displaySequence,
                 blankOptions: questionDetails.blankOptions,
                 displayWord: questionDetails.displayWord,
-                // Reading Comprehension special handling - direct assignment
+                // Reading Comprehension CRITICAL fields - direct assignment
                 storyTitle: questionDetails.storyTitle,
                 passages: questionDetails.passages || [],
                 sentenceQuestions: questionDetails.sentenceQuestions || []
-              } : null,
-              groupedResponses: group.responses // Keep individual responses for detailed display
+              } : null
             };
           });
         } else {
@@ -833,11 +856,17 @@ const StudentAssessmentResults = () => {
                 // Group by questionId and get the most recent response for each question
                 const responsesByQuestion = {};
                 allInterventionResponses.forEach(response => {
-                  const questionId = response.questionId;
-                  if (!responsesByQuestion[questionId] ||
-                      new Date(response.answeredAt) > new Date(responsesByQuestion[questionId].answeredAt)) {
-                    responsesByQuestion[questionId] = {
+                  // For Reading Comprehension, extract base questionId (RC_001 from RC_001_1)
+                  const baseQuestionId = category === 'Reading Comprehension'
+                    ? response.questionId.replace(/_\d+$/, '')
+                    : response.questionId;
+
+                  if (!responsesByQuestion[baseQuestionId] ||
+                      new Date(response.answeredAt) > new Date(responsesByQuestion[baseQuestionId].answeredAt)) {
+                    responsesByQuestion[baseQuestionId] = {
                       ...response,
+                      questionId: baseQuestionId, // Use base questionId for RC
+                      originalQuestionId: response.questionId, // Keep original for reference
                       revisionNumber: targetRevisionNumber,
                       attemptNumber: targetRevisionNumber
                     };
@@ -846,11 +875,21 @@ const StudentAssessmentResults = () => {
 
                 // Convert to array and enhance with question details from intervention assessment
                 interventionResponses = Object.values(responsesByQuestion).map(response => {
-                  // Find matching question from intervention assessment
+                  // Find matching question from intervention assessment using base questionId
                   const questionDetails = interventionAssessment?.questions?.find(q => q.questionId === response.questionId);
 
                   console.log(`[DEBUG] Matching question for ${response.questionId}:`, questionDetails);
                   console.log(`[DEBUG] Available question IDs in intervention:`, interventionAssessment?.questions?.map(q => q.questionId));
+
+                  console.log(`[RC INTERVENTION DEBUG] Processing ${response.questionId}:`, {
+                    hasQuestionDetails: !!questionDetails,
+                    originalQuestionId: response.originalQuestionId,
+                    responseArray: response.response,
+                    storyTitle: questionDetails?.storyTitle,
+                    passagesCount: questionDetails?.passages?.length,
+                    sentenceQuestionsCount: questionDetails?.sentenceQuestions?.length,
+                    category
+                  });
 
                   let enhancedResponse = {
                     ...response,
@@ -864,10 +903,17 @@ const StudentAssessmentResults = () => {
                       options: getOptionsFromQuestion(questionDetails, category),
                       // Include choiceOptions for formatting responses
                       choiceOptions: questionDetails.choiceOptions,
-                      // Reading Comprehension special handling - direct assignment
+                      // Reading Comprehension CRITICAL fields - direct assignment
                       storyTitle: questionDetails.storyTitle || questionDetails.questionText,
                       passages: questionDetails.passages || [],
-                      sentenceQuestions: questionDetails.sentenceQuestions || []
+                      sentenceQuestions: questionDetails.sentenceQuestions || [],
+                      // Additional fields for other categories
+                      questionSet: questionDetails.questionSet,
+                      dragElements: questionDetails.dragElements,
+                      correctSequence: questionDetails.correctSequence,
+                      displaySequence: questionDetails.displaySequence,
+                      blankOptions: questionDetails.blankOptions,
+                      displayWord: questionDetails.displayWord
                     } : null,
                     // Include intervention assessment metadata
                     interventionRevision: interventionAssessment?.revisionNumber || targetRevisionNumber,
@@ -1277,10 +1323,17 @@ const StudentAssessmentResults = () => {
                                       </div>
                                     </div>
                                   )}
+                                </div>
+                              )}
 
-                                  {/* Special handling for Reading Comprehension */}
-                                  {selectedCategory?.categoryName === 'Reading Comprehension' && (
-                                    <>
+                          {/* Special handling for Reading Comprehension */}
+                          {selectedCategory?.categoryName === 'Reading Comprehension' && (() => {
+                                    console.log('[RC RENDER] Rendering RC for questionId:', response.questionId);
+                                    console.log('[RC RENDER] response.questionDetails exists?', !!response.questionDetails);
+                                    console.log('[RC RENDER] response.questionDetails:', response.questionDetails);
+                                    console.log('[RC RENDER] Full response object:', response);
+                                    return (
+                                    <div className="student-assessment__question-content">
                                       {!response.questionDetails && (
                                         <div style={{
                                           padding: '1rem',
@@ -1521,17 +1574,16 @@ const StudentAssessmentResults = () => {
                                           </div>
                                         </div>
                                       )}
-                                        </>
-                                      )}
                                     </>
-                                  )}
+                                      )}
+                                    </div>
+                                    );
+                                  })()}
 
-                                  {/* Question metadata */}
-                                  <div className="student-assessment__question-metadata">
-                                    {/* Question type removed for all categories */}
-                                  </div>
-                                </div>
-                              )}
+                          {/* Question metadata */}
+                          <div className="student-assessment__question-metadata">
+                            {/* Question type removed for all categories */}
+                          </div>
 
                               {/* Student's Answer - HIDE for Reading Comprehension since answers are shown in sentence questions */}
                               {selectedCategory?.categoryName !== 'Reading Comprehension' && (
@@ -1686,10 +1738,16 @@ const StudentAssessmentResults = () => {
                                   </div>
                                 </div>
                               )}
+                                  </div>
+                                )}
 
                               {/* Special handling for Reading Comprehension in intervention results */}
-                              {selectedCategory?.categoryName === 'Reading Comprehension' && (
-                                <>
+                              {selectedCategory?.categoryName === 'Reading Comprehension' && (() => {
+                                console.log('[RC INTERVENTION RENDER] Rendering RC intervention for questionId:', response.questionId);
+                                console.log('[RC INTERVENTION RENDER] response.questionDetails exists?', !!response.questionDetails);
+                                console.log('[RC INTERVENTION RENDER] response.questionDetails:', response.questionDetails);
+                                return (
+                                <div className="student-assessment__question-content">
                                   {!response.questionDetails && (
                                     <div style={{
                                       padding: '1rem',
@@ -1931,25 +1989,24 @@ const StudentAssessmentResults = () => {
                                   )}
                                     </>
                                   )}
-                                </>
-                              )}
+                                </div>
+                                );
+                              })()}
 
-                                    {/* Question metadata */}
-                                    <div className="student-assessment__question-metadata">
-                                      {/* Question type removed for all categories */}
-                                      {response.interventionRevision && (
-                                        <div className="student-assessment__intervention-revision">
-                                          <strong>Intervention Revision:</strong> {response.interventionRevision}
-                                        </div>
-                                      )}
-                                      {response.interventionLastEdited && (
-                                        <div className="student-assessment__intervention-edited">
-                                          <strong>Last Edited:</strong> {formatDate(response.interventionLastEdited)}
-                                        </div>
-                                      )}
-                                    </div>
+                            {/* Question metadata */}
+                            <div className="student-assessment__question-metadata">
+                              {/* Question type removed for all categories */}
+                              {response.interventionRevision && (
+                                <div className="student-assessment__intervention-revision">
+                                  <strong>Intervention Revision:</strong> {response.interventionRevision}
+                                </div>
+                              )}
+                              {response.interventionLastEdited && (
+                                <div className="student-assessment__intervention-edited">
+                                  <strong>Last Edited:</strong> {formatDate(response.interventionLastEdited)}
+                                </div>
+                              )}
                             </div>
-                          )}
                           
                           {/* Student's Answer - HIDE for Reading Comprehension since answers are shown in sentence questions */}
                           {selectedCategory?.categoryName !== 'Reading Comprehension' && (
