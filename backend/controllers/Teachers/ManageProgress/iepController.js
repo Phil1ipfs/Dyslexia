@@ -114,12 +114,22 @@ class IEPController {
           error: 'No IEP report found and could not create one'
         });
       }
-      
+
+      // ✅ ENHANCEMENT: Ensure generalRecommendation field exists for older documents
+      const iepData = iepReport.toObject ? iepReport.toObject() : iepReport;
+
+      // Add generalRecommendation fields if they don't exist (for backwards compatibility)
+      if (!iepData.hasOwnProperty('generalRecommendation')) {
+        iepData.generalRecommendation = '';
+        iepData.generalRecommendationUpdatedAt = null;
+        iepData.generalRecommendationUpdatedBy = null;
+      }
+
       res.json({
         success: true,
-        data: iepReport
+        data: iepData
       });
-      
+
     } catch (error) {
       console.error('Error getting IEP report:', error);
       res.status(500).json({
@@ -889,12 +899,22 @@ class IEPController {
 
       console.log('✅ Intervention data refreshed successfully WITH teacher data preserved');
 
+      // ✅ ENHANCEMENT: Ensure generalRecommendation field exists for older documents
+      const iepData = iepReport.toObject ? iepReport.toObject() : iepReport;
+
+      // Add generalRecommendation fields if they don't exist (for backwards compatibility)
+      if (!iepData.hasOwnProperty('generalRecommendation')) {
+        iepData.generalRecommendation = '';
+        iepData.generalRecommendationUpdatedAt = null;
+        iepData.generalRecommendationUpdatedBy = null;
+      }
+
       res.json({
         success: true,
         message: 'Intervention data refreshed successfully (teacher data preserved)',
-        data: iepReport
+        data: iepData
       });
-      
+
     } catch (error) {
       console.error('Error refreshing intervention data:', error);
       res.status(500).json({
@@ -1438,10 +1458,20 @@ class IEPController {
 
       console.log('✅ Basic refresh completed with teacher data preserved');
 
+      // ✅ ENHANCEMENT: Ensure generalRecommendation field exists for older documents
+      const iepData = iepReport.toObject ? iepReport.toObject() : iepReport;
+
+      // Add generalRecommendation fields if they don't exist (for backwards compatibility)
+      if (!iepData.hasOwnProperty('generalRecommendation')) {
+        iepData.generalRecommendation = '';
+        iepData.generalRecommendationUpdatedAt = null;
+        iepData.generalRecommendationUpdatedBy = null;
+      }
+
       return res.json({
         success: true,
         message: 'IEP report refreshed (basic mode - teacher data preserved)',
-        data: iepReport
+        data: iepData
       });
 
     } catch (error) {
