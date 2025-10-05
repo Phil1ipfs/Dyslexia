@@ -27,6 +27,9 @@ router.put('/student/:studentId/objective/:objectiveId/main-assessment-remark', 
 // Update remark for a specific intervention attempt
 router.put('/student/:studentId/objective/:objectiveId/attempt/:attemptIndex/remark', IEPController.updateAttemptRemark);
 
+// ✅ NEW: Update general recommendation for IEP report
+router.put('/student/:studentId/general-recommendation', IEPController.updateGeneralRecommendation);
+
 // Bulk update multiple objectives for a student
 router.put('/student/:studentId/bulk-update', IEPController.bulkUpdateObjectives);
 

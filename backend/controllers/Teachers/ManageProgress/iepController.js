@@ -2112,6 +2112,75 @@ class IEPController {
     }
   }
 
+  // ✅ NEW: Update general recommendation for IEP report
+  static async updateGeneralRecommendation(req, res) {
+    try {
+      const { studentId } = req.params;
+      const { recommendation } = req.body;
+
+      console.log(`📝 Updating general recommendation for student ${studentId}`);
+
+      // Validate studentId
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid student ID format'
+        });
+      }
+
+      // Validate recommendation input
+      if (recommendation === undefined || recommendation === null) {
+        return res.status(400).json({
+          success: false,
+          error: 'Recommendation text is required'
+        });
+      }
+
+      // Find the active IEP report for this student
+      const iepReport = await IEPReport.findOne({
+        studentId: new mongoose.Types.ObjectId(studentId),
+        isActive: true
+      });
+
+      if (!iepReport) {
+        return res.status(404).json({
+          success: false,
+          error: 'No active IEP report found for this student'
+        });
+      }
+
+      // Update general recommendation fields
+      iepReport.generalRecommendation = recommendation || '';
+      iepReport.generalRecommendationUpdatedAt = new Date();
+      iepReport.generalRecommendationUpdatedBy = req.user?.id || null;
+      iepReport.updatedAt = new Date();
+
+      // Save the updated report
+      await iepReport.save();
+
+      console.log(`✅ Successfully updated general recommendation for student ${studentId}`);
+
+      res.json({
+        success: true,
+        message: 'General recommendation updated successfully',
+        data: {
+          studentId: studentId,
+          generalRecommendation: iepReport.generalRecommendation,
+          updatedAt: iepReport.generalRecommendationUpdatedAt,
+          updatedBy: iepReport.generalRecommendationUpdatedBy
+        }
+      });
+
+    } catch (error) {
+      console.error('Error updating general recommendation:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update general recommendation',
+        message: error.message
+      });
+    }
+  }
+
 }
 
 module.exports = IEPController; 

@@ -334,6 +334,207 @@
   font-weight: 500;
 }
 
+/* ✅ NEW: General Recommendations Card Styles */
+.sdx-recommendation-card {
+  background-color: var(--background-whitee);
+  border-radius: var(--radius-lgg);
+  box-shadow: var(--shadow-mdd);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  transition: var(--transition-fast);
+  border-top: 5px solid var(--literexia-yelloww);
+  animation: slideUp 0.6s ease;
+}
+
+.sdx-recommendation-card:hover {
+  box-shadow: var(--shadow-lgg);
+  transform: translateY(-3px);
+}
+
+.sdx-recommendation-content {
+  padding: 1.5rem;
+}
+
+.sdx-recommendation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.sdx-recommendation-description {
+  flex: 1;
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.sdx-edit-recommendation-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3B4F81, #4a5494);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sdx-edit-recommendation-btn:hover {
+  background: linear-gradient(135deg, #2a3d6b, #3B4F81);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.3);
+}
+
+.sdx-recommendation-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sdx-recommendation-textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: all 0.3s ease;
+}
+
+.sdx-recommendation-textarea:focus {
+  outline: none;
+  border-color: #3B4F81;
+  box-shadow: 0 0 0 3px rgba(59, 79, 129, 0.1);
+}
+
+.sdx-recommendation-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.sdx-save-recommendation-btn,
+.sdx-cancel-recommendation-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sdx-save-recommendation-btn {
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: white;
+}
+
+.sdx-save-recommendation-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.sdx-save-recommendation-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sdx-cancel-recommendation-btn {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.sdx-cancel-recommendation-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  transform: translateY(-2px);
+}
+
+.sdx-recommendation-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sdx-recommendation-text {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border-radius: 8px;
+  border-left: 4px solid #10B981;
+}
+
+.sdx-recommendation-icon {
+  color: #10B981;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.sdx-recommendation-text p {
+  flex: 1;
+  margin: 0;
+  color: #374151;
+  line-height: 1.7;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+}
+
+.sdx-recommendation-empty {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 2px dashed #d1d5db;
+}
+
+.sdx-empty-icon {
+  color: #9ca3af;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.sdx-recommendation-empty p {
+  flex: 1;
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.sdx-recommendation-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.sdx-meta-icon {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
 /* Parent Card Styles */
 .sdx-parent-card {
   background-color: var(--background-whitee);

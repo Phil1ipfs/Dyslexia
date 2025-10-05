@@ -285,6 +285,38 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
 
+  // ✅ NEW: General Recommendation Section Styles
+  generalRecommendationSection: {
+    marginTop: 25,
+    marginBottom: 20,
+    padding: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 5,
+    borderLeft: '3pt solid #3B4F81',
+  },
+
+  generalRecommendationTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#3B4F81',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+
+  generalRecommendationText: {
+    fontSize: 9,
+    color: '#374151',
+    lineHeight: 1.5,
+    textAlign: 'justify',
+  },
+
+  generalRecommendationEmpty: {
+    fontSize: 9,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    lineHeight: 1.5,
+  },
+
   // Signature section
   signatureSection: {
     flexDirection: 'row',
@@ -932,6 +964,22 @@ const IEPReportPDFRenderer = ({ iepData }) => {
         })}
           </>
         )}
+
+        {/* ✅ NEW: General Recommendations Section - Before Signatures */}
+        <View style={styles.generalRecommendationSection}>
+          <Text style={styles.generalRecommendationTitle}>
+            General Recommendations
+          </Text>
+          {iepData.generalRecommendation && iepData.generalRecommendation.trim() !== '' ? (
+            <Text style={styles.generalRecommendationText}>
+              {iepData.generalRecommendation}
+            </Text>
+          ) : (
+            <Text style={styles.generalRecommendationEmpty}>
+              No general recommendations have been provided at this time. Teachers may add personalized recommendations based on the student's overall progress and learning needs.
+            </Text>
+          )}
+        </View>
 
         {/* Signature Section - Flows naturally on same page */}
         <View style={[styles.signatureSection, { marginTop: 30 }]}>

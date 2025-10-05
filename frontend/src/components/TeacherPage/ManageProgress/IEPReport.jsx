@@ -98,9 +98,14 @@ const IEPReport = ({
   
   // Reading level progression confirmation dialog state
   const [showProgressionDialog, setShowProgressionDialog] = useState(false);
-  
+
   // Teacher profile state
   const [teacherProfile, setTeacherProfile] = useState(null);
+
+  // ✅ NEW: General Recommendation state
+  const [generalRecommendation, setGeneralRecommendation] = useState('');
+  const [isEditingRecommendation, setIsEditingRecommendation] = useState(false);
+  const [savingRecommendation, setSavingRecommendation] = useState(false);
 
   // Get data from either local state or global state
   const currentIepData = iepData || window.iepReportGlobalState?.iepData;
@@ -562,6 +567,11 @@ const IEPReport = ({
           setDataLoaded(true);
           setLoading(false);
           setForceUpdate(prev => prev + 1);
+
+          // ✅ NEW: Initialize general recommendation
+          if (response.data.generalRecommendation) {
+            setGeneralRecommendation(response.data.generalRecommendation);
+          }
           
           console.log('✅ All state setters called - Global state updated:', window.iepReportGlobalState);
           
@@ -862,6 +872,70 @@ const IEPReport = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  // ✅ NEW: Save general recommendation
+  const saveGeneralRecommendation = async () => {
+    try {
+      setSavingRecommendation(true);
+
+      const studentId = student?.id || student?._id;
+
+      console.log('Saving general recommendation:', generalRecommendation);
+
+      // Call the API to update general recommendation
+      const response = await fetch(`${API_BASE_URL}/iep/student/${studentId}/general-recommendation`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AuthService.getToken()}`
+        },
+        body: JSON.stringify({
+          recommendation: generalRecommendation
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state with the saved recommendation
+        setIepData(prevData => ({
+          ...prevData,
+          generalRecommendation: generalRecommendation,
+          generalRecommendationUpdatedAt: new Date()
+        }));
+
+        // Update global state as well
+        if (window.iepReportGlobalState?.iepData) {
+          window.iepReportGlobalState.iepData.generalRecommendation = generalRecommendation;
+          window.iepReportGlobalState.iepData.generalRecommendationUpdatedAt = new Date();
+        }
+
+        setIsEditingRecommendation(false);
+        showSuccessMessage('General recommendation saved successfully!');
+        toast.success('General recommendation saved successfully!');
+      } else {
+        throw new Error(result.error || 'Failed to save recommendation');
+      }
+
+    } catch (error) {
+      console.error('Error saving general recommendation:', error);
+      setError('Failed to save general recommendation. Please try again.');
+      toast.error('Failed to save general recommendation. Please try again.');
+    } finally {
+      setSavingRecommendation(false);
+    }
+  };
+
+  // ✅ NEW: Cancel editing general recommendation
+  const cancelEditingRecommendation = () => {
+    // Restore original value from iepData
+    if (currentIepData?.generalRecommendation) {
+      setGeneralRecommendation(currentIepData.generalRecommendation);
+    } else {
+      setGeneralRecommendation('');
+    }
+    setIsEditingRecommendation(false);
   };
 
   // Show success message temporarily
@@ -2234,6 +2308,90 @@ const IEPReport = ({
           </tbody>
         </table>
       </div>
+      </div>
+
+      {/* ✅ NEW: General Recommendations Section - Before Parent Information */}
+      <div className="sdx-recommendation-card">
+        <h3 className="sdx-section-title">
+          <FaClipboardList /> General Recommendations
+        </h3>
+        <div className="sdx-recommendation-content">
+          <div className="sdx-recommendation-header">
+            <p className="sdx-recommendation-description">
+              Provide personalized recommendations based on the student's overall progress, learning needs, and intervention outcomes. These recommendations will be included in the IEP Progress Report PDF.
+            </p>
+            {!isEditingRecommendation && (
+              <button
+                className="sdx-edit-recommendation-btn"
+                onClick={() => setIsEditingRecommendation(true)}
+              >
+                <FaEdit /> Edit Recommendation
+              </button>
+            )}
+          </div>
+
+          {isEditingRecommendation ? (
+            <div className="sdx-recommendation-edit">
+              <textarea
+                className="sdx-recommendation-textarea"
+                value={generalRecommendation}
+                onChange={(e) => setGeneralRecommendation(e.target.value)}
+                placeholder="Enter general recommendations for the student. Consider their strengths, areas for improvement, suggested strategies for home support, and next steps in their learning journey..."
+                rows="8"
+              />
+              <div className="sdx-recommendation-actions">
+                <button
+                  className="sdx-save-recommendation-btn"
+                  onClick={saveGeneralRecommendation}
+                  disabled={savingRecommendation}
+                >
+                  {savingRecommendation ? (
+                    <>
+                      <FaSpinner className="fa-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FaSave /> Save Recommendation
+                    </>
+                  )}
+                </button>
+                <button
+                  className="sdx-cancel-recommendation-btn"
+                  onClick={cancelEditingRecommendation}
+                  disabled={savingRecommendation}
+                >
+                  <FaTimes /> Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="sdx-recommendation-display">
+              {generalRecommendation && generalRecommendation.trim() !== '' ? (
+                <div className="sdx-recommendation-text">
+                  <FaCheckCircle className="sdx-recommendation-icon" />
+                  <p>{generalRecommendation}</p>
+                </div>
+              ) : (
+                <div className="sdx-recommendation-empty">
+                  <FaInfoCircle className="sdx-empty-icon" />
+                  <p>No general recommendations have been provided yet. Click "Edit Recommendation" to add personalized recommendations for this student.</p>
+                </div>
+              )}
+              {currentIepData?.generalRecommendationUpdatedAt && (
+                <div className="sdx-recommendation-meta">
+                  <FaCalendarAlt className="sdx-meta-icon" />
+                  <span>Last updated: {new Date(currentIepData.generalRecommendationUpdatedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Parent Information Section - Moved to bottom of Reading Skills Progress */}
