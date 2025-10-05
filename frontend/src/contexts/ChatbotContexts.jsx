@@ -26,7 +26,9 @@ function messagesReducer(state, action) {
   switch (action.type) {
     case 'ADD_MESSAGE':
       return [...state, action.payload];
-    case 'CLEAR_MESSAGES':
+    case 'CLEAR_ALL':
+      return [];
+    case 'RESET_TO_WELCOME':
       return [initialMessagesState[0]]; // Keep only the welcome message
     default:
       return state;
@@ -83,6 +85,27 @@ export const ChatbotProvider = ({ children }) => {
   };
 
   const { userId, userType } = getCurrentUserInfo();
+
+  // Persist sessionId per user so refresh restores the active chat
+  useEffect(() => {
+    if (!userId) return;
+    const storageKey = `tcb_session_${userId}`;
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      setSessionId(stored);
+    } else {
+      // Save the initially generated id for this user
+      localStorage.setItem(storageKey, sessionId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // Whenever sessionId changes and we have a user, save it
+  useEffect(() => {
+    if (!userId || !sessionId) return;
+    const storageKey = `tcb_session_${userId}`;
+    localStorage.setItem(storageKey, sessionId);
+  }, [userId, sessionId]);
   
   // Sample suggested questions in Filipino
   const suggestedQuestionsFil = {
@@ -152,8 +175,8 @@ export const ChatbotProvider = ({ children }) => {
         const response = await loadChatHistory(userId, userType, sessionId);
 
         if (response.success && response.chatHistory && response.chatHistory.messages.length > 0) {
-          // Clear current messages and load history
-          dispatch({ type: 'CLEAR_MESSAGES' });
+          // Replace messages with history (no extra welcome)
+          dispatch({ type: 'CLEAR_ALL' });
 
           // Add each message from history
           response.chatHistory.messages.forEach(msg => {
@@ -189,6 +212,34 @@ export const ChatbotProvider = ({ children }) => {
     loadHistory();
   }, [userId, userType, sessionId, isHistoryLoaded]);
 
+  // Explicitly load a specific session and populate messages
+  const loadSessionById = async (targetSessionId) => {
+    if (!userId || !userType || !targetSessionId) return;
+    try {
+      const response = await loadChatHistory(userId, userType, targetSessionId);
+      if (response.success && response.chatHistory) {
+        setSessionId(targetSessionId);
+        dispatch({ type: 'CLEAR_ALL' });
+        (response.chatHistory.messages || []).forEach(msg => {
+          dispatch({
+            type: 'ADD_MESSAGE',
+            payload: {
+              id: msg.messageId,
+              sender: msg.sender,
+              text: msg.text,
+              timestamp: new Date(msg.timestamp)
+            }
+          });
+        });
+        if (response.chatHistory.category) setSelectedCategory(response.chatHistory.category);
+        if (response.chatHistory.language) setLanguage(response.chatHistory.language);
+        setIsHistoryLoaded(true);
+      }
+    } catch (err) {
+      console.error('Failed to load selected chat session:', err);
+    }
+  };
+
   // Save chat history whenever messages change
   useEffect(() => {
     const saveHistory = async () => {
@@ -200,12 +251,16 @@ export const ChatbotProvider = ({ children }) => {
         sessionId
       });
 
-      if (!userId || !userType || !isHistoryLoaded || messages.length === 0) {
+      // Do not save if there's no user message (avoid saving the initial welcome-only state)
+      const hasUserMessage = messages.some(m => m.sender === 'user');
+
+      if (!userId || !userType || !isHistoryLoaded || messages.length === 0 || !hasUserMessage) {
         console.warn('[CHAT HISTORY] Skipping save - missing required data:', {
           hasUserId: !!userId,
           hasUserType: !!userType,
           isHistoryLoaded,
-          messageCount: messages.length
+          messageCount: messages.length,
+          hasUserMessage
         });
         return;
       }
@@ -287,7 +342,7 @@ export const ChatbotProvider = ({ children }) => {
   };
 
   const clearMessages = () => {
-    dispatch({ type: 'CLEAR_MESSAGES' });
+    dispatch({ type: 'RESET_TO_WELCOME' });
   };
 
   const startNewSession = () => {
@@ -295,8 +350,8 @@ export const ChatbotProvider = ({ children }) => {
     const newSessionId = generateSessionId();
     setSessionId(newSessionId);
 
-    // Clear messages
-    dispatch({ type: 'CLEAR_MESSAGES' });
+    // Reset messages to just the welcome
+    dispatch({ type: 'RESET_TO_WELCOME' });
 
     // Reset to defaults
     setSelectedCategory('all');
@@ -347,7 +402,8 @@ export const ChatbotProvider = ({ children }) => {
     startNewSession,
     changeCategory,
     toggleLanguage,
-    formatTimestamp
+    formatTimestamp,
+    loadSessionById
   };
 
   return <ChatbotContext.Provider value={value}>{children}</ChatbotContext.Provider>;

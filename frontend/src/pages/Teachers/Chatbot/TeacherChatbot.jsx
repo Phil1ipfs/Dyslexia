@@ -20,7 +20,8 @@ const TeacherChatbot = () => {
     sendMessage,
     changeCategory,
     startNewSession,
-    formatTimestamp
+    formatTimestamp,
+    loadSessionById
   } = useChatbot();
 
   const [inputMessage, setInputMessage] = useState('');
@@ -80,7 +81,7 @@ const TeacherChatbot = () => {
       }
 
       const userData = currentUser.user;
-      const userId = userData.idNumber || userData.teacherId || userData.studentId || userData._id;
+      const userId = userData.id || userData.idNumber || userData.teacherId || userData.studentId || userData._id;
       const userType = userRole || 'teacher';
 
       const response = await getAllChatSessions(userId, userType);
@@ -102,17 +103,12 @@ const TeacherChatbot = () => {
       if (!currentUser || !currentUser.user) return;
 
       const userData = currentUser.user;
-      const userId = userData.idNumber || userData.teacherId || userData.studentId || userData._id;
+      const userId = userData.id || userData.idNumber || userData.teacherId || userData.studentId || userData._id;
       const userType = userRole || 'teacher';
 
-      // Load the selected session
-      await loadChatHistory(userId, userType, selectedSessionId);
-
-      // Close the history sidebar
+      // Load the selected session via context helper (no full reload)
+      await loadSessionById(selectedSessionId);
       setShowHistory(false);
-
-      // Refresh to show loaded messages
-      window.location.reload();
     } catch (error) {
       console.error('Failed to load chat session:', error);
     }
@@ -229,6 +225,9 @@ const TeacherChatbot = () => {
                       <div className="tcb-history-item-date">{formatSessionDate(session.lastActivity)}</div>
                       <div className="tcb-history-item-count">{session.messageCount} messages</div>
                     </div>
+                    {session.title && (
+                      <div className="tcb-history-item-title"><strong>{session.title}</strong></div>
+                    )}
                     <div className="tcb-history-item-preview">{session.lastMessage || 'No messages'}</div>
                     <div className="tcb-history-item-actions">
                       <button

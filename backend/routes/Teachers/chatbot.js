@@ -7,6 +7,33 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 const OpenAI = require('openai').default;
+// Lightweight title generator for sessions (no external API)
+function generateSessionTitle(messages = []) {
+  const textPool = (messages.filter(m => m.sender === 'user').length > 0
+    ? messages.filter(m => m.sender === 'user')
+    : messages).map(m => (m.text || ''));
+
+  const corpus = textPool.join(' ').toLowerCase();
+  const stopWords = new Set([
+    'the','a','an','and','or','to','for','of','in','on','with','is','are','was','were','be','been','being','that','this','those','these','i','you','we','they','he','she','it','at','as','by','from','about','into','over','after','before','how','what','why','when','where','which','can','could','should','would','may','might','will','do','does','did','have','has','had','your','my','our','their','them','me'
+  ]);
+
+  const counts = Object.create(null);
+  corpus.split(/[^a-z0-9]+/i).forEach(word => {
+    const w = word.trim();
+    if (!w || w.length < 3 || stopWords.has(w)) return;
+    counts[w] = (counts[w] || 0) + 1;
+  });
+
+  const top = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0,6).map(([w]) => w);
+  let title = top.join(' ');
+  if (!title) {
+    title = (textPool[0] || 'Chat').substring(0, 80);
+  } else {
+    title = title.substring(0, 80);
+  }
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
 const ChatHistory = require('../../models/chatHistoryModel');
 
 // Initialize OpenAI client with your secret key
@@ -345,16 +372,24 @@ router.get('/history/sessions/:userId/:userType', async (req, res) => {
       .select('sessionId category language lastActivity createdAt messages')
       .sort({ lastActivity: -1 });
 
-    // Map to include message count and preview
-    const sessionsWithPreview = sessions.map(session => ({
-      sessionId: session.sessionId,
-      category: session.category,
-      language: session.language,
-      messageCount: session.messages.length,
-      lastMessage: session.messages.length > 0 ? session.messages[session.messages.length - 1].text.substring(0, 100) : '',
-      lastActivity: session.lastActivity,
-      createdAt: session.createdAt
-    }));
+    // Map to include message count, preview, and a context title
+    const sessionsWithPreview = sessions.map(session => {
+      const title = generateSessionTitle(session.messages || []);
+      const lastMsg = session.messages.length > 0
+        ? session.messages[session.messages.length - 1].text.substring(0, 100)
+        : '';
+
+      return {
+        sessionId: session.sessionId,
+        category: session.category,
+        language: session.language,
+        title,
+        messageCount: session.messages.length,
+        lastMessage: lastMsg,
+        lastActivity: session.lastActivity,
+        createdAt: session.createdAt
+      };
+    });
 
     res.json({
       success: true,
