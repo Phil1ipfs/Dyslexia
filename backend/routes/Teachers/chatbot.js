@@ -7,6 +7,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 const OpenAI = require('openai').default;
+const ChatHistory = require('../../models/chatHistoryModel');
 
 // Initialize OpenAI client with your secret key
 const openai = new OpenAI({
@@ -232,9 +233,166 @@ router.get('/test', (req, res) => {
     endpoints: {
       '/ask': 'General dyslexia teaching assistance',
       '/intervention-help': 'Specific intervention guidance with student data',
-      '/student-encouragement': 'Student-focused encouragement and tips'
+      '/student-encouragement': 'Student-focused encouragement and tips',
+      '/history/save': 'Save chat history',
+      '/history/load': 'Load chat history for a user'
     }
   });
+});
+
+/**
+ * POST /api/chatbot/history/save
+ * Save chat messages to database
+ * Request body: { userId: string, userType: string, sessionId: string, messages: array, category?: string, language?: string }
+ */
+router.post('/history/save', async (req, res) => {
+  const { userId, userType, sessionId, messages, category = 'all', language = 'filipino' } = req.body;
+
+  if (!userId || !userType || !sessionId || !messages) {
+    return res.status(400).json({ error: 'Missing required fields: userId, userType, sessionId, messages' });
+  }
+
+  try {
+    // Find existing chat history or create new one
+    let chatHistory = await ChatHistory.findOne({ userId, userType, sessionId });
+
+    if (chatHistory) {
+      // Update existing chat history
+      chatHistory.messages = messages;
+      chatHistory.category = category;
+      chatHistory.language = language;
+      chatHistory.lastActivity = new Date();
+    } else {
+      // Create new chat history
+      chatHistory = new ChatHistory({
+        userId,
+        userType,
+        sessionId,
+        messages,
+        category,
+        language
+      });
+    }
+
+    await chatHistory.save();
+
+    res.json({
+      success: true,
+      message: 'Chat history saved successfully',
+      sessionId: chatHistory.sessionId
+    });
+  } catch (err) {
+    console.error('Error saving chat history:', err);
+    res.status(500).json({ error: 'Failed to save chat history' });
+  }
+});
+
+/**
+ * GET /api/chatbot/history/load/:userId/:userType
+ * Load chat history for a user
+ * Optional query params: sessionId, limit
+ */
+router.get('/history/load/:userId/:userType', async (req, res) => {
+  const { userId, userType } = req.params;
+  const { sessionId, limit = 10 } = req.query;
+
+  if (!userId || !userType) {
+    return res.status(400).json({ error: 'Missing required params: userId, userType' });
+  }
+
+  try {
+    let query = { userId, userType };
+
+    // If sessionId is provided, get specific session
+    if (sessionId) {
+      query.sessionId = sessionId;
+      const chatHistory = await ChatHistory.findOne(query);
+      return res.json({
+        success: true,
+        chatHistory: chatHistory || null
+      });
+    }
+
+    // Otherwise, get most recent sessions
+    const chatHistories = await ChatHistory.find(query)
+      .sort({ lastActivity: -1 })
+      .limit(parseInt(limit));
+
+    res.json({
+      success: true,
+      chatHistories,
+      count: chatHistories.length
+    });
+  } catch (err) {
+    console.error('Error loading chat history:', err);
+    res.status(500).json({ error: 'Failed to load chat history' });
+  }
+});
+
+/**
+ * GET /api/chatbot/history/sessions/:userId/:userType
+ * Get all chat sessions for a user
+ */
+router.get('/history/sessions/:userId/:userType', async (req, res) => {
+  const { userId, userType } = req.params;
+
+  if (!userId || !userType) {
+    return res.status(400).json({ error: 'Missing required params: userId, userType' });
+  }
+
+  try {
+    const sessions = await ChatHistory.find({ userId, userType })
+      .select('sessionId category language lastActivity createdAt messages')
+      .sort({ lastActivity: -1 });
+
+    // Map to include message count and preview
+    const sessionsWithPreview = sessions.map(session => ({
+      sessionId: session.sessionId,
+      category: session.category,
+      language: session.language,
+      messageCount: session.messages.length,
+      lastMessage: session.messages.length > 0 ? session.messages[session.messages.length - 1].text.substring(0, 100) : '',
+      lastActivity: session.lastActivity,
+      createdAt: session.createdAt
+    }));
+
+    res.json({
+      success: true,
+      sessions: sessionsWithPreview,
+      count: sessionsWithPreview.length
+    });
+  } catch (err) {
+    console.error('Error loading chat sessions:', err);
+    res.status(500).json({ error: 'Failed to load chat sessions' });
+  }
+});
+
+/**
+ * DELETE /api/chatbot/history/:sessionId
+ * Delete a specific chat session
+ */
+router.delete('/history/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+
+  if (!sessionId) {
+    return res.status(400).json({ error: 'Missing required param: sessionId' });
+  }
+
+  try {
+    const result = await ChatHistory.findOneAndDelete({ sessionId });
+
+    if (!result) {
+      return res.status(404).json({ error: 'Chat session not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Chat session deleted successfully'
+    });
+  } catch (err) {
+    console.error('Error deleting chat session:', err);
+    res.status(500).json({ error: 'Failed to delete chat session' });
+  }
 });
 
 module.exports = router;

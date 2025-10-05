@@ -1,6 +1,12 @@
 // src/contexts/ChatbotContext.js
-import React, { createContext, useContext, useState, useReducer } from 'react';
+import React, { createContext, useContext, useState, useReducer, useEffect } from 'react';
 import { generateResponse } from '../services/Teachers/chatbotService';
+import {
+  saveChatHistory,
+  loadChatHistory,
+  generateSessionId
+} from '../services/Teachers/chatHistoryService';
+import authService from '../services/authService';
 
 // Create context
 const ChatbotContext = createContext();
@@ -33,6 +39,50 @@ export const ChatbotProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [language, setLanguage] = useState('filipino'); // 'filipino' or 'english'
+  const [sessionId, setSessionId] = useState(() => generateSessionId());
+  const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
+
+  // Get user information directly from authService
+  const getCurrentUserInfo = () => {
+    const currentUser = authService.getCurrentUser();
+    const userRole = authService.getUserRole();
+
+    console.log('[CHAT HISTORY] Getting user info:', {
+      hasCurrentUser: !!currentUser,
+      currentUserKeys: currentUser ? Object.keys(currentUser) : [],
+      currentUserFull: currentUser, // See full structure
+      userRole
+    });
+
+    if (!currentUser || !currentUser.user) {
+      console.warn('[CHAT HISTORY] No user found in authService');
+      return { userId: null, userType: 'teacher' };
+    }
+
+    // Extract userId from different possible user object structures
+    const userData = currentUser.user;
+    console.log('[CHAT HISTORY] userData object:', userData); // See what's in userData
+
+    const userId = userData.id || userData.idNumber || userData.teacherId || userData.studentId || userData.userId || userData._id || null;
+    const userType = userRole || 'teacher';
+
+    console.log('[CHAT HISTORY] User info extracted:', {
+      userId,
+      userType,
+      userDataKeys: Object.keys(userData),
+      availableIds: {
+        idNumber: userData.idNumber,
+        teacherId: userData.teacherId,
+        studentId: userData.studentId,
+        userId: userData.userId,
+        _id: userData._id
+      }
+    });
+
+    return { userId, userType };
+  };
+
+  const { userId, userType } = getCurrentUserInfo();
   
   // Sample suggested questions in Filipino
   const suggestedQuestionsFil = {
@@ -93,6 +143,101 @@ export const ChatbotProvider = ({ children }) => {
   // Get the appropriate questions based on selected language
   const suggestedQuestions = language === 'filipino' ? suggestedQuestionsFil : suggestedQuestionsEng;
 
+  // Load chat history on mount if userId is provided
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!userId || !userType || isHistoryLoaded) return;
+
+      try {
+        const response = await loadChatHistory(userId, userType, sessionId);
+
+        if (response.success && response.chatHistory && response.chatHistory.messages.length > 0) {
+          // Clear current messages and load history
+          dispatch({ type: 'CLEAR_MESSAGES' });
+
+          // Add each message from history
+          response.chatHistory.messages.forEach(msg => {
+            dispatch({
+              type: 'ADD_MESSAGE',
+              payload: {
+                id: msg.messageId,
+                sender: msg.sender,
+                text: msg.text,
+                timestamp: new Date(msg.timestamp)
+              }
+            });
+          });
+
+          // Restore category and language from history
+          if (response.chatHistory.category) {
+            setSelectedCategory(response.chatHistory.category);
+          }
+          if (response.chatHistory.language) {
+            setLanguage(response.chatHistory.language);
+          }
+
+          console.log('Chat history loaded successfully');
+        }
+
+        setIsHistoryLoaded(true);
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+        setIsHistoryLoaded(true); // Mark as loaded even on error to prevent retries
+      }
+    };
+
+    loadHistory();
+  }, [userId, userType, sessionId, isHistoryLoaded]);
+
+  // Save chat history whenever messages change
+  useEffect(() => {
+    const saveHistory = async () => {
+      console.log('[CHAT HISTORY] Save check:', {
+        userId,
+        userType,
+        isHistoryLoaded,
+        messageCount: messages.length,
+        sessionId
+      });
+
+      if (!userId || !userType || !isHistoryLoaded || messages.length === 0) {
+        console.warn('[CHAT HISTORY] Skipping save - missing required data:', {
+          hasUserId: !!userId,
+          hasUserType: !!userType,
+          isHistoryLoaded,
+          messageCount: messages.length
+        });
+        return;
+      }
+
+      try {
+        // Convert messages to the format expected by backend
+        const messagesToSave = messages.map(msg => ({
+          messageId: msg.id.toString(),
+          sender: msg.sender,
+          text: msg.text,
+          timestamp: msg.timestamp
+        }));
+
+        console.log('[CHAT HISTORY] Saving to database:', {
+          userId,
+          userType,
+          sessionId,
+          messageCount: messagesToSave.length
+        });
+
+        await saveChatHistory(userId, userType, sessionId, messagesToSave, selectedCategory, language);
+        console.log('[CHAT HISTORY] ✅ Successfully saved to database');
+      } catch (error) {
+        console.error('[CHAT HISTORY] ❌ Failed to save:', error);
+      }
+    };
+
+    // Debounce the save to avoid too many requests
+    const timeoutId = setTimeout(saveHistory, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [messages, userId, userType, sessionId, selectedCategory, language, isHistoryLoaded]);
+
   const sendMessage = async (text) => {
     if (!text.trim()) return;
     
@@ -145,6 +290,21 @@ export const ChatbotProvider = ({ children }) => {
     dispatch({ type: 'CLEAR_MESSAGES' });
   };
 
+  const startNewSession = () => {
+    // Generate new session ID
+    const newSessionId = generateSessionId();
+    setSessionId(newSessionId);
+
+    // Clear messages
+    dispatch({ type: 'CLEAR_MESSAGES' });
+
+    // Reset to defaults
+    setSelectedCategory('all');
+    setLanguage('filipino');
+
+    console.log('Started new chat session:', newSessionId);
+  };
+
   const changeCategory = (category) => {
     setSelectedCategory(category);
   };
@@ -181,8 +341,10 @@ export const ChatbotProvider = ({ children }) => {
     selectedCategory,
     suggestedQuestions,
     language,
+    sessionId,
     sendMessage,
     clearMessages,
+    startNewSession,
     changeCategory,
     toggleLanguage,
     formatTimestamp

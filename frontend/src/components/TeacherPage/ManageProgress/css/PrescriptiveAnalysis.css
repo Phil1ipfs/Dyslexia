@@ -1230,10 +1230,12 @@
 /* Progress info for success state */
 .literexia-progress-info {
   display: flex;
-  gap: 1.25rem;
+  gap: 2rem;
   background-color: #ffffff;
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 2.5rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
   border-left: 4px solid #3B4F81;
   animation: fadeSlideUp 0.4s ease-out;
   box-shadow: 0 4px 15px rgba(0, 117, 255, 0.1);
@@ -1254,7 +1256,7 @@
 
 .literexia-progress-info-textt h3 {
   margin-top: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   color: #3B4F81;
   font-size: 1.25rem;
   font-weight: 600;
