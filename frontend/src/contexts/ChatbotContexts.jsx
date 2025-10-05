@@ -4,7 +4,8 @@ import { generateResponse } from '../services/Teachers/chatbotService';
 import {
   saveChatHistory,
   loadChatHistory,
-  generateSessionId
+  generateSessionId,
+  getAllChatSessions
 } from '../services/Teachers/chatHistoryService';
 import authService from '../services/authService';
 
@@ -41,8 +42,9 @@ export const ChatbotProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [language, setLanguage] = useState('filipino'); // 'filipino' or 'english'
-  const [sessionId, setSessionId] = useState(() => generateSessionId());
+  const [sessionId, setSessionId] = useState(null);
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
+  const [isSessionInitialized, setIsSessionInitialized] = useState(false);
 
   // Get user information directly from authService
   const getCurrentUserInfo = () => {
@@ -89,14 +91,33 @@ export const ChatbotProvider = ({ children }) => {
   // Persist sessionId per user so refresh restores the active chat
   useEffect(() => {
     if (!userId) return;
-    const storageKey = `tcb_session_${userId}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      setSessionId(stored);
-    } else {
-      // Save the initially generated id for this user
-      localStorage.setItem(storageKey, sessionId);
-    }
+    const init = async () => {
+      const storageKey = `tcb_session_${userId}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        setSessionId(stored);
+        setIsSessionInitialized(true);
+        return;
+      }
+
+      // No stored session: try to resume the most recent server session
+      try {
+        const resp = await getAllChatSessions(userId, userType || 'teacher');
+        if (resp?.success && resp.sessions?.length > 0) {
+          setSessionId(resp.sessions[0].sessionId);
+          localStorage.setItem(storageKey, resp.sessions[0].sessionId);
+          setIsSessionInitialized(true);
+          return;
+        }
+      } catch (_) {}
+
+      // If still none, create a fresh one but only as a last resort
+      const freshId = generateSessionId();
+      setSessionId(freshId);
+      localStorage.setItem(storageKey, freshId);
+      setIsSessionInitialized(true);
+    };
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
@@ -105,6 +126,8 @@ export const ChatbotProvider = ({ children }) => {
     if (!userId || !sessionId) return;
     const storageKey = `tcb_session_${userId}`;
     localStorage.setItem(storageKey, sessionId);
+    // Reset history loaded flag when session changes so loader can fetch
+    setIsHistoryLoaded(false);
   }, [userId, sessionId]);
   
   // Sample suggested questions in Filipino
@@ -166,10 +189,10 @@ export const ChatbotProvider = ({ children }) => {
   // Get the appropriate questions based on selected language
   const suggestedQuestions = language === 'filipino' ? suggestedQuestionsFil : suggestedQuestionsEng;
 
-  // Load chat history on mount if userId is provided
+  // Load chat history once sessionId is initialized
   useEffect(() => {
     const loadHistory = async () => {
-      if (!userId || !userType || isHistoryLoaded) return;
+      if (!userId || !userType || !isSessionInitialized || isHistoryLoaded || !sessionId) return;
 
       try {
         const response = await loadChatHistory(userId, userType, sessionId);
@@ -210,7 +233,7 @@ export const ChatbotProvider = ({ children }) => {
     };
 
     loadHistory();
-  }, [userId, userType, sessionId, isHistoryLoaded]);
+  }, [userId, userType, sessionId, isHistoryLoaded, isSessionInitialized]);
 
   // Explicitly load a specific session and populate messages
   const loadSessionById = async (targetSessionId) => {
@@ -357,6 +380,9 @@ export const ChatbotProvider = ({ children }) => {
     setSelectedCategory('all');
     setLanguage('filipino');
 
+    // Mark as initialized and loaded to allow saving after first user message
+    setIsSessionInitialized(true);
+    setIsHistoryLoaded(true);
     console.log('Started new chat session:', newSessionId);
   };
 

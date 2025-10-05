@@ -167,13 +167,16 @@ const TeacherChatbot = () => {
   const formatSessionDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diff = now - date;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
-    return date.toLocaleDateString();
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    // Full explicit date for anything older
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   return (
