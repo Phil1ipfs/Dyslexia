@@ -648,6 +648,24 @@
   border-radius: 4px;
 }
 
+/* ✅ NEW: SVG Signature Container Styles */
+.iep-pdf-signature-line {
+  border-bottom: 2px solid #3B4F81;
+  min-height: 60px;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.iep-pdf-signature-line svg {
+  max-width: 100%;
+  height: auto;
+}
+
 .iep-pdf-sign-name {
   font-size: 12pt;
   margin: 0 0 5px 0;

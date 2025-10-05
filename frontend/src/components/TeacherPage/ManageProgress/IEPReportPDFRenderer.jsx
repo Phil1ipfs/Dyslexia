@@ -6,9 +6,12 @@ import {
   View,
   StyleSheet,
   Image,
+  Svg,
+  Path,
   pdf
 } from '@react-pdf/renderer';
 import cradleLogo from '../../../assets/images/Teachers/cradleLogoTrans.png';
+import { generateSignatureFromName, generatePrincipalSignaturePath } from './utils/signatureGenerator';
 
 // Create styles for the PDF
 const styles = StyleSheet.create({
@@ -984,14 +987,50 @@ const IEPReportPDFRenderer = ({ iepData }) => {
         {/* Signature Section - Flows naturally on same page */}
         <View style={[styles.signatureSection, { marginTop: 30 }]}>
           <View style={styles.signatureBox}>
-            <View style={styles.signatureLine}></View>
+            {/* ✅ Generated SVG E-Signature for Teacher */}
+            <View style={styles.signatureLine}>
+              {(() => {
+                const teacherSig = generateSignatureFromName(getTeacherName());
+                return (
+                  <Svg width={teacherSig.width} height={teacherSig.height} viewBox={teacherSig.viewBox} style={{ margin: 'auto' }}>
+                    <Path
+                      d={teacherSig.path}
+                      stroke="#1a1a1a"
+                      strokeWidth="2.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity="0.95"
+                    />
+                  </Svg>
+                );
+              })()}
+            </View>
             <Text style={styles.signatureLabel}>{getTeacherName()}</Text>
             <Text style={{ fontSize: 8 }}>Class Teacher</Text>
             <Text style={{ fontSize: 8 }}>Date: {formatDate(new Date())}</Text>
           </View>
 
           <View style={styles.signatureBox}>
-            <View style={styles.signatureLine}></View>
+            {/* ✅ Generated SVG E-Signature for Principal */}
+            <View style={styles.signatureLine}>
+              {(() => {
+                const principalSig = generatePrincipalSignaturePath();
+                return (
+                  <Svg width={principalSig.width} height={principalSig.height} viewBox={principalSig.viewBox} style={{ margin: 'auto' }}>
+                    <Path
+                      d={principalSig.path}
+                      stroke="#1a1a1a"
+                      strokeWidth="2.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity="0.95"
+                    />
+                  </Svg>
+                );
+              })()}
+            </View>
             <Text style={styles.signatureLabel}>MS. JASMINE P. LIM</Text>
             <Text style={{ fontSize: 8 }}>School Principal</Text>
             <Text style={{ fontSize: 8 }}>Date: {formatDate(new Date())}</Text>

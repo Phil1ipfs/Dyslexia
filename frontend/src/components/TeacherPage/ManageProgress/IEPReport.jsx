@@ -45,6 +45,7 @@ import AuthService from '../../../services/authService';
 import { API_BASE_URL } from '../../../services/config';
 import { pdf } from '@react-pdf/renderer';
 import IEPReportPDFRenderer from './IEPReportPDFRenderer';
+import { generateSignatureFromName, generatePrincipalSignaturePath } from './utils/signatureGenerator';
 import { toast } from '../../../utils/toastHelper';
 import SuccessDialog from '../../Teachers/SuccessDialog';
 import './css/IEPReport.css';
@@ -3349,12 +3350,50 @@ const IEPReport = ({
                 <div className="iep-pdf-page-4-section">
                   <div className="iep-pdf-signatures">
                   <div className="iep-pdf-signature">
+                    {/* ✅ Generated SVG E-Signature for Teacher */}
+                    <div className="iep-pdf-signature-line">
+                      {(() => {
+                        const teacherSig = generateSignatureFromName(getTeacherName());
+                        return (
+                          <svg width={teacherSig.width} height={teacherSig.height} viewBox={teacherSig.viewBox} style={{ margin: 'auto', display: 'block' }}>
+                            <path
+                              d={teacherSig.path}
+                              stroke="#1a1a1a"
+                              strokeWidth="2.5"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              opacity="0.95"
+                            />
+                          </svg>
+                        );
+                      })()}
+                    </div>
                     <p className="iep-pdf-sign-name">{getTeacherName()}</p>
-                    <p className="iep-pdf-sign-title">Grade 1 Teacher</p>
+                    <p className="iep-pdf-sign-title">Class Teacher</p>
                     <p className="iep-pdf-sign-date">Date: {new Date().toLocaleDateString()}</p>
                 </div>
                   <div className="iep-pdf-signature">
-                    <p className="iep-pdf-sign-name">Ms. Jasmine P. Lim</p>
+                    {/* ✅ Generated SVG E-Signature for Principal */}
+                    <div className="iep-pdf-signature-line">
+                      {(() => {
+                        const principalSig = generatePrincipalSignaturePath();
+                        return (
+                          <svg width={principalSig.width} height={principalSig.height} viewBox={principalSig.viewBox} style={{ margin: 'auto', display: 'block' }}>
+                            <path
+                              d={principalSig.path}
+                              stroke="#1a1a1a"
+                              strokeWidth="2.5"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              opacity="0.95"
+                            />
+                          </svg>
+                        );
+                      })()}
+                    </div>
+                    <p className="iep-pdf-sign-name">MS. JASMINE P. LIM</p>
                     <p className="iep-pdf-sign-title">School Principal</p>
                     <p className="iep-pdf-sign-date">Date: {new Date().toLocaleDateString()}</p>
                   </div>
