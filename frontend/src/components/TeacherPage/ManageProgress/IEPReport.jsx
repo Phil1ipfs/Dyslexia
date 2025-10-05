@@ -113,23 +113,20 @@ const IEPReport = ({
 
   // Get student name
   const getStudentName = () => {
-    // Debug logging to see what data we have
-    console.log('getStudentName debug:', {
-      currentIepData_studentId: currentIepData?.studentId,
-      student: student,
-      student_firstName: student?.firstName,
-      student_lastName: student?.lastName,
-      student_name: student?.name
-    });
-
+    // Priority 1: Get from refreshed IEP data (populated studentId)
     if (currentIepData?.studentId?.firstName && currentIepData?.studentId?.lastName) {
       return `${currentIepData.studentId.firstName} ${currentIepData.studentId.lastName}`;
-    } else if (student?.firstName && student?.lastName) {
+    }
+
+    // Priority 2: Get from student prop
+    if (student?.firstName && student?.lastName) {
       return `${student.firstName} ${student.lastName}`;
     } else if (student?.name) {
       return student.name;
-    } else if (student?.idNumber && window.studentsGlobalCache) {
-      // Try to find student in global cache by ID number
+    }
+
+    // Priority 3: Get from global cache
+    if (student?.idNumber && window.studentsGlobalCache) {
       const cachedStudent = window.studentsGlobalCache.find(s => s.idNumber === student.idNumber);
       if (cachedStudent?.firstName && cachedStudent?.lastName) {
         return `${cachedStudent.firstName} ${cachedStudent.lastName}`;
@@ -408,11 +405,12 @@ const IEPReport = ({
         loadedStudentRef.current = studentId;
       loadIEPData();
       loadParentData();
-        // Load teacher profile (optional - don't let it break the component)
-        loadTeacherProfile().catch(err => console.warn('Teacher profile loading failed:', err));
       } else {
         console.log('useEffect skipped - data already loaded for student:', studentId);
       }
+
+      // ✅ CRITICAL FIX: Always load teacher profile on mount or student change
+      loadTeacherProfile().catch(err => console.warn('Teacher profile loading failed:', err));
 
       // Initialize feedback message with pre-filled content (like StudentDetails)
       const studentName = getStudentName();
@@ -614,26 +612,36 @@ const IEPReport = ({
     try {
       setRefreshing(true);
       setError(null);
-      
+
       const studentId = student?.id || student?._id;
       console.log('Refreshing intervention data for student:', studentId);
-      
+
       const response = await IEPService.refreshInterventionData(studentId);
-      
+
       if (response.success && response.data) {
         setIepData(response.data);
         console.log('Intervention data refreshed:', response.data);
-        
+        console.log('Student data in response:', response.data.studentId);
+
+        // ✅ CRITICAL FIX: Always reload teacher profile after refresh to ensure name displays
+        try {
+          const profile = await fetchTeacherProfile();
+          setTeacherProfile(profile);
+          console.log('Teacher profile reloaded after refresh:', profile);
+        } catch (profileErr) {
+          console.warn('Teacher profile reload failed, keeping existing:', profileErr);
+        }
+
         // Notify parent component of successful refresh
         if (onDataUpdate) {
           onDataUpdate(response.data);
         }
-        
+
         showSuccessMessage('Intervention data updated successfully');
       } else {
         throw new Error('Failed to refresh intervention data');
       }
-      
+
     } catch (err) {
       console.error('Error refreshing intervention data:', err);
       setError(err.message || 'Failed to refresh intervention data');
@@ -1961,7 +1969,7 @@ const IEPReport = ({
           </div>
           <div className="literexia-summary-content">
             <span className="literexia-summary-label">Student</span>
-            <span className="literexia-summary-value">{currentIepData.studentId?.firstName} {currentIepData.studentId?.lastName}</span>
+            <span className="literexia-summary-value">{getStudentName()}</span>
           </div>
         </div>
         
