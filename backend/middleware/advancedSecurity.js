@@ -173,9 +173,11 @@ const advancedSecurityHeaders = (req, res, next) => {
     "default-src 'self'; " +
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
     "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: https:; " +
+    "img-src 'self' data: https: https://literexia-bucket.s3.ap-southeast-2.amazonaws.com; " +
     "font-src 'self' data:; " +
-    "connect-src 'self';"
+    "connect-src 'self' https://literexia-bucket.s3.ap-southeast-2.amazonaws.com; " +
+    "media-src 'self' https://literexia-bucket.s3.ap-southeast-2.amazonaws.com; " +
+    "frame-src 'self' https://literexia-bucket.s3.ap-southeast-2.amazonaws.com;"
   );
 
   // HTTP Strict Transport Security
