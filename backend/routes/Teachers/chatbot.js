@@ -8,7 +8,7 @@ const { GoogleGenAI } = require('@google/genai');
 const ai = new GoogleGenAI({
   vertexai: true,
   project: 'literexia-capstone-project',
-  location: 'us-central1'
+  location: 'global'
 });
 
 /**
@@ -60,9 +60,9 @@ PEDAGOGICAL STRATEGIES:
  */
 async function generateResponse(prompt, userType, temperature = 0.7) {
   try {
-    // Using gemini-2.0-flash as suggested for better availability and performance
+    // Using gemini-2.5-flash as confirmed by global availability test
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       contents: [
         { role: 'user', parts: [{ text: getSystemInstructions(userType) }] },
         { role: 'model', parts: [{ text: 'Maliwanag po. Handa na akong tumulong bilang Literexia Teaching Assistant.' }] },
@@ -70,7 +70,7 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
       ],
       config: {
         temperature,
-        maxOutputTokens: 2048, // Increased for more detailed pedagogical help
+        maxOutputTokens: 2048,
         topP: 0.95,
         topK: 40,
         safetySettings: [
@@ -82,7 +82,7 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
       }
     });
 
-    console.log('✅ Google Gen AI (Gemini 2.0 Flash) response generated successfully');
+    console.log('✅ Google Gen AI (Gemini 2.5 Flash) response generated successfully');
     return response.text;
 
   } catch (aiError) {
