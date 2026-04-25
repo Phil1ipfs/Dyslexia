@@ -1123,7 +1123,7 @@ connectDB().then(async (connected) => {
     // Load upload routes
     try {
       const uploadRoutes = require('./routes/uploadRoutes');
-      app.use('/api/upload', uploadRoutes);
+      app.use('/api/uploads', uploadRoutes);
       console.log('✅ Loaded upload routes at /api/uploads/*');
 
     } catch (error) {
