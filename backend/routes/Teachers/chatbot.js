@@ -73,13 +73,17 @@ PEDAGOGICAL STRATEGIES:
 }
 
 /**
- * Core Optimized Generation Logic
+ * Core Optimized Generation Logic with OpenAI Fallback
  */
 async function generateResponse(prompt, userType, temperature = 0.7) {
+  // 1. TRY GEMINI FIRST (Primary)
   try {
-    const genAI = getGenAI();
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('GEMINI_API_KEY not set');
+
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       systemInstruction: getSystemInstructions(userType),
       safetySettings
     });
@@ -93,11 +97,37 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
 
     const chatSession = model.startChat({ generationConfig });
     const result = await chatSession.sendMessage(prompt);
-    
+    console.log('✅ Gemini response generated successfully');
     return result.response.text();
-  } catch (err) {
-    console.error('❌ Gemini Generation Error:', err.message);
-    throw new Error('AI service temporarily unavailable');
+
+  } catch (geminiError) {
+    console.error('⚠️ Gemini Failed:', geminiError.message);
+    
+    // 2. FALLBACK TO OPENAI
+    try {
+      const openAiKey = process.env.OPENAI_API_KEY;
+      if (!openAiKey) throw new Error('OPENAI_API_KEY not set');
+
+      const { OpenAI } = require('openai');
+      const openai = new OpenAI({ apiKey: openAiKey });
+
+      console.log('🔄 Falling back to OpenAI...');
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: getSystemInstructions(userType) },
+          { role: "user", content: prompt }
+        ],
+        temperature
+      });
+
+      console.log('✅ OpenAI fallback success');
+      return completion.choices[0].message.content;
+
+    } catch (openaiError) {
+      console.error('❌ Both AI services failed:', openaiError.message);
+      throw new Error('Nagkaproblema sa pag-abot sa AI services. Subukan muli maya-maya.');
+    }
   }
 }
 
