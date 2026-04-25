@@ -8,7 +8,7 @@ const { GoogleGenAI } = require('@google/genai');
 const ai = new GoogleGenAI({
   vertexai: true,
   project: 'literexia-capstone-project',
-  location: 'us-central1'
+  location: 'asia-southeast1'
 });
 
 /**
