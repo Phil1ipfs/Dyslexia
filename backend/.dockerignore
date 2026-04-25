@@ -1,0 +1,45 @@
+# ============================================================================
+# Literexia Backend — Docker Ignore
+# Exclude files not needed in the container image
+# ============================================================================
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Logs (never ship logs into a container)
+*.log
+backend-restart.log
+backend-startup.log
+backend.log
+
+# Local dev files
+.DS_Store
+.env
+.env.local
+.env.*.local
+
+# Development scripts (not needed in production)
+scripts/
+docs/
+checkPassword.js
+hashPassword.js
+manual_prescriptive_cleanup.js
+setup-s3-cors.js
+cluster.js
+
+# Node modules (we install fresh in Docker for correct platform)
+node_modules
+
+# Docker files (prevent infinite context)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# IDE
+.vscode/
+.idea/
+
+# Local storage files
+storage/pdf-reports/*
