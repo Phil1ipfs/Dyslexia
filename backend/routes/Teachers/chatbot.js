@@ -60,7 +60,7 @@ PEDAGOGICAL STRATEGIES:
 async function generateResponse(prompt, userType, temperature = 0.7) {
   try {
     const model = vertexAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       safetySettings: [
         { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
         { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
