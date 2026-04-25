@@ -5,7 +5,7 @@ const path = require('path');
 const { GoogleGenAI } = require('@google/genai');
 
 // Initialize Google Gen AI (Unified SDK)
-const ai = new GoogleGenAI({ 
+const ai = new GoogleGenAI({
   vertexai: true,
   project: 'literexia-capstone-project',
   location: 'us-central1'
@@ -61,14 +61,14 @@ PEDAGOGICAL STRATEGIES:
 async function generateResponse(prompt, userType, temperature = 0.7) {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.0-flash-001',
       contents: [
         { role: 'user', parts: [{ text: getSystemInstructions(userType) }] },
         { role: 'model', parts: [{ text: 'Maliwanag po. Handa na akong tumulong bilang Literexia Teaching Assistant.' }] },
         { role: 'user', parts: [{ text: prompt }] }
       ],
-      config: { 
-        temperature, 
+      config: {
+        temperature,
         maxOutputTokens: 1024,
         topP: 0.95,
         topK: 40,
@@ -86,7 +86,7 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
 
   } catch (aiError) {
     console.error('⚠️ Google Gen AI Failed:', aiError.message);
-    
+
     // FALLBACK TO OPENAI
     try {
       const openAiKey = process.env.OPENAI_API_KEY;
