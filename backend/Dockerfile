@@ -57,6 +57,7 @@ RUN rm -rf \
     manual_prescriptive_cleanup.js \
     setup-s3-cors.js \
     cluster.js \
+    scratch/ \
     .DS_Store
 
 # Create storage directory (in case any service tries to access it)
