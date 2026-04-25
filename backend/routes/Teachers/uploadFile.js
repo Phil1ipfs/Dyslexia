@@ -60,7 +60,6 @@ router.post('/s3', (req, res) => {
         Key: `${uploadPath}/${fileName}`,
         Body: req.file.buffer,
         ContentType: req.file.mimetype,
-        ACL: 'public-read'
       };
       
       try {
@@ -122,7 +121,6 @@ router.post('/upload', (req, res) => {
             Key: `student-profiles/${filename}`,
             Body: req.file.buffer,
             ContentType: req.file.mimetype,
-            ACL: 'public-read'
         };
 
         try {
@@ -191,7 +189,6 @@ router.post('/template-image', (req, res) => {
             Key: `main-assessment/sentences/${filename}`, // Use the designated folder path
             Body: req.file.buffer,
             ContentType: req.file.mimetype,
-            ACL: 'public-read'
         };
         
         try {

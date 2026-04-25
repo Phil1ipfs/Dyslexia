@@ -21,7 +21,6 @@ async function uploadToS3(file, folder = '') {
     Key: key,
     Body: file.buffer,
     ContentType: file.mimetype,
-    ACL: 'public-read',
   };
 
   await s3.send(new PutObjectCommand(params));

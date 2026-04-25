@@ -550,7 +550,6 @@ exports.uploadProfileImage = async (req, res) => {
           Bucket: process.env.AWS_BUCKET_NAME,
           Key: key,
           Body: req.file.buffer,
-          ACL: 'public-read',
           ContentType: req.file.mimetype
         }
       });

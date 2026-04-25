@@ -1246,7 +1246,6 @@ exports.uploadProfileImage = async (req, res) => {
         Body: req.file.buffer,
         ContentType: req.file.mimetype,
         CacheControl: 'no-cache',
-        ACL: 'public-read' // Make sure file is publicly accessible
       };
       
       // Upload to S3

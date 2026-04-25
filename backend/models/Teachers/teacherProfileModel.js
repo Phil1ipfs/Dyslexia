@@ -565,7 +565,6 @@ exports.uploadProfileImage = async (req, res) => {
           Bucket: bucketName,
           Key: key,
           Body: req.file.buffer,
-          ACL: 'public-read',
           ContentType: req.file.mimetype
         }
       });

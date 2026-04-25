@@ -73,7 +73,6 @@ const uploadFileToS3 = async (file, teacherId) => {
       Body: file.buffer,
       ContentType: file.mimetype,
       CacheControl: 'no-cache',
-      ACL: 'public-read'
     };
     
     await s3Client.send(new PutObjectCommand(params));

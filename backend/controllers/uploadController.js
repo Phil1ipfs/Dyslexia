@@ -66,7 +66,6 @@ class UploadController {
         Body: buffer,
         ContentType: contentType || 'application/pdf',
         ContentDisposition: 'inline',
-        ACL: 'public-read',
         Metadata: {
           ...metadata,
           studentId: studentId || 'unknown',

@@ -493,7 +493,6 @@ exports.uploadMedia = async (req, res) => {
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
-      ACL: 'public-read'
     };
     
     const upload = new Upload({
@@ -1377,7 +1376,6 @@ exports.convertImagesToS3 = async (req, res) => {
             Key: key,
             Body: buffer,
             ContentType: mimeType,
-            ACL: 'public-read'
           };
           
           // Upload to S3

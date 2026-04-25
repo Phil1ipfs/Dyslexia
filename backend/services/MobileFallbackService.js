@@ -141,7 +141,6 @@ class MobileFallbackService {
         Key: s3Key,
         Body: imageBuffer,
         ContentType: 'image/png',
-        ACL: 'public-read',
         CacheControl: 'max-age=31536000', // Cache for 1 year
         Metadata: {
           'generated-by': 'MobileFallbackService',

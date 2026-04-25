@@ -9,8 +9,7 @@ const s3Client = new S3Client({
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-  forcePathStyle: true // Use path-style URLs for better compatibility
+  }
 });
 
 // Add method to generate presigned URLs (compatible with AWS SDK v3)

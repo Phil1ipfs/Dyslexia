@@ -304,7 +304,6 @@ exports.uploadProfileImage = [
                 Key: fileName,
                 Body: file.buffer,
                 ContentType: file.mimetype,
-                ACL: 'public-read'
             };
 
             const command = new PutObjectCommand(uploadParams);

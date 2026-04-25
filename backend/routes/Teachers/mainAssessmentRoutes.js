@@ -69,7 +69,6 @@ router.post('/upload-image',
         Key: fileName,
         Body: file.buffer,
         ContentType: file.mimetype,
-        ACL: 'public-read'
       };
 
       // Upload to S3

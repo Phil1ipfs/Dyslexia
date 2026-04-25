@@ -1267,7 +1267,6 @@ class InterventionService {
         Key: key,
         Body: fileBuffer,
         ContentType: fileType,
-        ACL: 'public-read' // Make file publicly accessible for mobile
       };
 
       const command = new PutObjectCommand(uploadParams);

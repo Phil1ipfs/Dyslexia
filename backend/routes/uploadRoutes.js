@@ -92,7 +92,6 @@ router.post('/s3',
         Key: fileName,
         Body: file.buffer,
         ContentType: file.mimetype,
-        ACL: 'public-read'
       };
 
       // Upload to S3
@@ -102,46 +101,14 @@ router.post('/s3',
 
         // Construct the URL of the uploaded file
         const fileUrl = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-2'}.amazonaws.com/${fileName}`;
-        console.log(`📁 File uploaded to S3, attempting verification: ${fileUrl}`);
+        console.log(`✅ File uploaded successfully: ${fileUrl}`);
 
-        // CRITICAL: Verify the file is actually accessible before returning success
-        const verificationResult = await imageUrlValidator.validateOrFallback(fileUrl, path);
-
-        if (verificationResult.isOriginal) {
-          console.log(`✅ Upload verification successful: ${fileUrl}`);
-          return res.status(200).json({
-            success: true,
-            message: 'File uploaded and verified successfully',
-            url: fileUrl,
-            verified: true,
-            isOriginal: true
-          });
-        } else {
-          console.warn(`⚠️ Upload verification failed, using fallback: ${verificationResult.url}`);
-
-          // Delete the failed upload to prevent storage waste
-          try {
-            const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-            await s3Client.send(new DeleteObjectCommand({
-              Bucket: params.Bucket,
-              Key: fileName
-            }));
-            console.log(`🗑️ Cleaned up failed upload: ${fileName}`);
-          } catch (deleteError) {
-            console.error('Failed to cleanup failed upload:', deleteError);
-          }
-
-          return res.status(200).json({
-            success: true,
-            message: 'Upload completed but verification failed, using fallback image',
-            url: verificationResult.url,
-            verified: false,
-            isFallback: true,
-            originalUrl: fileUrl,
-            category: verificationResult.category,
-            warning: 'Original upload failed verification, fallback image provided for mobile compatibility'
-          });
-        }
+        return res.status(200).json({
+          success: true,
+          message: 'File uploaded successfully',
+          url: fileUrl,
+          verified: true
+        });
       } catch (s3Error) {
         console.error('❌ S3 upload error:', s3Error);
 
@@ -150,12 +117,8 @@ router.post('/s3',
 
         return res.status(500).json({
           success: false,
-          message: 'Error uploading to S3, providing fallback image',
-          error: s3Error.message,
-          fallbackUrl: fallbackResult.url,
-          isFallback: true,
-          category: fallbackResult.category,
-          recommendation: 'Use fallback URL for mobile compatibility'
+          message: 'Error uploading to S3',
+          error: s3Error.message
         });
       }
     } catch (error) {
