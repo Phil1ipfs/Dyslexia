@@ -2,437 +2,192 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
+const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 
-// Load environment variables with correct path (go up 2 directories to backend root)
+// Load environment variables
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
-const OpenAI = require('openai').default;
-// Lightweight title generator for sessions (no external API)
-function generateSessionTitle(messages = []) {
-  if (!Array.isArray(messages) || messages.length === 0) return 'Chat';
-
-  // Prefer the first user message; skip the static welcome bot message
-  const welcomeSignature = 'Literexia Teaching Assistant';
-  const userFirst = messages.find(m => m.sender === 'user' && m.text);
-  const nonWelcomeBot = messages.find(m => m.sender === 'bot' && m.text && !m.text.includes(welcomeSignature));
-  // Prefer assistant's first substantive reply; fallback to user's first, then any first message
-  const source = (nonWelcomeBot?.text || userFirst?.text || messages[0].text || '').trim();
-
-  if (!source) return 'Chat';
-
-  // Take the first sentence or up to 10 words, whichever is shorter
-  const firstSentence = source.split(/[.!?\n]/)[0];
-  const words = firstSentence.trim().split(/\s+/).slice(0, 10).join(' ');
-  let title = words;
-
-  // Clean excessive whitespace and trailing punctuation
-  title = title.replace(/\s+/g, ' ').replace(/[,;:\-]+$/,'').trim();
-
-  // Capitalize first letter; keep original casing of the rest (works for Filipino/English)
-  if (title.length > 0) {
-    title = title.charAt(0).toUpperCase() + title.slice(1);
+// Singleton pattern for Gemini AI to optimize connection reuse
+let genAIInstance = null;
+function getGenAI() {
+  if (!genAIInstance) {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error('No AI API Key configured');
+    genAIInstance = new GoogleGenerativeAI(apiKey);
   }
-
-  // Fallback if title too generic
-  if (title.length < 3) title = 'Chat';
-
-  // Limit length
-  if (title.length > 80) title = title.substring(0, 80);
-  return title;
+  return genAIInstance;
 }
+
+/**
+ * Production-grade Safety Settings for Educational Content
+ * Prevents the AI from being overly sensitive to medical/learning disability keywords
+ */
+const safetySettings = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+];
+
+/**
+ * Optimized Title Generator
+ */
+function generateSessionTitle(messages = []) {
+  if (!Array.isArray(messages) || messages.length === 0) return 'New Teaching Session';
+
+  const userMsg = messages.find(m => m.sender === 'user' && m.text)?.text || '';
+  if (!userMsg) return 'New Teaching Session';
+
+  return userMsg.split(/[.!?\n]/)[0].trim().split(/\s+/).slice(0, 8).join(' ') || 'Chat Session';
+}
+
 const ChatHistory = require('../../models/chatHistoryModel');
 
-// Initialize OpenAI client with your secret key
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// Log API key status for debugging (without exposing the key)
-if (!process.env.OPENAI_API_KEY) {
-  console.error('❌ OPENAI_API_KEY not found in environment variables!');
-} else {
-  console.log(`✅ OpenAI API Key loaded (starts with: ${process.env.OPENAI_API_KEY.substring(0, 7)}...)`);
-}
-
 /**
- * Get dyslexia-specific teaching context for the AI assistant
+ * Dyslexia-Specific System Instructions
  */
-function getDyslexiaTeachingContext(userType) {
-  const baseContext = `You are the "Literexia Teaching Assistant" - an AI companion specialized in supporting Filipino K-12 students with dyslexia and reading difficulties.
+function getSystemInstructions(userType) {
+  const base = `You are the "Literexia Teaching Assistant" - a world-class educational expert specialized in Filipino K-12 students with dyslexia and reading difficulties.
 
-CORE SYSTEM UNDERSTANDING:
-- Assessment System: 5 reading levels (Low Emerging → At Grade Level) with 5 core skill categories
-- 5 Reading Categories: Alphabet Knowledge, Phonological Awareness, Decoding, Word Recognition, Reading Comprehension
-- Language Context: Primarily Filipino/Tagalog with English elements
-- Population: K-12 Filipino students with dyslexia and reading difficulties
+PERSONALITY & TONE:
+- Be warm, conversational, and deeply empathetic. Speak like a supportive senior teacher or mentor.
+- Avoid robotic or overly formal responses. Use a natural "Taglish" (Tagalog-English) mix when helpful for clarity.
+- Be extremely detailed and thorough. Don't just give a list; explain the "why" and "how."
 
-KEY DYSLEXIA-SPECIFIC CHALLENGES:
-1. Phonological Awareness Difficulties - Problems distinguishing similar sounds (B-P, M-N, D-T)
-2. Sequential Processing Issues - Trouble with 3+ sound sequences
-3. Sound-Symbol Mapping - Difficulty connecting letters to sounds
-4. Decoding Challenges - Problems sounding out words, especially initial sounds
-5. Reading Comprehension Gaps - All-or-nothing understanding issues
+CORE EXPERTISE:
+- You know every "workaround" and "hack" for dyslexia: multisensory techniques (Sand trays, air writing), mnemonics for sound confusion (e.g., "b has a belly, d has a diaper"), and assistive technology.
+- Specialized in 5 core categories: Alphabet Knowledge, Phonological Awareness (B-P, M-N, D-T sounds), Decoding, Word Recognition, and Comprehension.
+- Deep understanding of the Literexia 5-level system (Low Emerging to At Grade Level).
 
-ASSESSMENT SYSTEM:
-- Students progress through reading levels only when ALL categories pass ≥75%
-- Failed categories trigger teacher-created interventions with system prescriptions
-- Error patterns include: B-P sound confusion, sequential processing difficulties, initial sound problems
-- Intervention process: Prescription → Teacher creation → Student practice → Teacher revision if needed
-
-RESEARCH-BASED APPROACHES TO RECOMMEND:
-- Multisensory Learning (Visual + auditory + tactile approaches)
-- Systematic Phonics (Structured, explicit sound-symbol instruction)
-- Scaffolding (Breaking complex skills into smaller steps)
-- Repeated Practice (Focused, targeted skill practice)
-- Positive Reinforcement (Celebrating progress and effort)
-- Metacognitive Strategies (Teaching students how they learn best)`;
+PEDAGOGICAL STRATEGIES:
+- Systematic Phonics: Break everything down into the smallest possible sounds.
+- Scaffolding: Provide heavy support initially, then gradually reduce it.
+- Metacognition: Help students and teachers understand *how* they are learning.
+- Workarounds: Suggest color overlays for visual stress, recording lessons for sequential processing issues, and using physical objects to represent sounds.`;
 
   if (userType === 'student') {
-    return baseContext + `
-
-COMMUNICATION STYLE FOR STUDENTS:
-- Use simple, clear language
-- Break information into small chunks
-- Be encouraging and patient
-- Emphasize strengths while addressing challenges
-- Avoid overwhelming with too much text
-- Validate difficulties while promoting growth mindset
-- Provide practical, actionable advice
-- Use positive, motivating language
-
-STUDENT SUPPORT FOCUS:
-- Learning encouragement and motivation
-- Simple explanations of reading concepts
-- Home practice suggestions
-- Self-advocacy skills
-- Building confidence in learning abilities`;
+    return `${base}\n\nSTUDENT FOCUS: Use simple, encouraging language. Focus on confidence. If they struggle with a sound, suggest a fun physical workaround (like drawing the letter in the air while saying it). Be their biggest cheerleader.`;
   }
-
-  // Default teacher context
-  return baseContext + `
-
-TEACHER SUPPORT FOCUS:
-- Intervention strategy guidance
-- Error pattern analysis interpretation
-- Question creation assistance
-- Progress monitoring techniques
-- Differentiation strategies for specific student needs
-- Research-based teaching methods
-- Assessment result interpretation
-
-INTERVENTION GUIDANCE:
-- Help interpret error patterns from assessment results
-- Suggest specific techniques for common dyslexia challenges
-- Provide question creation guidance for teacher-made interventions
-- Recommend modifications for near-miss cases (students scoring 70-74%)
-- Support teachers in understanding prescriptive analytics results
-
-Be practical, evidence-based, and supportive in all responses.`;
+  return `${base}\n\nTEACHER FOCUS: Be a pedagogical partner. Provide detailed intervention plans. If a student is failing a category, suggest specific, creative "workaround" activities that go beyond standard worksheets. Help them interpret error patterns (like why a student confuses 'p' and 'b').`;
 }
 
 /**
- * POST /api/chatbot/ask
- * Request body: { prompt: string, model?: string, userType?: string }
- * Returns: { reply: string }
+ * Core Optimized Generation Logic
+ */
+async function generateResponse(prompt, userType, temperature = 0.7) {
+  try {
+    const genAI = getGenAI();
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: getSystemInstructions(userType),
+      safetySettings
+    });
+
+    const generationConfig = {
+      temperature,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 1024,
+    };
+
+    const chatSession = model.startChat({ generationConfig });
+    const result = await chatSession.sendMessage(prompt);
+    
+    return result.response.text();
+  } catch (err) {
+    console.error('❌ Gemini Generation Error:', err.message);
+    throw new Error('AI service temporarily unavailable');
+  }
+}
+
+/**
+ * ROUTES
  */
 router.post('/ask', async (req, res) => {
-  const { prompt, model = 'gpt-4', userType = 'teacher' } = req.body;
-
-  if (!prompt) {
-    return res.status(400).json({ error: 'No prompt provided' });
-  }
+  const { prompt, userType = 'teacher' } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
 
   try {
-    // Create dyslexia-specific system context
-    const systemContext = getDyslexiaTeachingContext(userType);
-
-    // Call the Chat Completions endpoint with proper context
-    const completion = await openai.chat.completions.create({
-      model: model,
-      messages: [
-        { role: 'system', content: systemContext },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
-      presence_penalty: 0.6,
-      frequency_penalty: 0.5
-    });
-
-    const reply = completion.choices?.[0]?.message?.content || '';
+    const reply = await generateResponse(prompt, userType);
     res.json({ reply });
   } catch (err) {
-    console.error('OpenAI API error:', err);
-    res.status(500).json({ error: 'Failed to generate chatbot response' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-/**
- * POST /api/chatbot/intervention-help
- * Help teachers with specific intervention scenarios
- * Request body: { studentData: object, question: string }
- */
 router.post('/intervention-help', async (req, res) => {
   const { studentData, question } = req.body;
+  if (!question) return res.status(400).json({ error: 'Question is required' });
 
-  if (!question) {
-    return res.status(400).json({ error: 'No question provided' });
-  }
+  const contextPrompt = studentData 
+    ? `Student Performance Data: ${JSON.stringify(studentData)}. \n\nTeacher Question: ${question}`
+    : question;
 
   try {
-    // Create context with student-specific data
-    const systemContext = getDyslexiaTeachingContext('teacher') + `
-
-CURRENT STUDENT CONTEXT:
-${studentData ? `
-- Student Performance: ${JSON.stringify(studentData, null, 2)}
-- Focus on specific error patterns and scores shown above
-- Provide targeted intervention strategies based on this student's specific needs
-` : 'General intervention guidance requested - provide evidence-based dyslexia intervention strategies'}
-
-Provide practical, specific advice that teachers can immediately implement.`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: systemContext },
-        { role: 'user', content: question }
-      ],
-      temperature: 0.7,
-      max_tokens: 600,
-      presence_penalty: 0.6,
-      frequency_penalty: 0.5
-    });
-
-    const reply = completion.choices?.[0]?.message?.content || '';
+    const reply = await generateResponse(contextPrompt, 'teacher');
     res.json({ reply });
   } catch (err) {
-    console.error('OpenAI API error:', err);
-    res.status(500).json({ error: 'Failed to generate intervention guidance' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-/**
- * POST /api/chatbot/student-encouragement
- * Provide encouragement and learning tips for students
- * Request body: { studentLevel: string, challenge: string, question: string }
- */
 router.post('/student-encouragement', async (req, res) => {
   const { studentLevel, challenge, question } = req.body;
+  if (!question) return res.status(400).json({ error: 'Question is required' });
 
-  if (!question) {
-    return res.status(400).json({ error: 'No question provided' });
-  }
+  const contextPrompt = `Level: ${studentLevel}. Challenge: ${challenge}. \n\nStudent asks: ${question}`;
 
   try {
-    const systemContext = getDyslexiaTeachingContext('student') + `
-
-STUDENT CONTEXT:
-- Reading Level: ${studentLevel || 'Not specified'}
-- Current Challenge: ${challenge || 'General support needed'}
-
-Focus on:
-- Being extremely encouraging and positive
-- Using simple, age-appropriate language
-- Providing concrete, actionable tips
-- Building confidence and motivation
-- Normalizing learning differences
-- Celebrating effort and progress`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: systemContext },
-        { role: 'user', content: question }
-      ],
-      temperature: 0.8,
-      max_tokens: 400,
-      presence_penalty: 0.3,
-      frequency_penalty: 0.3
-    });
-
-    const reply = completion.choices?.[0]?.message?.content || '';
+    const reply = await generateResponse(contextPrompt, 'student', 0.8);
     res.json({ reply });
   } catch (err) {
-    console.error('OpenAI API error:', err);
-    res.status(500).json({ error: 'Failed to generate student encouragement' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Test route to verify API is working
-router.get('/test', (req, res) => {
-  res.json({
-    message: 'Literexia Teaching Assistant API is working!',
-    endpoints: {
-      '/ask': 'General dyslexia teaching assistance',
-      '/intervention-help': 'Specific intervention guidance with student data',
-      '/student-encouragement': 'Student-focused encouragement and tips',
-      '/history/save': 'Save chat history',
-      '/history/load': 'Load chat history for a user'
-    }
-  });
-});
+// --- History Management (Optimized for speed) ---
 
-/**
- * POST /api/chatbot/history/save
- * Save chat messages to database
- * Request body: { userId: string, userType: string, sessionId: string, messages: array, category?: string, language?: string }
- */
 router.post('/history/save', async (req, res) => {
-  const { userId, userType, sessionId, messages, category = 'all', language = 'filipino' } = req.body;
-
-  if (!userId || !userType || !sessionId || !messages) {
-    return res.status(400).json({ error: 'Missing required fields: userId, userType, sessionId, messages' });
-  }
+  const { userId, userType, sessionId, messages } = req.body;
+  if (!userId || !sessionId || !messages) return res.status(400).json({ error: 'Missing data' });
 
   try {
-    // Find existing chat history or create new one
-    let chatHistory = await ChatHistory.findOne({ userId, userType, sessionId });
-
-    if (chatHistory) {
-      // Update existing chat history
-      chatHistory.messages = messages;
-      chatHistory.category = category;
-      chatHistory.language = language;
-      chatHistory.lastActivity = new Date();
-    } else {
-      // Create new chat history
-      chatHistory = new ChatHistory({
-        userId,
-        userType,
-        sessionId,
-        messages,
-        category,
-        language
-      });
-    }
-
-    await chatHistory.save();
-
-    res.json({
-      success: true,
-      message: 'Chat history saved successfully',
-      sessionId: chatHistory.sessionId
-    });
+    await ChatHistory.findOneAndUpdate(
+      { userId, userType, sessionId },
+      { messages, lastActivity: new Date() },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true });
   } catch (err) {
-    console.error('Error saving chat history:', err);
-    res.status(500).json({ error: 'Failed to save chat history' });
+    res.status(500).json({ error: 'Database error' });
   }
 });
 
-/**
- * GET /api/chatbot/history/load/:userId/:userType
- * Load chat history for a user
- * Optional query params: sessionId, limit
- */
-router.get('/history/load/:userId/:userType', async (req, res) => {
-  const { userId, userType } = req.params;
-  const { sessionId, limit = 10 } = req.query;
-
-  if (!userId || !userType) {
-    return res.status(400).json({ error: 'Missing required params: userId, userType' });
-  }
-
-  try {
-    let query = { userId, userType };
-
-    // If sessionId is provided, get specific session
-    if (sessionId) {
-      query.sessionId = sessionId;
-      const chatHistory = await ChatHistory.findOne(query);
-      return res.json({
-        success: true,
-        chatHistory: chatHistory || null
-      });
-    }
-
-    // Otherwise, get most recent sessions
-    const chatHistories = await ChatHistory.find(query)
-      .sort({ lastActivity: -1 })
-      .limit(parseInt(limit));
-
-    res.json({
-      success: true,
-      chatHistories,
-      count: chatHistories.length
-    });
-  } catch (err) {
-    console.error('Error loading chat history:', err);
-    res.status(500).json({ error: 'Failed to load chat history' });
-  }
-});
-
-/**
- * GET /api/chatbot/history/sessions/:userId/:userType
- * Get all chat sessions for a user
- */
 router.get('/history/sessions/:userId/:userType', async (req, res) => {
-  const { userId, userType } = req.params;
-
-  if (!userId || !userType) {
-    return res.status(400).json({ error: 'Missing required params: userId, userType' });
-  }
-
   try {
-    const sessions = await ChatHistory.find({ userId, userType })
-      .select('sessionId category language lastActivity createdAt messages')
+    const sessions = await ChatHistory.find({ userId: req.params.userId })
+      .select('sessionId messages lastActivity createdAt')
       .sort({ lastActivity: -1 });
 
-    // Map to include message count, preview, and a context title
-    const sessionsWithPreview = sessions.map(session => {
-      const title = generateSessionTitle(session.messages || []);
-      const lastMsg = session.messages.length > 0
-        ? session.messages[session.messages.length - 1].text.substring(0, 100)
-        : '';
+    const results = sessions.map(s => ({
+      sessionId: s.sessionId,
+      title: generateSessionTitle(s.messages),
+      lastActivity: s.lastActivity,
+      messageCount: s.messages.length
+    }));
 
-      return {
-        sessionId: session.sessionId,
-        category: session.category,
-        language: session.language,
-        title,
-        messageCount: session.messages.length,
-        lastMessage: lastMsg,
-        lastActivity: session.lastActivity,
-        createdAt: session.createdAt
-      };
-    });
-
-    res.json({
-      success: true,
-      sessions: sessionsWithPreview,
-      count: sessionsWithPreview.length
-    });
+    res.json({ success: true, sessions: results });
   } catch (err) {
-    console.error('Error loading chat sessions:', err);
-    res.status(500).json({ error: 'Failed to load chat sessions' });
+    res.status(500).json({ error: 'Failed to load sessions' });
   }
 });
 
-/**
- * DELETE /api/chatbot/history/:sessionId
- * Delete a specific chat session
- */
 router.delete('/history/:sessionId', async (req, res) => {
-  const { sessionId } = req.params;
-
-  if (!sessionId) {
-    return res.status(400).json({ error: 'Missing required param: sessionId' });
-  }
-
   try {
-    const result = await ChatHistory.findOneAndDelete({ sessionId });
-
-    if (!result) {
-      return res.status(404).json({ error: 'Chat session not found' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Chat session deleted successfully'
-    });
+    await ChatHistory.findOneAndDelete({ sessionId: req.params.sessionId });
+    res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting chat session:', err);
-    res.status(500).json({ error: 'Failed to delete chat session' });
+    res.status(500).json({ error: 'Delete failed' });
   }
 });
 
