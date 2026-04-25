@@ -2,12 +2,13 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const { VertexAI } = require('@google-cloud/vertexai');
+const { GoogleGenAI } = require('@google/genai');
 
-// Initialize Vertex AI (Uses GCP Credits)
-const vertexAI = new VertexAI({ 
-  project: 'literexia-capstone-project', 
-  location: 'us-central1' 
+// Initialize Google Gen AI (Unified SDK)
+const ai = new GoogleGenAI({ 
+  vertexai: true,
+  project: 'literexia-capstone-project',
+  location: 'us-central1'
 });
 
 /**
@@ -59,43 +60,32 @@ PEDAGOGICAL STRATEGIES:
  */
 async function generateResponse(prompt, userType, temperature = 0.7) {
   try {
-    const model = vertexAI.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
-      safetySettings: [
-        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      contents: [
+        { role: 'user', parts: [{ text: getSystemInstructions(userType) }] },
+        { role: 'model', parts: [{ text: 'Maliwanag po. Handa na akong tumulong bilang Literexia Teaching Assistant.' }] },
+        { role: 'user', parts: [{ text: prompt }] }
       ],
-    });
-
-    const chatSession = model.startChat({
-      generationConfig: {
-        temperature,
+      config: { 
+        temperature, 
+        maxOutputTokens: 1024,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 1024,
-      },
-      history: [
-        {
-          role: 'user',
-          parts: [{ text: getSystemInstructions(userType) }],
-        },
-        {
-          role: 'model',
-          parts: [{ text: 'Maliwanag po. Handa na akong tumulong bilang Literexia Teaching Assistant.' }],
-        }
-      ]
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+        ]
+      }
     });
 
-    const result = await chatSession.sendMessage(prompt);
-    const response = result.response;
-    
-    console.log('✅ Vertex AI response generated successfully');
-    return response.candidates[0].content.parts[0].text;
+    console.log('✅ Google Gen AI response generated successfully');
+    return response.text;
 
-  } catch (vertexError) {
-    console.error('⚠️ Vertex AI Failed:', vertexError.message);
+  } catch (aiError) {
+    console.error('⚠️ Google Gen AI Failed:', aiError.message);
     
     // FALLBACK TO OPENAI
     try {
