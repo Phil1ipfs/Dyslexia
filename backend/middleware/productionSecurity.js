@@ -35,7 +35,7 @@ const createProductionSecurityConfig = () => {
     }),
 
     // Trust proxy for AWS Load Balancer
-    trustProxy: 1,
+    trustProxy: true,
 
     // Session configuration for production
     session: {
