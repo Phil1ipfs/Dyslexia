@@ -2,42 +2,21 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
+const { VertexAI } = require('@google-cloud/vertexai');
 
-// Load environment variables
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
-
-// Singleton pattern for Gemini AI to optimize connection reuse
-let genAIInstance = null;
-function getGenAI() {
-  if (!genAIInstance) {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error('No AI API Key configured');
-    genAIInstance = new GoogleGenerativeAI(apiKey);
-  }
-  return genAIInstance;
-}
-
-/**
- * Production-grade Safety Settings for Educational Content
- * Prevents the AI from being overly sensitive to medical/learning disability keywords
- */
-const safetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-];
+// Initialize Vertex AI (Uses GCP Credits)
+const vertexAI = new VertexAI({ 
+  project: 'literexia-capstone-project', 
+  location: 'asia-southeast1' 
+});
 
 /**
  * Optimized Title Generator
  */
 function generateSessionTitle(messages = []) {
   if (!Array.isArray(messages) || messages.length === 0) return 'New Teaching Session';
-
   const userMsg = messages.find(m => m.sender === 'user' && m.text)?.text || '';
   if (!userMsg) return 'New Teaching Session';
-
   return userMsg.split(/[.!?\n]/)[0].trim().split(/\s+/).slice(0, 8).join(' ') || 'Chat Session';
 }
 
@@ -73,41 +52,52 @@ PEDAGOGICAL STRATEGIES:
 }
 
 /**
- * Core Optimized Generation Logic with OpenAI Fallback
+ * Core Optimized Generation Logic with Vertex AI
  */
 async function generateResponse(prompt, userType, temperature = 0.7) {
-  // 1. TRY GEMINI FIRST (Primary)
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY not set');
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash",
-      systemInstruction: getSystemInstructions(userType),
-      safetySettings
+    const model = vertexAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ],
     });
 
-    const generationConfig = {
-      temperature,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 1024,
-    };
+    const chatSession = model.startChat({
+      generationConfig: {
+        temperature,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 1024,
+      },
+      history: [
+        {
+          role: 'user',
+          parts: [{ text: getSystemInstructions(userType) }],
+        },
+        {
+          role: 'model',
+          parts: [{ text: 'Maliwanag po. Handa na akong tumulong bilang Literexia Teaching Assistant.' }],
+        }
+      ]
+    });
 
-    const chatSession = model.startChat({ generationConfig });
     const result = await chatSession.sendMessage(prompt);
-    console.log('✅ Gemini response generated successfully');
-    return result.response.text();
-
-  } catch (geminiError) {
-    console.error('⚠️ Gemini Failed:', geminiError.message);
+    const response = result.response;
     
-    // 2. FALLBACK TO OPENAI
+    console.log('✅ Vertex AI response generated successfully');
+    return response.candidates[0].content.parts[0].text;
+
+  } catch (vertexError) {
+    console.error('⚠️ Vertex AI Failed:', vertexError.message);
+    
+    // FALLBACK TO OPENAI
     try {
       const openAiKey = process.env.OPENAI_API_KEY;
       if (!openAiKey) throw new Error('OPENAI_API_KEY not set');
-
       const { OpenAI } = require('openai');
       const openai = new OpenAI({ apiKey: openAiKey });
 
@@ -120,12 +110,8 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
         ],
         temperature
       });
-
-      console.log('✅ OpenAI fallback success');
       return completion.choices[0].message.content;
-
     } catch (openaiError) {
-      console.error('❌ Both AI services failed:', openaiError.message);
       throw new Error('Nagkaproblema sa pag-abot sa AI services. Subukan muli maya-maya.');
     }
   }
@@ -137,7 +123,6 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
 router.post('/ask', async (req, res) => {
   const { prompt, userType = 'teacher' } = req.body;
   if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
-
   try {
     const reply = await generateResponse(prompt, userType);
     res.json({ reply });
@@ -149,11 +134,7 @@ router.post('/ask', async (req, res) => {
 router.post('/intervention-help', async (req, res) => {
   const { studentData, question } = req.body;
   if (!question) return res.status(400).json({ error: 'Question is required' });
-
-  const contextPrompt = studentData 
-    ? `Student Performance Data: ${JSON.stringify(studentData)}. \n\nTeacher Question: ${question}`
-    : question;
-
+  const contextPrompt = studentData ? `Data: ${JSON.stringify(studentData)}. \n\nQ: ${question}` : question;
   try {
     const reply = await generateResponse(contextPrompt, 'teacher');
     res.json({ reply });
@@ -165,9 +146,7 @@ router.post('/intervention-help', async (req, res) => {
 router.post('/student-encouragement', async (req, res) => {
   const { studentLevel, challenge, question } = req.body;
   if (!question) return res.status(400).json({ error: 'Question is required' });
-
   const contextPrompt = `Level: ${studentLevel}. Challenge: ${challenge}. \n\nStudent asks: ${question}`;
-
   try {
     const reply = await generateResponse(contextPrompt, 'student', 0.8);
     res.json({ reply });
@@ -176,12 +155,9 @@ router.post('/student-encouragement', async (req, res) => {
   }
 });
 
-// --- History Management (Optimized for speed) ---
-
 router.post('/history/save', async (req, res) => {
   const { userId, userType, sessionId, messages } = req.body;
   if (!userId || !sessionId || !messages) return res.status(400).json({ error: 'Missing data' });
-
   try {
     await ChatHistory.findOneAndUpdate(
       { userId, userType, sessionId },
@@ -199,14 +175,12 @@ router.get('/history/sessions/:userId/:userType', async (req, res) => {
     const sessions = await ChatHistory.find({ userId: req.params.userId })
       .select('sessionId messages lastActivity createdAt')
       .sort({ lastActivity: -1 });
-
     const results = sessions.map(s => ({
       sessionId: s.sessionId,
       title: generateSessionTitle(s.messages),
       lastActivity: s.lastActivity,
       messageCount: s.messages.length
     }));
-
     res.json({ success: true, sessions: results });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load sessions' });
