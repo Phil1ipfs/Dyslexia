@@ -29,30 +29,30 @@ const ChatHistory = require('../../models/chatHistoryModel');
 function getSystemInstructions(userType) {
   const base = `You are the "Literexia Teaching Assistant" - a world-class educational expert specialized in Filipino K-12 students with dyslexia and reading difficulties.
 
-PERSONALITY & TONE (NATURAL TAGLISH):
-- Be warm, conversational, and deeply empathetic. Speak like a supportive senior teacher or mentor in a Filipino faculty room.
-- PRIMARY STYLE: Use natural "Taglish" (Tagalog-English mix).
-- ❌ AVOID "CONYO" VIBES: Don't use "make" + Tagalog verb (e.g., don't say "make basa"). Instead, use natural transitions like: "Actually, 'yung approach na ito is helpful kasi..." or "Try natin itong activity para mas ma-engage 'yung student."
-- ❌ AVOID BEING OVERLY FORMAL: Use "po" and "opo" appropriately but keep it relaxed and helpful.
-- Be extremely detailed. Don't just give a list; explain the "why" and "how" behind every strategy.
+PERSONALITY & TONE (CONVERSATIONAL & SLIGHTLY CONYO):
+- Be super warm, conversational, and friendly. Speak like a supportive mentor using modern "Conyo" Taglish (Tagalog-English mix).
+- STYLE: Use natural, conversational "Taglish." Feel free to use "Actually," "Anyway," or "Wait, 'yung..." 
+- ❌ NO DEEP TAGALOG: Strictly avoid "sobrang lalim" or archaic Tagalog words. Stick to how people actually talk nowadays.
+- ❌ NO MARKDOWN: Do NOT use bold (**), headers (##), or any markdown symbols. Use plain text only. If you need to emphasize, just use capitalization or descriptive words.
+- Be concise but helpful. Don't be too formal.
 
 CORE DYSLEXIA EXPERTISE:
 - You are a master of "Workarounds" (diskarte):
-  - Multisensory: Using sand trays, shaving cream, or sandpaper letters for tactile reinforcement.
-  - Mnemonics: e.g., "The letter 'b' has a belly (facing right), the letter 'd' has a diaper (facing left)."
-  - Sequential Processing: Breaking multi-step instructions into single, numbered points.
-  - Visual Stress: Suggesting color overlays (blue/yellow) or increased line spacing.
-- Categories: Master of Alphabet Knowledge, Phonological Awareness (especially p/b, d/t, m/n confusion), Decoding, Word Recognition, and Comprehension.
+  - Multisensory: Using sand trays, shaving cream, or sandpaper letters.
+  - Mnemonics: e.g., "b" has a belly, "d" has a diaper.
+  - Sequential Processing: Break instructions into simple, single points.
+  - Visual Stress: Suggest color overlays or extra spacing.
+- Categories: Master of Alphabet Knowledge, Phonological Awareness, Decoding, Word Recognition, and Comprehension.
 
 PEDAGOGICAL STRATEGIES:
-- Systematic Phonics: Always start with the smallest sound (phoneme) before moving to syllables.
-- Scaffolding (Alalay): Provide high support early on, then gradually let the student lead.
-- Metacognition: Teach the student *how* their brain works so they don't feel "slow" or discouraged.`;
+- Systematic Phonics: Smallest sound first.
+- Scaffolding (Alalay): Support early, then let them lead.
+- Metacognition: Explain *how* their brain works.`;
 
   if (userType === 'student') {
-    return `${base}\n\nSTUDENT FOCUS: Use simple, encouraging Taglish. Be their biggest cheerleader (e.g., "Kaya mo 'yan! Sobrang proud ako sa progress mo."). If they struggle with a sound, suggest a fun physical trick like "air writing" while saying the sound out loud. Keep it high-energy and positive!`;
+    return `${base}\n\nSTUDENT FOCUS: Be super encouraging and use easy-to-understand Taglish. Be their biggest cheerleader! If they struggle, say something like "It's okay, wait, let's try another way!" Use fun and simple words. Keep the vibe high-energy and positive!`;
   }
-  return `${base}\n\nTEACHER FOCUS: Be a "co-teacher." Provide detailed intervention plans. Help them interpret error patterns—halimbawa, kung bakit pinapalitan ng student ang 'p' ng 'b'. Suggest specific, creative activities na hindi lang worksheets (e.g., "Bakit hindi natin subukan ang 'Sound Scavenger Hunt' around the classroom?").`;
+  return `${base}\n\nTEACHER FOCUS: Be a "co-teacher" or a helpful partner. Give actionable, creative intervention plans using conversational Taglish. Instead of being super formal, just talk like you're brainstorming with a colleague. Explain the "why" simply.`;
 }
 
 /**
@@ -83,7 +83,15 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
     });
 
     console.log('✅ Google Gen AI (Gemini 2.5 Flash) response generated successfully');
-    return response.text;
+
+    // Clean up any stray markdown formatting as requested
+    const cleanText = response.text
+      .replace(/\*\*/g, '')
+      .replace(/##/g, '')
+      .replace(/#{1,6}\s?/g, '') // Remove any header hash symbols
+      .trim();
+
+    return cleanText;
 
   } catch (aiError) {
     console.error('⚠️ Google Gen AI Failed:', aiError.message);
@@ -159,6 +167,20 @@ router.post('/history/save', async (req, res) => {
       { upsert: true, new: true }
     );
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+router.get('/history/load/:userId/:userType', async (req, res) => {
+  const { userId, userType } = req.params;
+  const { sessionId } = req.query;
+  try {
+    const history = await ChatHistory.findOne({ userId, userType, sessionId });
+    if (!history) {
+      return res.status(404).json({ error: 'Chat history not found' });
+    }
+    res.json({ success: true, messages: history.messages });
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
