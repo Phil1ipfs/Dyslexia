@@ -8,7 +8,7 @@ const { GoogleGenAI } = require('@google/genai');
 const ai = new GoogleGenAI({
   vertexai: true,
   project: 'literexia-capstone-project',
-  location: 'asia-southeast1'
+  location: 'us-central1'
 });
 
 /**
@@ -61,7 +61,7 @@ PEDAGOGICAL STRATEGIES:
 async function generateResponse(prompt, userType, temperature = 0.7) {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-flash-001',
       contents: [
         { role: 'user', parts: [{ text: getSystemInstructions(userType) }] },
         { role: 'model', parts: [{ text: 'Maliwanag po. Handa na akong tumulong bilang Literexia Teaching Assistant.' }] },
