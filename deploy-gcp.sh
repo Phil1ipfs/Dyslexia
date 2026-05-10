@@ -17,8 +17,8 @@ set -euo pipefail
 PROJECT_ID="literexia-capstone-project"
 SERVICE_NAME="literexia-backend"
 REGION="asia-southeast1"
-MEMORY="1Gi"
-CPU="1"
+MEMORY="2Gi"
+CPU="2"
 MIN_INSTANCES="1"    # Keep 1 instance warm for background services (auto-processing, monitoring)
 MAX_INSTANCES="3"
 TIMEOUT="300"
@@ -118,6 +118,8 @@ deploy() {
         --allow-unauthenticated \
         --memory "$MEMORY" \
         --cpu "$CPU" \
+        --cpu-boost \
+        --execution-environment gen2 \
         --min-instances "$MIN_INSTANCES" \
         --max-instances "$MAX_INSTANCES" \
         --timeout "$TIMEOUT" \

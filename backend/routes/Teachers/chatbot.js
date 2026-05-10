@@ -62,7 +62,7 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
   try {
     // Using gemini-2.5-flash as confirmed by global availability test
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: [
         { role: 'user', parts: [{ text: getSystemInstructions(userType) }] },
         { role: 'model', parts: [{ text: 'Maliwanag po. Handa na akong tumulong bilang Literexia Teaching Assistant.' }] },
@@ -82,7 +82,7 @@ async function generateResponse(prompt, userType, temperature = 0.7) {
       }
     });
 
-    console.log('✅ Google Gen AI (Gemini 2.5 Flash) response generated successfully');
+    console.log('✅ Google Gen AI (Gemini 2.5 Pro) response generated successfully');
 
     // Clean up any stray markdown formatting as requested
     const cleanText = response.text
