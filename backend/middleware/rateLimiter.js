@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 // Rate limiter for login attempts
 const loginLimiter = rateLimit({
   windowMs: 5 * 1000, // 5 seconds
-  max: 10, // limit each IP to 10 requests per 5 seconds
+  max: 30, // limit each IP to 30 requests per 5 seconds
   message: {
     error: 'Too many login attempts from this IP, please try again after 5 seconds',
     retryAfter: '5 seconds'
@@ -30,7 +30,7 @@ const loginLimiter = rateLimit({
 // Aggressive rate limiter for repeated failed attempts from same IP
 const aggressiveLoginLimiter = rateLimit({
   windowMs: 5 * 1000, // 5 seconds
-  max: 10, // limit each IP to 10 requests per 5 seconds
+  max: 30, // limit each IP to 30 requests per 5 seconds
   message: {
     error: 'Too many failed login attempts from this IP, please try again after 5 seconds',
     retryAfter: '5 seconds'

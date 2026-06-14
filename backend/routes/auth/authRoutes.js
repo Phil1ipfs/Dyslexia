@@ -68,7 +68,7 @@ const normalizeRole = (role) => {
 router.post('/login',
   loginLimiter,
   aggressiveLoginLimiter,
-  createAccountLimiter(3, 60 * 60 * 1000), // 3 attempts per hour per email
+  createAccountLimiter(20, 60 * 1000), // 20 attempts per 1 minute per email
   loginLogger,
   async (req, res) => {
   const { email, password, expectedRole } = req.body;

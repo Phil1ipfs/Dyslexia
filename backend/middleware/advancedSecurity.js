@@ -5,8 +5,8 @@ const bcrypt = require('bcrypt');
 class AccountLockoutService {
   constructor() {
     this.lockouts = new Map(); // In production, use Redis or database
-    this.maxAttempts = 5;
-    this.lockoutDuration = 30 * 60 * 1000; // 30 minutes
+    this.maxAttempts = 10;
+    this.lockoutDuration = 60 * 1000; // 1 minute
     this.escalationThreshold = 3; // After 3 lockouts, increase duration
   }
 
@@ -36,8 +36,8 @@ class AccountLockoutService {
 
     if (lockoutData.attempts >= this.maxAttempts) {
       lockoutData.lockoutCount++;
-      // Exponential backoff for repeat offenders
-      const multiplier = Math.pow(2, Math.min(lockoutData.lockoutCount - 1, 4));
+      // No escalation - keep every lockout at the base duration (~1 minute)
+      const multiplier = 1;
       const lockoutDuration = this.lockoutDuration * multiplier;
 
       lockoutData.unlockTime = now + lockoutDuration;
@@ -232,9 +232,9 @@ class SuspiciousActivityDetector {
     };
 
     // Clean old data (older than 1 hour)
-    const oneHourAgo = now - (60 * 60 * 1000);
-    ipData.requests = ipData.requests.filter(time => time > oneHourAgo);
-    ipData.failedLogins = ipData.failedLogins.filter(time => time > oneHourAgo);
+    const recentFailureWindow = now - (60 * 1000); // 1 minute (shortened from 1 hour)
+    ipData.requests = ipData.requests.filter(time => time > recentFailureWindow);
+    ipData.failedLogins = ipData.failedLogins.filter(time => time > recentFailureWindow);
 
     // Record new activity
     ipData.requests.push(now);
@@ -261,7 +261,7 @@ class SuspiciousActivityDetector {
     let score = 0;
     const now = Date.now();
     const oneMinuteAgo = now - (60 * 1000);
-    const oneHourAgo = now - (60 * 60 * 1000);
+    const recentFailureWindow = now - (60 * 1000); // 1 minute (shortened from 1 hour)
 
     // High request rate
     const recentRequests = ipData.requests.filter(time => time > oneMinuteAgo).length;
@@ -270,7 +270,7 @@ class SuspiciousActivityDetector {
     }
 
     // Multiple failed logins
-    const recentFailures = ipData.failedLogins.filter(time => time > oneHourAgo).length;
+    const recentFailures = ipData.failedLogins.filter(time => time > recentFailureWindow).length;
     if (recentFailures > this.suspiciousThreshold.failedLoginsPerHour) {
       score += 40;
     }
@@ -299,14 +299,14 @@ class SuspiciousActivityDetector {
     const reasons = [];
     const now = Date.now();
     const oneMinuteAgo = now - (60 * 1000);
-    const oneHourAgo = now - (60 * 60 * 1000);
+    const recentFailureWindow = now - (60 * 1000); // 1 minute (shortened from 1 hour)
 
     const recentRequests = ipData.requests.filter(time => time > oneMinuteAgo).length;
     if (recentRequests > this.suspiciousThreshold.requestsPerMinute) {
       reasons.push(`High request rate: ${recentRequests} requests per minute`);
     }
 
-    const recentFailures = ipData.failedLogins.filter(time => time > oneHourAgo).length;
+    const recentFailures = ipData.failedLogins.filter(time => time > recentFailureWindow).length;
     if (recentFailures > this.suspiciousThreshold.failedLoginsPerHour) {
       reasons.push(`Multiple failed logins: ${recentFailures} in the last hour`);
     }
