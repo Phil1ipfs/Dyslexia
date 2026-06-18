@@ -1308,6 +1308,17 @@ server.listen(PORT, async () => {
     console.warn('⚠️ Could not start auto-processing service:', error.message);
   }
 
+  // Start real-time prescriptive analysis watcher (change stream on category_results).
+  // Mobile writes results directly to MongoDB, bypassing the inline web trigger; this
+  // generates the prescriptive analysis the instant a mobile write lands, so teachers
+  // don't wait for the 5-minute poller. The poller remains as a safety-net fallback.
+  try {
+    const PrescriptiveAnalysisWatcher = require('./services/Teachers/PrescriptiveAnalysisWatcher');
+    PrescriptiveAnalysisWatcher.start();
+  } catch (error) {
+    console.warn('⚠️ Could not start prescriptive analysis watcher:', error.message);
+  }
+
   // Sync existing intervention data with category_results
   try {
     const InterventionSyncService = require('./services/Teachers/InterventionSyncService');
