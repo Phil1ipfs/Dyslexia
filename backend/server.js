@@ -1357,22 +1357,12 @@ server.listen(PORT, async () => {
     console.warn('⚠️ Could not start intervention monitoring service:', error.message);
   }
 
-  // Start category results fix service (automatic statistics recalculation)
-  try {
-    const CategoryResultsFixService = require('./services/Teachers/CategoryResultsFixService');
-
-    // Run immediate fix on startup
-    console.log('[CATEGORY FIX] 🔧 Running startup category results fix...');
-    CategoryResultsFixService.fixAllCategoryResults().then(result => {
-      console.log(`[CATEGORY FIX] ✅ Startup fix completed: ${result.fixed} fixed, ${result.skipped} already correct`);
-    });
-
-    // Auto-start the periodic monitoring service
-    CategoryResultsFixService.startAutoFixMonitoring(5); // Every 5 minutes
-    console.log('🎯 Category results fix service auto-started - will check and fix category statistics every 5 minutes');
-  } catch (error) {
-    console.warn('⚠️ Could not start category results fix service:', error.message);
-  }
+  // NOTE: Removed a DUPLICATE CategoryResultsFixService init that used to live here.
+  // The "Fix category results..." block above already runs fixAllCategoryResults() once at
+  // startup and starts a 10-minute auto-fix monitor. This second block added a redundant
+  // startup full-scan plus a 2nd concurrent monitor (every 5 min) over ALL students, which
+  // saturated the single warm instance's event loop and caused /prescriptive-analytics/generate
+  // to be starved and time out (504 at 300s). A single 10-minute monitor is sufficient.
 
   // Start automatic data processor (generates missing category_results)
   try {
