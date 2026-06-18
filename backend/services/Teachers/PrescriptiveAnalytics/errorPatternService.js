@@ -3,6 +3,7 @@
 
 const StudentResponse = require('../../../models/Teachers/ManageProgress/studentResponseModel');
 const MainAssessment = require('../../../models/Teachers/mainAssessmentModel');
+const CategoryResult = require('../../../models/Teachers/ManageProgress/categoryResultModel');
 
 class ErrorPatternService {
   
@@ -68,10 +69,17 @@ class ErrorPatternService {
     try {
       console.log(`[ERROR PATTERN ANALYSIS] Starting analysis for student ${studentId}, categoryResultId: ${categoryResultId}`);
 
-      // Fetch student responses for analysis
+      // Fetch student responses for analysis, scoped to the category result's reading level.
+      // IMPORTANT: responses link to a category_result by readingLevel, NOT by categoryId — a
+      // response's categoryId points to main_assessment, not category_results. The old
+      // `query.categoryId = categoryResultId` compared ids from two different collections,
+      // matched nothing, and silently dropped every response ("Found 0 responses" -> 500).
       const query = { studentId };
       if (categoryResultId) {
-        query.categoryId = categoryResultId;
+        const categoryResult = await CategoryResult.findById(categoryResultId).select('readingLevel').lean();
+        if (categoryResult?.readingLevel) {
+          query.readingLevel = categoryResult.readingLevel;
+        }
       }
 
       const responses = await StudentResponse.find(query).sort({ answeredAt: 1 });

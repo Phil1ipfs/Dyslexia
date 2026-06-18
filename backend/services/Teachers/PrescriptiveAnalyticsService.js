@@ -176,6 +176,11 @@ class PrescriptiveAnalyticsService {
         updatedAt: new Date()
       };
 
+      // Idempotent regeneration: remove any prior analysis for this category result first so
+      // the insert below cannot hit E11000 on analysis_lookup_idx (unique categoryResultId).
+      // Keeps the original new()+save() path so Map/Mixed field serialization is unchanged.
+      // Mirrors how ReadingLevelProgressionService clears old analyses before regenerating.
+      await PrescriptiveAnalysis.deleteOne({ categoryResultId });
       const prescriptiveAnalysis = new PrescriptiveAnalysis(analysisData);
       await prescriptiveAnalysis.save();
 
@@ -1639,9 +1644,12 @@ class PrescriptiveAnalyticsService {
       detailedErrors: errorPattern?.detailedErrorAnalysis?.length || 0
     });
 
-    // Ensure we have valid error patterns to analyze
+    // Degrade gracefully instead of failing the whole analysis: a failed category with
+    // no analyzable error patterns (e.g. sparse/zero responses) still gets a sensible
+    // category-default approach rather than crashing the request with a 500.
     if (!Array.isArray(errorPatterns) || errorPatterns.length === 0) {
-      throw new Error(`Cannot determine primaryApproach for ${categoryName}: No error patterns found for analysis. This indicates incomplete prescriptive analysis.`);
+      console.warn(`[PRESCRIPTIVE] No error patterns for ${categoryName} - using default primary approach`);
+      return this.getDefaultPrimaryApproach(categoryName);
     }
 
     // Category-specific analysis based on ACTUAL error patterns
@@ -1672,8 +1680,23 @@ class PrescriptiveAnalyticsService {
       }
     }
 
-    // If we reach here, the error analysis was incomplete
-    throw new Error(`Cannot determine primaryApproach for ${categoryName}: Error patterns exist but don't match expected analysis criteria. Found patterns: ${errorPatterns.map(p => p.errorPattern).join(', ')}`);
+    // Patterns exist but none matched the category-specific criteria — fall back to the
+    // category default rather than throwing (which would 500 the whole generation).
+    console.warn(`[PRESCRIPTIVE] Error patterns for ${categoryName} did not match known criteria - using default primary approach. Found: ${errorPatterns.map(p => p.errorPattern).join(', ')}`);
+    return this.getDefaultPrimaryApproach(categoryName);
+  }
+
+  /**
+   * Category-appropriate default teaching approach, used when error-pattern analysis
+   * yields nothing usable. Only returns approaches already produced by getPrimaryApproach.
+   */
+  getDefaultPrimaryApproach(categoryName) {
+    const defaults = {
+      'Alphabet Knowledge': 'systematic_explicit_instruction',
+      'Phonological Awareness': 'multisensory_structured',
+      'Decoding': 'phonics_based'
+    };
+    return defaults[categoryName] || 'systematic_explicit_instruction';
   }
 
   /**
