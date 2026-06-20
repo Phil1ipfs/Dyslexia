@@ -13,11 +13,26 @@ const validateEmailUniqueness = async (email) => {
 
     const sanitizedEmail = email.toLowerCase().trim();
 
-    // Check 1: teachers.profile collection
-    console.log('🔍 [EMAIL VALIDATION] Checking teachers.profile collection...');
-    const teachersDb = mongoose.connection.useDb('teachers');
-    const teachersCollection = teachersDb.collection('profile');
-    const existingTeacher = await teachersCollection.findOne({ email: sanitizedEmail });
+    // Run all five collection checks in PARALLEL (they hit five independent
+    // databases). Previously these were awaited one-by-one, so an available
+    // email paid the full cost of five sequential lookups — the main source of
+    // lag when creating a teacher/parent. Results are still evaluated in the same
+    // priority order, so the returned existingUserType/foundInCollection is
+    // identical to the old sequential behavior.
+    console.log('🔍 [EMAIL VALIDATION] Checking all collections in parallel...');
+    const teachersCollection = mongoose.connection.useDb('teachers').collection('profile');
+    const parentCollection = mongoose.connection.useDb('parent').collection('parent_profile');
+    const usersCollection = mongoose.connection.useDb('users_web').collection('users');
+    const studentsCollection = mongoose.connection.useDb('test').collection('users');
+    const adminCollection = mongoose.connection.useDb('admin_user').collection('admin_profile');
+
+    const [existingTeacher, existingParent, existingUser, existingStudent, existingAdmin] = await Promise.all([
+      teachersCollection.findOne({ email: sanitizedEmail }),
+      parentCollection.findOne({ email: sanitizedEmail }),
+      usersCollection.findOne({ email: sanitizedEmail }),
+      studentsCollection.findOne({ email: sanitizedEmail }),
+      adminCollection.findOne({ email: sanitizedEmail })
+    ]);
 
     if (existingTeacher) {
       console.log('❌ [EMAIL VALIDATION] Email found in teachers.profile:', existingTeacher._id);
@@ -33,12 +48,6 @@ const validateEmailUniqueness = async (email) => {
       };
     }
 
-    // Check 2: parent.parent_profile collection
-    console.log('🔍 [EMAIL VALIDATION] Checking parent.parent_profile collection...');
-    const parentDb = mongoose.connection.useDb('parent');
-    const parentCollection = parentDb.collection('parent_profile');
-    const existingParent = await parentCollection.findOne({ email: sanitizedEmail });
-
     if (existingParent) {
       console.log('❌ [EMAIL VALIDATION] Email found in parent.parent_profile:', existingParent._id);
       return {
@@ -52,12 +61,6 @@ const validateEmailUniqueness = async (email) => {
         }
       };
     }
-
-    // Check 3: users_web.users collection (general users/login accounts)
-    console.log('🔍 [EMAIL VALIDATION] Checking users_web.users collection...');
-    const usersWebDb = mongoose.connection.useDb('users_web');
-    const usersCollection = usersWebDb.collection('users');
-    const existingUser = await usersCollection.findOne({ email: sanitizedEmail });
 
     if (existingUser) {
       console.log('❌ [EMAIL VALIDATION] Email found in users_web.users:', existingUser._id);
@@ -73,12 +76,6 @@ const validateEmailUniqueness = async (email) => {
       };
     }
 
-    // Check 4: test.users collection (student users)
-    console.log('🔍 [EMAIL VALIDATION] Checking test.users collection...');
-    const testDb = mongoose.connection.useDb('test');
-    const studentsCollection = testDb.collection('users');
-    const existingStudent = await studentsCollection.findOne({ email: sanitizedEmail });
-
     if (existingStudent) {
       console.log('❌ [EMAIL VALIDATION] Email found in test.users:', existingStudent._id);
       return {
@@ -92,12 +89,6 @@ const validateEmailUniqueness = async (email) => {
         }
       };
     }
-
-    // Check 5: admin_user.admin_profile collection
-    console.log('🔍 [EMAIL VALIDATION] Checking admin_user.admin_profile collection...');
-    const adminDb = mongoose.connection.useDb('admin_user');
-    const adminCollection = adminDb.collection('admin_profile');
-    const existingAdmin = await adminCollection.findOne({ email: sanitizedEmail });
 
     if (existingAdmin) {
       console.log('❌ [EMAIL VALIDATION] Email found in admin_user.admin_profile:', existingAdmin._id);

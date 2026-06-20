@@ -11,6 +11,14 @@ const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Readiness flag: routes are registered asynchronously (after the DB connects),
+// but server.listen() binds the port immediately — so Cloud Run can route traffic
+// to this instance during a cold start before any route exists, leaving those
+// requests to hang with no handler (browser sees net::ERR_FAILED / "No
+// Access-Control-Allow-Origin"). The guard below short-circuits that window with
+// a fast, CORS-carrying 503 instead. Flipped true once route registration finishes.
+let appReady = false;
+
 // Trust proxy for AWS EC2 / load balancer (must be set before rate limiters)
 app.set('trust proxy', 1);
 
@@ -128,6 +136,22 @@ app.get('/test', (req, res) => {
 
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
+});
+
+// Readiness guard: until routes finish registering, return a fast retryable 503
+// (CORS headers are already set by the cors middleware above) instead of letting
+// the request hang with no handler. Health/test/metrics paths are exempt so the
+// platform's probes keep working during startup.
+const READINESS_EXEMPT = ['/health', '/healthz', '/metrics', '/test', '/api/test'];
+app.use((req, res, next) => {
+  if (appReady || READINESS_EXEMPT.includes(req.path)) {
+    return next();
+  }
+  res.setHeader('Retry-After', '3');
+  return res.status(503).json({
+    error: 'Service starting',
+    message: 'Server is still initializing, please retry shortly.'
+  });
 });
 
 // Define database connection with better error handling
@@ -1217,6 +1241,11 @@ connectDB().then(async (connected) => {
       console.error(`[ERROR] ${err.message}`);
       res.status(500).json({ error: 'Server error', message: err.message });
     });
+
+    // All routes are registered — the instance can now serve traffic. This lifts
+    // the readiness guard so requests stop getting the startup 503.
+    appReady = true;
+    console.log('✅ Routes registered — app marked ready to serve traffic');
 
   } catch (error) {
     console.error('Error registering routes:', error);
