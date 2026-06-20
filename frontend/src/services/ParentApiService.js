@@ -4,7 +4,7 @@ import axios from 'axios';
 const isProd = import.meta.env.PROD;
 
 // API base URL configuration that works in both dev and production
-const API_BASE = import.meta.env.VITE_BACKEND_URL || (isProd ? '' : 'https://api.literexia.com/');
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://api.literexia.com';
 
 // Create axios instance with default config
 const apiClient = axios.create({

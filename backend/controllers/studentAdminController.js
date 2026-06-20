@@ -492,10 +492,18 @@ exports.updateStudent = async (req, res) => {
       });
     }
 
-    // Handle profile image upload
+    // Handle profile image upload. Degrade gracefully if S3 is unavailable
+    // (e.g. AWS billing hold) — the rest of the edit still saves, the photo is
+    // just skipped, instead of failing the whole update with a 500.
     let profileImageUrl = '';
+    let imageUploadFailed = false;
     if (req.file) {
-      profileImageUrl = await uploadToS3(req.file, 'student-profiles');
+      try {
+        profileImageUrl = await uploadToS3(req.file, 'student-profiles');
+      } catch (uploadError) {
+        imageUploadFailed = true;
+        console.error('🚨 [STUDENT ADMIN] S3 upload failed during update (saving without new image):', uploadError.message);
+      }
     }
 
     // Use sanitized data from validation
@@ -530,7 +538,10 @@ exports.updateStudent = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Student updated successfully',
+      message: imageUploadFailed
+        ? 'Student updated successfully, but the profile image could not be uploaded (image service unavailable). Please try the image again later.'
+        : 'Student updated successfully',
+      imageUploadFailed,
       data: { studentProfile: updatedProfile }
     });
   } catch (err) {

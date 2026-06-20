@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Check if in production
 const isProd = import.meta.env.PROD;
-const API_BASE_URL = import.meta.env.VITE_API_URL || (isProd ? '' : 'https://api.literexia.com/');
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.literexia.com';
 
 /**
  * Save chat history to database

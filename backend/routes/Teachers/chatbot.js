@@ -178,7 +178,7 @@ router.get('/history/load/:userId/:userType', async (req, res) => {
   try {
     const history = await ChatHistory.findOne({ userId, userType, sessionId });
     if (!history) {
-      return res.status(404).json({ error: 'Chat history not found' });
+      return res.json({ success: true, messages: [] });
     }
     res.json({ success: true, messages: history.messages });
   } catch (err) {
