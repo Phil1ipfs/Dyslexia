@@ -1,0 +1,15 @@
+# Don't ship local deps/build artifacts into the Docker build context.
+# node_modules is reinstalled with `npm ci` inside the image; copying the local
+# (macOS) one would bloat the context and can break the Linux build (esbuild/
+# native binaries are platform-specific).
+node_modules
+dist
+.git
+.gitignore
+*.log
+.DS_Store
+.env
+.env.*
+npm-debug.log*
+.vscode
+coverage
