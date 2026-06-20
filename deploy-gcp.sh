@@ -37,6 +37,36 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_step()  { echo -e "${BLUE}[STEP]${NC} $1"; }
 
 # ──────────────────────────────────────────────────────
+# Ensure gcloud runs on a supported Python (>= 3.10)
+# ──────────────────────────────────────────────────────
+# gcloud 5xx fails to even load `run deploy` on Python 3.9
+# ("unsupported operand type(s) for |"). If the interpreter gcloud would use is
+# too old, point CLOUDSDK_PYTHON at a newer one. Respects an existing override.
+ensure_gcloud_python() {
+    # Respect an explicit user choice.
+    if [ -n "${CLOUDSDK_PYTHON:-}" ]; then
+        return
+    fi
+
+    # gcloud picks its own (here, broken 3.9.6) interpreter when unset, so don't
+    # try to detect that — just pin the newest supported one we can find. gcloud
+    # supports CPython 3.8–3.13, so this is always safe when a match exists.
+    for py in python3.13 python3.12 python3.11 python3.10; do
+        for path in "/opt/homebrew/bin/$py" "/usr/local/bin/$py" "$(command -v "$py" 2>/dev/null)"; do
+            if [ -n "$path" ] && [ -x "$path" ]; then
+                export CLOUDSDK_PYTHON="$path"
+                log_info "Using Python for gcloud: $path ($("$path" --version 2>&1))"
+                return
+            fi
+        done
+    done
+
+    log_warn "No Python >= 3.10 found for gcloud; deploy may fail on the bundled 3.9. Install one: brew install python@3.11"
+}
+
+ensure_gcloud_python
+
+# ──────────────────────────────────────────────────────
 # Enable required GCP APIs
 # ──────────────────────────────────────────────────────
 enable_apis() {
