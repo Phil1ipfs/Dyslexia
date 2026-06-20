@@ -365,6 +365,15 @@ class AutoProcessingService {
     // Then run both periodically
     const intervalMs = intervalMinutes * 60 * 1000;
     setInterval(async () => {
+      // Overlap guard: a full all-students scan can occasionally exceed the
+      // interval on a busy/contended instance. Skipping the tick (instead of
+      // launching a second concurrent scan) prevents these heavy passes from
+      // stacking up and starving request handlers on the shared event loop.
+      if (this._periodicRunning) {
+        console.log('[AUTO PROCESSOR] ⏭️ Previous periodic run still in progress, skipping this tick');
+        return;
+      }
+      this._periodicRunning = true;
       try {
         // Run assessment processing
         await this.processAllCompleteAssessments();
@@ -373,6 +382,8 @@ class AutoProcessingService {
         await this.runPeriodicProgressionValidation();
       } catch (error) {
         console.error('[AUTO PROCESSOR] Error in periodic processing:', error.message);
+      } finally {
+        this._periodicRunning = false;
       }
     }, intervalMs);
   }

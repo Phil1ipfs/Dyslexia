@@ -9,6 +9,7 @@ const InterventionCompletionService = require('./InterventionCompletionService')
 class InterventionMonitoringService {
   constructor() {
     this.isRunning = false;
+    this.isChecking = false; // overlap guard: true while a check is in flight
     this.intervalId = null;
     this.checkInterval = 30000; // Check every 30 seconds
     this.lastCheck = new Date();
@@ -62,6 +63,13 @@ class InterventionMonitoringService {
    * Main monitoring function - checks for completed interventions and processes them
    */
   async checkForCompletedInterventions() {
+    // Overlap guard: if the previous tick is still running (e.g. under load), skip
+    // this one rather than stacking concurrent full passes on the shared event loop.
+    if (this.isChecking) {
+      console.log('[INTERVENTION MONITORING] ⏭️ Previous check still running, skipping this tick');
+      return;
+    }
+    this.isChecking = true;
     try {
       const checkStartTime = new Date();
       console.log(`[INTERVENTION MONITORING] 🔍 Checking for completed interventions at ${checkStartTime.toISOString()}`);
@@ -110,6 +118,8 @@ class InterventionMonitoringService {
 
     } catch (error) {
       console.error('[INTERVENTION MONITORING] Error in monitoring check:', error);
+    } finally {
+      this.isChecking = false;
     }
   }
 

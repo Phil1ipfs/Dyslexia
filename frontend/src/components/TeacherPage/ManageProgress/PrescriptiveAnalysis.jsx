@@ -1080,8 +1080,11 @@ const PrescriptiveAnalysis = ({
 
       try {
         const results = {};
-        // ✅ FIX: Loop through ALL categories to check for intervention results
-        for (const category of allCategories) {
+        // ⚡ PERF: Fetch ALL categories in parallel instead of sequentially.
+        // Previously this awaited each category one-at-a-time (5 categories ×
+        // 2 requests each = up to 10 serial round-trips), which dominated load
+        // time. Promise.all collapses that to a single round-trip window.
+        await Promise.all(allCategories.map(async (category) => {
           try {
             console.log(`[INTERVENTION RESULTS] Fetching results for: ${category.categoryName} (student: ${currentStudentId})`);
             const categoryResults = await fetchInterventionResults(currentStudentId, category.categoryName);
@@ -1097,7 +1100,7 @@ const PrescriptiveAnalysis = ({
             console.error(`Error loading intervention results for ${category.categoryName}:`, error);
             // Continue with other categories even if one fails
           }
-        }
+        }));
 
         setInterventionResults(results);
         console.log('[INTERVENTION RESULTS] All intervention results loaded:', results);
@@ -5174,12 +5177,13 @@ const PrescriptiveAnalysis = ({
       const categories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
       const enhancedResults = {};
 
-      for (const category of categories) {
+      // ⚡ PERF: fetch all categories concurrently instead of one-at-a-time.
+      await Promise.all(categories.map(async (category) => {
         const enhancedResult = await fetchEnhancedInterventionResults(liveStudent.idNumber, category);
         if (enhancedResult) {
           enhancedResults[category] = enhancedResult;
         }
-      }
+      }));
 
       console.log('[DYNAMIC INTERVENTION RESULTS] ✅ Enhanced results updated:', Object.keys(enhancedResults));
       setInterventionResults(prevResults => ({

@@ -193,8 +193,21 @@ class CategoryResultsFixService {
     console.log(`[CATEGORY FIX] 🔄 Starting auto-fix monitoring (every ${intervalMinutes} minutes)`);
 
     setInterval(async () => {
-      console.log('[CATEGORY FIX] 🔍 Running periodic category results check...');
-      await this.fixAllCategoryResults();
+      // Overlap guard: don't launch a second full scan if the previous one is
+      // still running — keeps these passes from stacking on the shared event loop.
+      if (this._fixRunning) {
+        console.log('[CATEGORY FIX] ⏭️ Previous fix run still in progress, skipping this tick');
+        return;
+      }
+      this._fixRunning = true;
+      try {
+        console.log('[CATEGORY FIX] 🔍 Running periodic category results check...');
+        await this.fixAllCategoryResults();
+      } catch (error) {
+        console.error('[CATEGORY FIX] Error in periodic fix run:', error.message);
+      } finally {
+        this._fixRunning = false;
+      }
     }, intervalMinutes * 60 * 1000);
   }
 }

@@ -333,6 +333,16 @@ connectDB().then(async (connected) => {
   console.log('Database connected successfully - registering routes');
   console.log('User model is targeting collection:', User.collection.name);
 
+  // Ensure critical indexes exist BEFORE routes/background services start hitting
+  // the DB. category_results in particular shipped unindexed, making every
+  // studentId/readingLevel lookup a full collection scan that starved the heavy
+  // endpoints into 504 timeouts. Idempotent + non-blocking on failure.
+  try {
+    await require('./services/ensureIndexes')();
+  } catch (error) {
+    console.warn('⚠️ Could not ensure indexes (continuing startup):', error.message);
+  }
+
   // Test S3 connection
   if (s3Client.testS3Connection) {
     s3Client.testS3Connection()

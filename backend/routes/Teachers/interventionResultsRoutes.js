@@ -66,20 +66,29 @@ router.get('/student/:studentId/category/:categoryName', auth, authorize('teache
 
     // Get the latest intervention result
     const latestIntervention = category.interventionHistory[category.interventionHistory.length - 1];
-    
-    // Get intervention assessment details
-    const interventionAssessmentsCollection = db.collection('intervention_assessments');
-    const interventionAssessment = await interventionAssessmentsCollection.findOne({
-      _id: new mongoose.Types.ObjectId(latestIntervention.interventionId)
-    });
 
-    // Get intervention results details
-    const interventionResultsCollection = db.collection('intervention_results');
-    const interventionResult = await interventionResultsCollection.findOne({
-      studentId: parseInt(studentId),
-      interventionAssessmentId: new mongoose.Types.ObjectId(latestIntervention.interventionId),
-      revisionNumber: latestIntervention.attemptNumber
-    });
+    // Guard against missing/malformed interventionId to avoid 500 crashes
+    let interventionAssessment = null;
+    let interventionResult = null;
+    if (latestIntervention.interventionId && mongoose.Types.ObjectId.isValid(latestIntervention.interventionId)) {
+      const interventionObjectId = new mongoose.Types.ObjectId(latestIntervention.interventionId);
+
+      // Get intervention assessment details
+      const interventionAssessmentsCollection = db.collection('intervention_assessment');
+      interventionAssessment = await interventionAssessmentsCollection.findOne({
+        _id: interventionObjectId
+      });
+
+      // Get intervention results details
+      const interventionResultsCollection = db.collection('intervention_results');
+      interventionResult = await interventionResultsCollection.findOne({
+        studentId: parseInt(studentId),
+        interventionAssessmentId: interventionObjectId,
+        revisionNumber: latestIntervention.attemptNumber
+      });
+    } else {
+      console.warn(`[INTERVENTION RESULTS API] ⚠️ Missing/invalid interventionId in history for ${categoryName} (student ${studentId}); returning summary without assessment details`);
+    }
 
     // Prepare the response data
     const responseData = {
@@ -373,19 +382,28 @@ router.get('/', async (req, res) => {
       // Get the latest intervention result
       const latestIntervention = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
 
-      // Get intervention assessment details
-      const interventionAssessmentsCollection = db.collection('intervention_assessments');
-      const interventionAssessment = await interventionAssessmentsCollection.findOne({
-        _id: new mongoose.Types.ObjectId(latestIntervention.interventionId)
-      });
+      // Guard against missing/malformed interventionId to avoid 500 crashes
+      let interventionAssessment = null;
+      let interventionResult = null;
+      if (latestIntervention.interventionId && mongoose.Types.ObjectId.isValid(latestIntervention.interventionId)) {
+        const interventionObjectId = new mongoose.Types.ObjectId(latestIntervention.interventionId);
 
-      // Get intervention results details
-      const interventionResultsCollection = db.collection('intervention_results');
-      const interventionResult = await interventionResultsCollection.findOne({
-        studentId: parseInt(studentId),
-        interventionAssessmentId: new mongoose.Types.ObjectId(latestIntervention.interventionId),
-        revisionNumber: latestIntervention.attemptNumber
-      });
+        // Get intervention assessment details
+        const interventionAssessmentsCollection = db.collection('intervention_assessment');
+        interventionAssessment = await interventionAssessmentsCollection.findOne({
+          _id: interventionObjectId
+        });
+
+        // Get intervention results details
+        const interventionResultsCollection = db.collection('intervention_results');
+        interventionResult = await interventionResultsCollection.findOne({
+          studentId: parseInt(studentId),
+          interventionAssessmentId: interventionObjectId,
+          revisionNumber: latestIntervention.attemptNumber
+        });
+      } else {
+        console.warn(`[INTERVENTION RESULTS API] ⚠️ Missing/invalid interventionId in history for ${categoryName} (student ${studentId}); returning summary without assessment details`);
+      }
 
       // Prepare the response data
       const responseData = {

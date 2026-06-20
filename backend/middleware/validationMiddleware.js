@@ -92,8 +92,8 @@ const studentValidation = {
     param('studentId')
       .isNumeric()
       .withMessage('Student ID must be numeric')
-      .isInt({ min: 1, max: 999999999 })
-      .withMessage('Student ID must be a valid integer between 1 and 999999999'),
+      .isInt({ min: 1, max: 9999999999 })
+      .withMessage('Student ID must be a valid integer between 1 and 9999999999'),
 
     handleValidationErrors
   ],
@@ -109,8 +109,8 @@ const studentValidation = {
         if (isNaN(numValue)) {
           throw new Error('ID Number must be numeric');
         }
-        if (numValue < 1 || numValue > 999999999) {
-          throw new Error('ID Number must be between 1 and 999999999');
+        if (numValue < 1 || numValue > 9999999999) {
+          throw new Error('ID Number must be between 1 and 9999999999');
         }
         return true;
       }),
