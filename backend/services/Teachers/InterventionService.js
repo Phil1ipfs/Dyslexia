@@ -1260,22 +1260,11 @@ class InterventionService {
         size: fileBuffer.length
       });
 
-      // Upload directly to S3 with public-read ACL
-      const { PutObjectCommand } = require('@aws-sdk/client-s3');
-      const uploadParams = {
-        Bucket: bucketName,
-        Key: key,
-        Body: fileBuffer,
-        ContentType: fileType,
-      };
+      // Upload to Google Cloud Storage (public-read bucket)
+      const gcsStorage = require('../../utils/gcsStorage');
+      const fileUrl = await gcsStorage.uploadBuffer(fileBuffer, key, fileType);
 
-      const command = new PutObjectCommand(uploadParams);
-      await s3Client.send(command);
-
-      console.log('✅ File uploaded successfully to S3 with public-read ACL');
-
-      // Create the public URL
-      const fileUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+      console.log('✅ File uploaded successfully to GCS');
 
       // CRITICAL: Verify the file is actually accessible before returning
       console.log(`🔍 VERIFYING URL accessibility: ${fileUrl}`);
@@ -1323,11 +1312,7 @@ class InterventionService {
 
         // Try to clean up the uploaded file
         try {
-          const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-          await s3Client.send(new DeleteObjectCommand({
-            Bucket: bucketName,
-            Key: key
-          }));
+          await gcsStorage.storage.bucket(gcsStorage.BUCKET).file(key).delete({ ignoreNotFound: true });
           console.log(`🗑️ Cleaned up inaccessible file: ${key}`);
         } catch (cleanupError) {
           console.error(`❌ Failed to cleanup inaccessible file:`, cleanupError);
@@ -1339,17 +1324,13 @@ class InterventionService {
       // Get file metadata for additional validation
       let fileMetadata = {};
       try {
-        const { HeadObjectCommand } = require('@aws-sdk/client-s3');
-        const headResult = await s3Client.send(new HeadObjectCommand({
-          Bucket: bucketName,
-          Key: key
-        }));
+        const [md] = await gcsStorage.storage.bucket(gcsStorage.BUCKET).file(key).getMetadata();
 
         fileMetadata = {
-          size: headResult.ContentLength,
-          type: headResult.ContentType,
-          lastModified: headResult.LastModified,
-          etag: headResult.ETag
+          size: md.size,
+          type: md.contentType,
+          lastModified: md.updated,
+          etag: md.etag
         };
 
         console.log(`📊 File metadata:`, fileMetadata);
@@ -1428,20 +1409,25 @@ class InterventionService {
         targetFolder
       });
       
-      // Generate the pre-signed URL
-      const uploadUrl = await s3Client.getSignedUrlPromise('putObject', s3Params);
-      
+      // Generate a GCS V4 signed PUT URL for direct client upload
+      const gcsStorage = require('../../utils/gcsStorage');
+      const [uploadUrl] = await gcsStorage.storage.bucket(gcsStorage.BUCKET).file(key).getSignedUrl({
+        version: 'v4',
+        action: 'write',
+        expires: Date.now() + 5 * 60 * 1000,
+        contentType: fileType,
+      });
+
       console.log('Generated presigned URL successfully');
-      
-      // Create a direct URL to the file that will be accessible after upload
-      const fileUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${s3Params.Key}`;
-      
+
+      // Public URL the file will be reachable at after upload (bucket is public-read)
+      const fileUrl = gcsStorage.publicUrl(key);
+
       return {
         uploadUrl,
-        key: s3Params.Key,
+        key,
         fileUrl,
-        // Add instruction for frontend to make file public after upload
-        makePublicRequired: true
+        makePublicRequired: false
       };
     } catch (error) {
       console.error('Error generating pre-signed URL:', error);

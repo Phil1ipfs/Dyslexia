@@ -1,6 +1,5 @@
 // services/MobileFallbackService.js
-const s3Client = require('../config/s3');
-const { PutObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const gcsStorage = require('../utils/gcsStorage'); // storage now on GCS
 const imageUrlValidator = require('../utils/imageUrlValidator');
 const sharp = require('sharp'); // For image generation (install if needed)
 
@@ -90,21 +89,12 @@ class MobileFallbackService {
    */
   async checkImageExistsInS3(url) {
     try {
-      // Extract S3 key from URL
-      const s3Key = this.extractS3KeyFromUrl(url);
-      if (!s3Key) return false;
-
-      await s3Client.send(new HeadObjectCommand({
-        Bucket: this.bucketName,
-        Key: s3Key
-      }));
-
-      return true;
+      const key = this.extractS3KeyFromUrl(url);
+      if (!key) return false;
+      const [exists] = await gcsStorage.storage.bucket(gcsStorage.BUCKET).file(key).exists();
+      return exists;
     } catch (error) {
-      if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
-        return false;
-      }
-      throw error;
+      return false;
     }
   }
 
@@ -112,14 +102,8 @@ class MobileFallbackService {
    * Extract S3 key from full URL
    */
   extractS3KeyFromUrl(url) {
-    if (!url || !url.includes(this.bucketName)) return null;
-
-    const urlParts = url.split('/');
-    const bucketIndex = urlParts.findIndex(part => part.includes(this.bucketName));
-
-    if (bucketIndex === -1 || bucketIndex + 1 >= urlParts.length) return null;
-
-    return urlParts.slice(bucketIndex + 1).join('/');
+    // Handles both GCS (storage.googleapis.com) and legacy S3 URLs
+    return gcsStorage.keyFromUrl(url);
   }
 
   /**
@@ -135,22 +119,8 @@ class MobileFallbackService {
       // Generate appropriate placeholder image based on category
       const imageBuffer = await this.generatePlaceholderImage(category);
 
-      // Upload to S3
-      const uploadParams = {
-        Bucket: this.bucketName,
-        Key: s3Key,
-        Body: imageBuffer,
-        ContentType: 'image/png',
-        CacheControl: 'max-age=31536000', // Cache for 1 year
-        Metadata: {
-          'generated-by': 'MobileFallbackService',
-          'category': category,
-          'purpose': 'mobile-fallback',
-          'created-at': new Date().toISOString()
-        }
-      };
-
-      await s3Client.send(new PutObjectCommand(uploadParams));
+      // Upload placeholder to GCS
+      await gcsStorage.uploadBuffer(imageBuffer, s3Key, 'image/png');
 
       // Verify the uploaded image is accessible
       const isAccessible = await imageUrlValidator.validateImageUrl(targetUrl, 3000); // 3 second timeout

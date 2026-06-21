@@ -2,8 +2,7 @@
 const mongoose = require('mongoose');
 const InterventionAssessment = require('../models/Teachers/ManageProgress/interventionAssessmentModel');
 const imageUrlValidator = require('../utils/imageUrlValidator');
-const s3Client = require('../config/s3');
-const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const gcsStorage = require('../utils/gcsStorage'); // storage now on GCS
 
 class DatabaseCleanupService {
   constructor() {
@@ -155,10 +154,7 @@ class DatabaseCleanupService {
       try {
         console.log(`  🗑️ Deleting orphaned file: ${orphanedFile.s3Key}`);
 
-        await s3Client.send(new DeleteObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET || 'literexia-bucket',
-          Key: orphanedFile.s3Key
-        }));
+        await gcsStorage.storage.bucket(gcsStorage.BUCKET).file(orphanedFile.s3Key).delete({ ignoreNotFound: true });
 
         cleanedUp++;
         console.log(`  ✅ Deleted: ${orphanedFile.s3Key}`);
