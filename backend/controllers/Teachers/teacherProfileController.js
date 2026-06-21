@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const s3Client = require('../../config/s3');
+const gcsStorage = require('../../utils/gcsStorage'); // image uploads now go to GCS
 const path = require('path');
 const slugify = require('slugify'); // Add this dependency if not already installed
 const multer = require('multer');
@@ -1174,43 +1175,9 @@ exports.uploadProfileImage = async (req, res) => {
       const bucketName = process.env.AWS_S3_BUCKET || 'literexia-bucket';
       const region = process.env.AWS_REGION || 'ap-southeast-2';
 
-      // Delete existing S3 image if present
-      if (profile.profileImageUrl && 
-          profile.profileImageUrl !== "null" && 
-          profile.profileImageUrl.includes('amazonaws.com')) {
-        try {
-          // Extract key from URL by parsing carefully
-          let key = '';
-          
-          // Clean the URL to handle any query parameters
-          const urlString = profile.profileImageUrl.split('?')[0];
-          
-          // Parse the path part only
-          if (urlString.includes('/teacher-profiles/')) {
-            const pathParts = urlString.split('/teacher-profiles/');
-            if (pathParts.length > 1) {
-              key = 'teacher-profiles/' + pathParts[1];
-              console.log('Extracted S3 key:', key);
-            }
-          } else {
-            console.log('Could not parse path from URL:', urlString);
-          }
-          
-          if (key) {
-            console.log('Deleting previous S3 image with key:', key);
-
-            const deleteCommand = new DeleteObjectCommand({
-              Bucket: bucketName,
-              Key: key
-            });
-
-            await s3Client.send(deleteCommand);
-            console.log('Successfully deleted previous S3 image');
-          }
-        } catch (deleteError) {
-          console.error('Failed to delete previous S3 image:', deleteError.message);
-          // Continue with upload even if deletion fails
-        }
+      // Delete the previous profile image (GCS; legacy S3 URLs are ignored safely)
+      if (profile.profileImageUrl && profile.profileImageUrl !== "null") {
+        await gcsStorage.deleteByUrl(profile.profileImageUrl);
       }
 
       // Create organized folder structure
@@ -1239,20 +1206,8 @@ exports.uploadProfileImage = async (req, res) => {
       console.log('- Key:', key);
       console.log('- File size:', req.file.size, 'bytes');
 
-      // Set upload parameters
-      const params = {
-        Bucket: bucketName,
-        Key: key,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
-        CacheControl: 'no-cache',
-      };
-      
-      // Upload to S3
-      await s3Client.send(new PutObjectCommand(params));
-      
-      // Construct the complete URL
-      const imageUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+      // Upload to Google Cloud Storage (reuses the key built above)
+      const imageUrl = await gcsStorage.uploadBuffer(req.file.buffer, key, req.file.mimetype);
       console.log('Image uploaded to:', imageUrl);
 
       // Get the profile collection
@@ -1314,45 +1269,9 @@ exports.deleteProfileImage = async (req, res) => {
       return res.status(404).json({ error: 'No teacher profile found.' });
     }
 
-    // Check if S3 image URL exists
-    if (profile.profileImageUrl &&
-        profile.profileImageUrl !== "null" &&
-        profile.profileImageUrl.includes('amazonaws.com')) {
-      try {
-        // Check for bucket name in environment
-        const bucketName = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
-
-        // Extract key from URL by parsing it properly
-        let key = '';
-        try {
-          const url = new URL(profile.profileImageUrl.startsWith('http') ? 
-                            profile.profileImageUrl : 
-                            `https://${profile.profileImageUrl}`);
-          
-          // Remove query parameters (like timestamps) from the path
-          const cleanPath = url.pathname.split('?')[0]; 
-          const pathParts = cleanPath.split('/');
-          key = pathParts.slice(1).join('/');
-        } catch (urlError) {
-          console.error('Error parsing image URL:', urlError);
-          // Fallback method - crude string manipulation
-          const urlParts = profile.profileImageUrl.split('/');
-          key = urlParts.slice(3).join('/');
-        }
-
-        console.log('Deleting S3 image with key:', key);
-
-        const deleteCommand = new DeleteObjectCommand({
-          Bucket: bucketName,
-          Key: key
-        });
-
-        await s3Client.send(deleteCommand);
-        console.log('Successfully deleted S3 image');
-      } catch (deleteError) {
-        console.error('Failed to delete S3 image:', deleteError.message);
-        // Continue with database update even if S3 deletion fails
-      }
+    // Delete the stored profile image (GCS; legacy S3 URLs are ignored safely)
+    if (profile.profileImageUrl && profile.profileImageUrl !== "null") {
+      await gcsStorage.deleteByUrl(profile.profileImageUrl);
     }
 
     // Get the profile collection

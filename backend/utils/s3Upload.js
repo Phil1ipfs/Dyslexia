@@ -1,45 +1,39 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+// Image uploads now go to Google Cloud Storage (migrated off AWS S3 after the
+// AWS account was suspended). The export name `uploadToS3` is kept so existing
+// callers (studentAdminController, etc.) work unchanged — only the storage
+// backend changed. On Cloud Run, Application Default Credentials (the service
+// account) are used automatically, so no keys are needed.
+const { Storage } = require('@google-cloud/storage');
 const path = require('path');
 
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
+const storage = new Storage();
+const BUCKET = process.env.GCS_BUCKET || 'literexia-uploads';
 
-const BUCKET = process.env.AWS_S3_BUCKET || process.env.AWS_BUCKET_NAME;
-
-// Bound how long an upload may take. Without this, a hung/slow S3 (credential or
-// billing problems) makes the whole request hang until Cloud Run's 300s timeout,
-// and the browser sees a 504 (Gateway Timeout) on create/update. With it, the
-// upload rejects after S3_TIMEOUT_MS and the caller's try/catch degrades
-// gracefully (saves the record without the image). 10s is generous for a small
-// profile image yet short enough to never 504.
-const S3_TIMEOUT_MS = 10000;
+// Bound how long an upload may take so a slow/hung storage backend can't make the
+// whole request hang until Cloud Run's 300s timeout (which the browser sees as a
+// 504 on create/update). On timeout the caller's try/catch degrades gracefully
+// (saves the record without the image). 10s is generous for a small profile image.
+const UPLOAD_TIMEOUT_MS = 10000;
 
 async function uploadToS3(file, folder = '') {
   const ext = path.extname(file.originalname);
   const filename = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
   const key = folder ? `${folder}/${filename}` : filename;
 
-  const params = {
-    Bucket: BUCKET,
-    Key: key,
-    Body: file.buffer,
-    ContentType: file.mimetype,
-  };
+  const blob = storage.bucket(BUCKET).file(key);
 
   await Promise.race([
-    s3.send(new PutObjectCommand(params)),
+    blob.save(file.buffer, {
+      contentType: file.mimetype,
+      resumable: false, // simple one-shot upload — fine for small profile images
+    }),
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`S3 upload timed out after ${S3_TIMEOUT_MS}ms`)), S3_TIMEOUT_MS)
+      setTimeout(() => reject(new Error(`GCS upload timed out after ${UPLOAD_TIMEOUT_MS}ms`)), UPLOAD_TIMEOUT_MS)
     ),
   ]);
 
-  // Return the public URL
-  return `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  // Public URL (bucket has allUsers objectViewer)
+  return `https://storage.googleapis.com/${BUCKET}/${key}`;
 }
 
-module.exports = uploadToS3; 
+module.exports = uploadToS3;

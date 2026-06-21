@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const s3Client = require('../config/s3');
+const gcsStorage = require('../utils/gcsStorage'); // image uploads now go to GCS
 const getParentProfileModel = require('../models/parentProfileModel');
 
 // Sanitize input helper function
@@ -498,28 +499,9 @@ exports.uploadProfileImage = async (req, res) => {
         throw new Error('AWS_BUCKET_NAME is not configured');
       }
 
-      // Delete existing S3 image if present
-      if (parent.profileImageUrl &&
-        parent.profileImageUrl !== "null" &&
-        parent.profileImageUrl.includes('amazonaws.com')) {
-        try {
-          // Extract key from URL
-          const urlParts = parent.profileImageUrl.split('/');
-          const key = urlParts.slice(3).join('/');
-
-          console.log('Deleting previous S3 image with key:', key);
-
-          const deleteCommand = new DeleteObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: key
-          });
-
-          await s3Client.send(deleteCommand);
-          console.log('Successfully deleted previous S3 image');
-        } catch (deleteError) {
-          console.error('Failed to delete previous S3 image:', deleteError.message);
-          // Continue with upload even if deletion fails
-        }
+      // Delete the previous profile image (GCS; legacy S3 URLs ignored safely)
+      if (parent.profileImageUrl && parent.profileImageUrl !== "null") {
+        await gcsStorage.deleteByUrl(parent.profileImageUrl);
       }
 
       // Create organized folder structure
@@ -543,26 +525,15 @@ exports.uploadProfileImage = async (req, res) => {
       console.log('- Key:', key);
       console.log('- File size:', req.file.size, 'bytes');
 
-      // Create S3 upload
-      const uploader = new Upload({
-        client: s3Client,
-        params: {
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: key,
-          Body: req.file.buffer,
-          ContentType: req.file.mimetype
-        }
-      });
-
-      // Perform the upload
-      const uploadResult = await uploader.done();
-      console.log('S3 upload successful:', uploadResult.Location);
+      // Upload to Google Cloud Storage (reuses the key built above)
+      const imageUrl = await gcsStorage.uploadBuffer(req.file.buffer, key, req.file.mimetype);
+      console.log('GCS upload successful:', imageUrl);
 
       // Update MongoDB document - using findOneAndUpdate to avoid document not found errors
       const updateResult = await ParentProfile.findOneAndUpdate(
         { _id: parent._id },
         {
-          profileImageUrl: uploadResult.Location,
+          profileImageUrl: imageUrl,
           updatedAt: new Date()
         },
         {
@@ -654,28 +625,9 @@ exports.deleteProfileImage = async (req, res) => {
       return res.status(404).json({ error: 'No parent profile found.' });
     }
 
-    // Check if S3 image URL exists
-    if (parent.profileImageUrl &&
-      parent.profileImageUrl !== "null" &&
-      parent.profileImageUrl.includes('amazonaws.com')) {
-      try {
-        // Extract key from URL
-        const urlParts = parent.profileImageUrl.split('/');
-        const key = urlParts.slice(3).join('/');
-
-        console.log('Deleting S3 image with key:', key);
-
-        const deleteCommand = new DeleteObjectCommand({
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: key
-        });
-
-        await s3Client.send(deleteCommand);
-        console.log('Successfully deleted S3 image');
-      } catch (deleteError) {
-        console.error('Failed to delete S3 image:', deleteError.message);
-        // Continue with database update even if S3 deletion fails
-      }
+    // Delete the stored profile image (GCS; legacy S3 URLs ignored safely)
+    if (parent.profileImageUrl && parent.profileImageUrl !== "null") {
+      await gcsStorage.deleteByUrl(parent.profileImageUrl);
     }
 
     // Update MongoDB document using findOneAndUpdate

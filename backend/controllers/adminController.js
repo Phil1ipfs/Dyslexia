@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const gcsStorage = require('../utils/gcsStorage'); // image uploads now go to GCS
 const bcrypt = require('bcrypt');
 
 // Data sanitization utility functions
@@ -291,26 +292,10 @@ exports.uploadProfileImage = [
                 });
             }
 
-            const adminEmail = req.user.email;
             const file = req.file;
 
-            // Generate unique filename
-            const timestamp = Date.now();
-            const fileName = `admin-profiles/${timestamp}-${adminEmail.replace('@', '_')}-${file.originalname}`;
-
-            // Upload to S3
-            const uploadParams = {
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Key: fileName,
-                Body: file.buffer,
-                ContentType: file.mimetype,
-            };
-
-            const command = new PutObjectCommand(uploadParams);
-            await s3Client.send(command);
-
-            // Generate the public URL
-            const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+            // Upload to Google Cloud Storage
+            const imageUrl = await gcsStorage.uploadFile(file, 'admin-profiles');
 
             console.log('Image uploaded successfully:', imageUrl);
 
