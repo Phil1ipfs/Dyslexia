@@ -82,6 +82,7 @@ app.use(cors({
       'http://192.168.56.1:5173',
       'http://192.168.1.4:5173',
       'https://literexia.com',
+      'https://www.literexia.com',
       // Frontend now hosted on Cloud Run (migrated off Amplify). Both run.app URL
       // formats are allowed so the app works before the literexia.com custom
       // domain is mapped to the frontend service.
