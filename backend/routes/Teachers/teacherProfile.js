@@ -4,8 +4,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { auth, authorize } = require('../../middleware/auth');
 const multer = require('multer');
-const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const s3Client = require('../../config/s3');
+const gcsStorage = require('../../utils/gcsStorage'); // uploads now go to GCS
 const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
@@ -75,49 +74,21 @@ const uploadFileToS3 = async (file, teacherId) => {
       CacheControl: 'no-cache',
     };
     
-    await s3Client.send(new PutObjectCommand(params));
-    
-    // Return the URL for the uploaded file
-    const region = process.env.AWS_REGION || 'ap-southeast-2';
-    const bucket = process.env.AWS_S3_BUCKET || 'literexia-bucket';
-    return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+    // Upload to GCS and return the public URL
+    return await gcsStorage.uploadBuffer(params.Body, params.Key, params.ContentType);
   } catch (error) {
-    console.error('Error uploading file to S3:', error);
+    console.error('Error uploading file to GCS:', error);
     throw error;
   }
 };
 
-// Delete file from S3
+// Delete file from storage (GCS; legacy S3 URLs are ignored safely)
 const deleteFileFromS3 = async (imageUrl) => {
   try {
     if (!imageUrl || imageUrl === 'null') return;
-    
-    // Parse URL to get the key
-    const bucket = process.env.AWS_S3_BUCKET || 'literexia-bucket';
-    
-    // For S3 URLs like https://bucket.s3.region.amazonaws.com/folder/file.jpg
-    let key = '';
-    if (imageUrl.includes('/teacher-profiles/')) {
-      const urlParts = imageUrl.split('/teacher-profiles/');
-      if (urlParts.length > 1) {
-        key = 'teacher-profiles/' + urlParts[1].split('?')[0]; // Remove query params
-      }
-    }
-    
-    if (!key) {
-      console.warn('Could not extract S3 key from URL:', imageUrl);
-      return;
-    }
-    
-    console.log('Deleting S3 file with key:', key);
-    await s3Client.send(new DeleteObjectCommand({
-      Bucket: bucket,
-      Key: key
-    }));
-    
-    console.log('Successfully deleted S3 file');
+    await gcsStorage.deleteByUrl(imageUrl);
   } catch (error) {
-    console.error('Error deleting file from S3:', error);
+    console.error('Error deleting file from storage:', error);
     // Don't throw - continue even if delete fails
   }
 };

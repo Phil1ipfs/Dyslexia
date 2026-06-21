@@ -3,8 +3,7 @@ const router = express.Router();
 const { authenticateToken, authorize } = require('../../middleware/auth');
 const mainAssessmentController = require('../../controllers/Teachers/mainAssessmentController');
 const multer = require('multer');
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
-const s3Client = require('../../config/s3');
+const gcsStorage = require('../../utils/gcsStorage'); // uploads now go to GCS
 
 // Storage config for multer
 const storage = multer.memoryStorage();
@@ -71,13 +70,10 @@ router.post('/upload-image',
         ContentType: file.mimetype,
       };
 
-      // Upload to S3
+      // Upload to GCS
       try {
-        await s3Client.send(new PutObjectCommand(params));
-        
-        // Construct the URL of the uploaded file
-        const fileUrl = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-2'}.amazonaws.com/${fileName}`;
-        
+        const fileUrl = await gcsStorage.uploadBuffer(params.Body, params.Key, params.ContentType);
+
         return res.status(200).json({
           success: true,
           message: 'File uploaded successfully',

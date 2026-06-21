@@ -4,6 +4,7 @@ const { Upload } = require('@aws-sdk/lib-storage');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+const gcsStorage = require('../utils/gcsStorage'); // uploads now go to GCS
 
 // Configure AWS S3 client
 const s3Client = new S3Client({
@@ -162,22 +163,17 @@ class UploadController {
         }
       }
       
-      // Upload to S3
+      // Upload to GCS
       try {
-        const upload = new Upload({
-          client: s3Client,
-          params,
-        });
-        
-        const uploadResult = await upload.done();
-        
-        console.log('[UploadController] PDF uploaded to S3:', uploadResult.Location);
-        
+        const fileUrl = await gcsStorage.uploadBuffer(params.Body, params.Key, params.ContentType);
+
+        console.log('[UploadController] PDF uploaded to GCS:', fileUrl);
+
         res.json({
           success: true,
           message: 'PDF uploaded successfully',
-          fileUrl: uploadResult.Location,
-          key: uploadResult.Key
+          fileUrl: fileUrl,
+          key: params.Key
         });
       } catch (s3Error) {
         console.error('[UploadController] S3 upload error:', s3Error);
@@ -288,32 +284,21 @@ class UploadController {
         }
       }
       
-      // Get from S3
+      // Get from GCS
       try {
-        const params = {
-          Bucket: process.env.AWS_BUCKET_NAME || 'literexia-bucket',
-          Key: id
-        };
-        
-        // Check if the object exists
-        const command = new HeadObjectCommand(params);
-        await s3Client.send(command);
-        
-        // Generate a public URL instead of a signed URL
-        const publicUrl = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-2'}.amazonaws.com/${params.Key}`;
-        
-        // Redirect to the public URL
-        res.redirect(publicUrl);
-      } catch (s3Error) {
-        console.error('[UploadController] S3 download error:', s3Error);
-        
-        if (s3Error.code === 'NotFound') {
+        const [exists] = await gcsStorage.storage.bucket(gcsStorage.BUCKET).file(id).exists();
+        if (!exists) {
           return res.status(404).json({
             success: false,
-            error: 'PDF not found in S3'
+            error: 'PDF not found in storage'
           });
         }
-        
+
+        // Redirect to the public URL (bucket is public-read)
+        res.redirect(gcsStorage.publicUrl(id));
+      } catch (s3Error) {
+        console.error('[UploadController] GCS download error:', s3Error);
+
         res.status(500).json({
           success: false,
           error: 'Failed to retrieve from S3',

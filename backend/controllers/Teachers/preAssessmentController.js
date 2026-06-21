@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
+const gcsStorage = require('../../utils/gcsStorage'); // uploads now go to GCS
 const { PreAssessment, QuestionType } = require('../../models/Teachers/preAssessmentModel');
 
 // Configure AWS S3 client
@@ -495,21 +496,16 @@ exports.uploadMedia = async (req, res) => {
       ContentType: file.mimetype,
     };
     
-    const upload = new Upload({
-      client: s3Client,
-      params,
-    });
-    
-    const uploadResult = await upload.done();
-    
+    const fileUrl = await gcsStorage.uploadBuffer(params.Body, params.Key, params.ContentType);
+
     res.json({
       message: 'File uploaded successfully',
-      fileUrl: uploadResult.Location,
-      fileKey: uploadResult.Key,
+      fileUrl: fileUrl,
+      fileKey: params.Key,
       s3Path: fileName
     });
   } catch (error) {
-    console.error('Error uploading file to S3:', error);
+    console.error('Error uploading file to GCS:', error);
     res.status(500).json({ message: 'Error uploading file', error: error.message });
   }
 };
@@ -523,15 +519,9 @@ exports.deleteMedia = async (req, res) => {
       return res.status(400).json({ message: 'File key is required' });
     }
     
-    // Delete from S3
-    const params = {
-      Bucket: process.env.AWS_S3_BUCKET,
-      Key: fileKey
-    };
-    
-    const command = new DeleteObjectCommand(params);
-    await s3Client.send(command);
-    
+    // Delete from GCS
+    await gcsStorage.storage.bucket(gcsStorage.BUCKET).file(fileKey).delete({ ignoreNotFound: true });
+
     res.json({
       message: 'File deleted successfully',
       fileKey
@@ -1378,19 +1368,11 @@ exports.convertImagesToS3 = async (req, res) => {
             ContentType: mimeType,
           };
           
-          // Upload to S3
-          const upload = new Upload({
-            client: s3Client,
-            params,
-          });
-          
-          await upload.done();
-          
-          // Generate S3 URL
-          const s3Url = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
-          
-          // Update question with S3 URL
-          updatedQuestion.questionImage = s3Url; // Set S3 URL directly
+          // Upload to GCS
+          const s3Url = await gcsStorage.uploadBuffer(params.Body, params.Key, params.ContentType);
+
+          // Update question with the uploaded image URL
+          updatedQuestion.questionImage = s3Url;
           
           imagesProcessed++;
         } catch (error) {

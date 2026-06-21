@@ -3,8 +3,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const mongoose = require('mongoose');
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
-const s3Client = require('../../config/s3');
+const gcsStorage = require('../../utils/gcsStorage'); // uploads now go to GCS
 
 const router = express.Router();
 
@@ -64,7 +63,7 @@ router.post('/s3', (req, res) => {
       
       try {
         // Try to upload to S3
-        await s3Client.send(new PutObjectCommand(s3Params));
+        await gcsStorage.uploadBuffer(s3Params.Body, s3Params.Key, s3Params.ContentType);
         
         console.log('[S3 UPLOAD] Upload successful');
         
@@ -125,7 +124,7 @@ router.post('/upload', (req, res) => {
 
         try {
             console.log('Attempting S3 upload to:', s3Params.Key);
-            await s3Client.send(new PutObjectCommand(s3Params));
+            await gcsStorage.uploadBuffer(s3Params.Body, s3Params.Key, s3Params.ContentType);
 
             // build the correct URL from your bucket + region
             const region = s3Client?.config?.region || 'us-east-1';
@@ -196,7 +195,7 @@ router.post('/template-image', (req, res) => {
             
             // Try to upload to S3
             try {
-                await s3Client.send(new PutObjectCommand(s3Params));
+                await gcsStorage.uploadBuffer(s3Params.Body, s3Params.Key, s3Params.ContentType);
                 
                 // Build the correct URL
                 const region = s3Client?.config?.region || 'us-east-1';

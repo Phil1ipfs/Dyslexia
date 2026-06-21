@@ -3,8 +3,7 @@ const router = express.Router();
 const UploadController = require('../controllers/uploadController');
 const uploadAuthMiddleware = require('../middleware/uploadAuthMiddleware');
 const multer = require('multer');
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
-const s3Client = require('../config/s3');
+const gcsStorage = require('../utils/gcsStorage'); // uploads now go to GCS
 const imageUrlValidator = require('../utils/imageUrlValidator');
 
 // Log all requests to this router
@@ -96,11 +95,8 @@ router.post('/s3',
 
       // Upload to S3
       try {
-        console.log(`🚀 Uploading file to S3: ${fileName}`);
-        await s3Client.send(new PutObjectCommand(params));
-
-        // Construct the URL of the uploaded file
-        const fileUrl = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-2'}.amazonaws.com/${fileName}`;
+        console.log(`🚀 Uploading file to GCS: ${fileName}`);
+        const fileUrl = await gcsStorage.uploadBuffer(params.Body, params.Key, params.ContentType);
         console.log(`✅ File uploaded successfully: ${fileUrl}`);
 
         return res.status(200).json({
