@@ -11,6 +11,13 @@ const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// APIs must always serve fresh data. Disable ETag so Express stops issuing 304
+// "Not Modified" revalidations — a stale/empty response cached by the browser
+// during an earlier failed load was being replayed via 304, leaving admin lists
+// blank even though the server had the data. (A no-store Cache-Control header is
+// also set on /api responses below.)
+app.set('etag', false);
+
 // Readiness flag: routes are registered asynchronously (after the DB connects),
 // but server.listen() binds the port immediately — so Cloud Run can route traffic
 // to this instance during a cold start before any route exists, leaving those
@@ -93,6 +100,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With']
 }));
+
+// API responses are dynamic — never let the browser serve a stale/empty cached
+// copy. Combined with `app.set('etag', false)` above this stops 304 revalidation
+// from replaying a response that was cached during an earlier failed load.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // Increase body parser limits for larger file uploads
 app.use(express.json({ limit: '50mb' }));
