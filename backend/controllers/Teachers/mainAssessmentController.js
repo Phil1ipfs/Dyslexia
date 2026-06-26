@@ -1,5 +1,31 @@
 const mongoose = require('mongoose');
 const MainAssessment = require('../../models/Teachers/mainAssessmentModel');
+const gcsStorage = require('../../utils/gcsStorage'); // question images go to GCS
+
+// Upload any base64 (data:image) question images to GCS and replace them with the
+// public storage URL, so create/update persists a real URL in MongoDB instead of a
+// huge base64 blob. Already-http(s) URLs are left untouched.
+async function processQuestionImages(questions) {
+  if (!Array.isArray(questions)) return questions;
+  for (const question of questions) {
+    const img = question && question.questionImage;
+    if (img && typeof img === 'string' && img.startsWith('data:image')) {
+      try {
+        const matches = img.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) continue;
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        const fileExt = (mimeType.split('/')[1] || 'png').split('+')[0];
+        const key = `main-assessment/images/${question.questionId || 'q'}_${Date.now()}.${fileExt}`;
+        question.questionImage = await gcsStorage.uploadBuffer(buffer, key, mimeType);
+        console.log(`[MAIN-ASSESSMENT] Uploaded question image to GCS: ${question.questionImage}`);
+      } catch (err) {
+        console.error(`[MAIN-ASSESSMENT] Failed to upload image for question ${question && question.questionId}:`, err.message);
+      }
+    }
+  }
+  return questions;
+}
 
 // Helper to get database collections
 const getMainAssessmentCollection = () => {
@@ -434,10 +460,13 @@ exports.createAssessment = async (req, res) => {
       delete question.category;
     });
     
+    // Upload any embedded (base64) question images to GCS before saving
+    await processQuestionImages(assessmentData.questions);
+
     // Set timestamps
     assessmentData.createdAt = new Date();
     assessmentData.updatedAt = new Date();
-    
+
     // Insert into collection
     const result = await mainAssessmentCollection.insertOne(assessmentData);
     
@@ -515,8 +544,11 @@ exports.updateAssessment = async (req, res) => {
         // Remove duplicated category field from individual questions
         delete question.category;
       });
+
+      // Upload any embedded (base64) question images to GCS before saving
+      await processQuestionImages(updateData.questions);
     }
-    
+
     // Update timestamps
     updateData.updatedAt = new Date();
     

@@ -269,6 +269,32 @@ exports.getPreAssessmentById = async (req, res) => {
 };
 
 // Create a new pre-assessment
+// Upload any base64 (data:image) question images to GCS and replace them with the
+// public storage URL, so create/update always persists a real URL in MongoDB
+// instead of a huge base64 blob (which can exceed the 16MB document limit and fail
+// to save). URLs that are already http(s) are left untouched.
+async function processQuestionImages(questions) {
+  if (!Array.isArray(questions)) return questions;
+  for (const question of questions) {
+    const img = question && question.questionImage;
+    if (img && typeof img === 'string' && img.startsWith('data:image')) {
+      try {
+        const matches = img.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) continue;
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        const fileExt = (mimeType.split('/')[1] || 'png').split('+')[0];
+        const key = `pre-assessment/images/${question.questionId || 'q'}_${Date.now()}.${fileExt}`;
+        question.questionImage = await gcsStorage.uploadBuffer(buffer, key, mimeType);
+        console.log(`[PRE-ASSESSMENT] Uploaded question image to GCS: ${question.questionImage}`);
+      } catch (err) {
+        console.error(`[PRE-ASSESSMENT] Failed to upload image for question ${question && question.questionId}:`, err.message);
+      }
+    }
+  }
+  return questions;
+}
+
 exports.createPreAssessment = async (req, res) => {
   try {
     const preAssessmentData = req.body;
@@ -286,7 +312,12 @@ exports.createPreAssessment = async (req, res) => {
     preAssessmentData.isActive = true;
     preAssessmentData.type = preAssessmentData.type || 'pre_assessment';
     preAssessmentData.totalQuestions = preAssessmentData.totalQuestions || 0;
-    
+
+    // Upload any embedded (base64) question images to GCS before saving
+    if (preAssessmentData.questions) {
+      await processQuestionImages(preAssessmentData.questions);
+    }
+
     // Initialize categoryCounts - always start with zeros and calculate from questions
     preAssessmentData.categoryCounts = {
       alphabet_knowledge: 0,
@@ -387,9 +418,12 @@ exports.updatePreAssessment = async (req, res) => {
     
     // If questions are being updated, recalculate categoryCounts, totalQuestions, and scoringRules
     if (updateData.questions) {
+      // Upload any embedded (base64) question images to GCS before saving
+      await processQuestionImages(updateData.questions);
+
       updateData.categoryCounts = recalculateCategoryCounts(updateData.questions);
       updateData.totalQuestions = updateData.questions.length;
-      
+
       // Recalculate dynamic scoring rules based on updated question counts
       updateData.scoringRules = calculateScoringRules(updateData.categoryCounts);
     }
