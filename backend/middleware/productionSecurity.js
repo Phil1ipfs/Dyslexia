@@ -92,7 +92,11 @@ const setupCluster = () => {
 // Database Connection Optimization for AWS EC2
 const optimizeMongoConnection = () => {
   return {
-    maxPoolSize: 10, // Maintain up to 10 socket connections
+    maxPoolSize: 50, // More headroom so concurrent requests + background jobs don't
+                     // exhaust the pool and make every DB query hang (was 10).
+    minPoolSize: 5,  // Keep warm connections ready.
+    waitQueueTimeoutMS: 10000, // If no pool connection is free in 10s, fail fast
+                               // (fast error) instead of hanging the request.
     serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
     socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
     bufferCommands: false, // Disable mongoose buffering
